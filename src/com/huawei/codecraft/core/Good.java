@@ -1,6 +1,8 @@
 package com.huawei.codecraft.core;
 
 
+import com.huawei.codecraft.Const;
+import com.huawei.codecraft.Util;
 import com.huawei.codecraft.util.Point;
 
 // 货物类
@@ -27,9 +29,21 @@ public class Good {
         return bookRobot == null;
     }
 
+    @Override
+    public String toString() {
+        return "Good{" +
+                "pos=" + pos +
+                ", value=" + value +
+                '}';
+    }
+
     // 预定该货物
     public void setBook(Robot robot) {
         bookRobot = robot;
     }
 
+    // 该物品是否存在，
+    public boolean isExist() {
+        return deadFrame >= Const.frameId;
+    }
 }

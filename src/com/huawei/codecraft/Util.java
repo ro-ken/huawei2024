@@ -50,6 +50,12 @@ public class Util {
     public static void printMove(int id,int num){
         outStream.printf("move %d %d\n", id,num);
     }
+    public static void printGet(int id){
+        outStream.printf("get %d\n", id);
+    }
+    public static void printPull(int id){
+        outStream.printf("pull %d\n", id);
+    }
     // 将船移动到泊位
     public static void printShip(int boatId,int berthId){
         outStream.printf("ship %d %d\n", boatId,berthId);

@@ -37,12 +37,20 @@ public class Main {
     }
 
     private static void updateBerth() {
+        for (Good frameGood : frameGoods) {
+            printLog(frameGood);
+        }
+
         for (Berth berth:berths) {
+
             berth.updateGoodList(frameGoods);
         }
     }
 
     private static void handleFrame() {
+        for (int i = 0; i < 3; i++) {
+            printLog(robots[i]);
+        }
 
         for (int i = 0; i < boat_num; i++) {
             boats[i].schedule();
@@ -50,9 +58,10 @@ public class Main {
         for (int i = 0; i < robot_num; i++) {
             robots[i].schedule();
         }
-        Random rand = new Random();
-        for(int i = 0; i < robot_num; i ++)
-            System.out.printf("move %d %d" + System.lineSeparator(), i, rand.nextInt(4) % 4);
+
+//        Random rand = new Random();
+//        for(int i = 0; i < robot_num; i ++)
+//            System.out.printf("move %d %d" + System.lineSeparator(), i, rand.nextInt(4) % 4);
     }
     
     public static void init() {

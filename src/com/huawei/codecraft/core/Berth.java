@@ -61,6 +61,14 @@ public class Berth {
 
     }
 
+    @Override
+    public String toString() {
+        return "Berth{" +
+                "id=" + id +
+                ", pos=" + pos +
+                '}';
+    }
+
     // 时间不够了
     private boolean timeNotEnough(Good good) {
         return false;
