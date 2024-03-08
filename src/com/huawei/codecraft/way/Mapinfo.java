@@ -1,14 +1,25 @@
 package com.huawei.codecraft.way;
-import com.huawei.codecraft.Const;
 
+import static com.huawei.codecraft.Const.mapWidth;
+import com.huawei.codecraft.Util;
+
+/**
+ * ClassName: Mapinfo
+ * Package: com.huawei.codecraft.way
+ * Description: 初始化地图信息
+ */
 public class Mapinfo {
-    public static int[][] map = new int[Const.mapWidth][Const.mapWidth];
+    public static int[][] map = new int[mapWidth][mapWidth];
 
     // 私有化构造函数防止外部实例化
     private Mapinfo() {
     }
 
-    // 初始化地图，传入字符数组，并将地图转换为整数表示
+    /**
+     * 初始化地图，将原始地图转为更方便处理的int类型
+     *
+     * @param inputMap 原始地图
+     */
     public static void init(char[][] inputMap) {
         for (int i = 0; i < inputMap.length; i++) {
             for (int j = 0; j < inputMap[i].length; j++) {
@@ -27,14 +38,21 @@ public class Mapinfo {
                         map[i][j] = 1;  // 用1表示空地和机器人起始位置
                         break;
                     default:
-                        map[i][j] = 1;  // 对未知字符默认使用1
+                        map[i][j] = -2;  // 对未知字符默认使用-2
                         break;
                 }
             }
         }
     }
 
+    /**
+     * 判断地图是否有效
+     *
+     * @param x 横坐标
+     * @param y 纵坐标
+     */
     public static boolean isValid(int x, int y) {
-        return x >= 0 && y >= 0 && x < map.length && y < map[0].length;
+        return x >= 0 && y >= 0 && x < mapWidth && y < mapWidth;
     }
+
 }

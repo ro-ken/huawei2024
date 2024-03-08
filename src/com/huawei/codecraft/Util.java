@@ -1,8 +1,10 @@
 package com.huawei.codecraft;
+import com.huawei.codecraft.util.Point;
 
 import java.io.BufferedOutputStream;
 import java.io.FileNotFoundException;
 import java.io.PrintStream;
+import java.util.ArrayList;
 import java.util.Scanner;
 
 import static com.huawei.codecraft.Const.*;
@@ -74,4 +76,14 @@ public class Util {
         }
     }
 
+    public static void printPath(ArrayList<Point> Path){
+        StringBuilder pathStr = new StringBuilder();
+        for (int i = 0; i < Path.size(); i++) {
+            pathStr.append(Path.get(i));  // 直接使用 Point 对象，自动调用 toString 方法
+            if (i < Path.size() - 1) {
+                pathStr.append(" -> ");  // 在点之间添加分隔符
+            }
+        }
+        printLog(pathStr);
+    }
 }

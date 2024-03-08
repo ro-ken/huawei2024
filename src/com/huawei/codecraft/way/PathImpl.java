@@ -2,14 +2,26 @@ package com.huawei.codecraft.way;
 
 import com.huawei.codecraft.Const;
 import com.huawei.codecraft.util.Point;
+import com.huawei.codecraft.Util;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.Queue;
 
+/**
+ * ClassName: PathImpl
+ * Package: com.huawei.codecraft.way
+ * Description: 寻路的具体接口实现
+ */
 public class PathImpl implements Path{
     private static final int[][] directions = {{1, 0}, {-1, 0}, {0, -1}, {0, 1}};
+
+    /**
+     * 获取路径长度
+     * @param p1 起点
+     * @param p2 终点
+     */
     @Override
     public int getPathFps(Point p1, Point p2) {
         return getPath(p1, p2).size();
@@ -19,6 +31,7 @@ public class PathImpl implements Path{
     public ArrayList<Point> getPath(Point p1, Point p2) {
 
         if (!isAccessible(p1.x, p1.y) || !isAccessible(p2.x, p2.y)) {
+            Util.printLog("point is impossible");
             return null;
         }
 
@@ -48,12 +61,14 @@ public class PathImpl implements Path{
                 }
             }
         }
-
+        Util.printLog(p1);
+        Util.printLog(p2);
+        Util.printLog("No way");
         return null;
     }
 
     private static boolean isAccessible(int x, int y) {
-        return Mapinfo.isValid(x, y) && Mapinfo.map[x][y] > 0;
+        return Mapinfo.isValid(x, y) && Mapinfo.map[x][y] >= 0;
     }
 
     private static ArrayList<Point> constructPath(Pos end) {
