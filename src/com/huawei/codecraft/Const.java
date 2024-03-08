@@ -2,7 +2,13 @@ package com.huawei.codecraft;
 
 import com.huawei.codecraft.core.Berth;
 import com.huawei.codecraft.core.Boat;
+import com.huawei.codecraft.core.Good;
 import com.huawei.codecraft.core.Robot;
+import com.huawei.codecraft.way.Path;
+import com.huawei.codecraft.way.SimplePathImpl;
+
+import java.lang.reflect.Array;
+import java.util.ArrayList;
 
 // 全局变量类
 public class Const {
@@ -28,4 +34,6 @@ public class Const {
     public static Robot[] robots = new Robot[robot_num];
     public static Berth[] berths = new Berth[berth_num];
     public static Boat[] boats = new Boat[boat_num];
+    public static ArrayList<Good> frameGoods= new ArrayList<>();    // 每一帧新产生的货物
+    public static Path path = new SimplePathImpl(); // 修改Path实现
 }

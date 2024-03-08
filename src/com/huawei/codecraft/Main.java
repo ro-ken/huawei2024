@@ -30,12 +30,26 @@ public class Main {
         for (int i = 0; i < totalFrame; i++) {
             input();
             printLog("frameId:"+frameId);
+            updateBerth();
             handleFrame();
             printOk();
         }
     }
 
+    private static void updateBerth() {
+        for (Berth berth:berths) {
+            berth.updateGoodList(frameGoods);
+        }
+    }
+
     private static void handleFrame() {
+
+        for (int i = 0; i < boat_num; i++) {
+            boats[i].schedule();
+        }
+        for (int i = 0; i < robot_num; i++) {
+            robots[i].schedule();
+        }
         Random rand = new Random();
         for(int i = 0; i < robot_num; i ++)
             System.out.printf("move %d %d" + System.lineSeparator(), i, rand.nextInt(4) % 4);
@@ -77,16 +91,17 @@ public class Main {
         frameId = inStream.nextInt();
         money = inStream.nextInt();
         int goodsNum = inStream.nextInt();
+        frameGoods.clear();
         for (int i = 1; i <= goodsNum; i++) {
             int x = inStream.nextInt();
             int y = inStream.nextInt();
             int val = inStream.nextInt();
             Good good = new Good(x,y,val,frameId);
             ObjectMap[x][y] = good;
+            frameGoods.add(good);
         }
         for(int i = 0; i < robot_num; i++) {
-
-            robots[i].goods = inStream.nextInt();
+            robots[i].carry = inStream.nextInt();
             robots[i].x = inStream.nextInt();
             robots[i].y = inStream.nextInt();
             robots[i].status = inStream.nextInt();
@@ -98,6 +113,7 @@ public class Main {
 
         inStream.nextLine();
         String okk = inStream.nextLine();
+
     }
 
 }

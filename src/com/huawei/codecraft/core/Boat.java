@@ -11,4 +11,8 @@ public class Boat {
     public Boat(int id) {
         this.id = id;
     }
+
+    public void schedule() {
+
+    }
 }
