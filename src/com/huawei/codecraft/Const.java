@@ -7,7 +7,6 @@ import com.huawei.codecraft.core.Robot;
 import com.huawei.codecraft.way.Path;
 import com.huawei.codecraft.way.SimplePathImpl;
 
-import java.lang.reflect.Array;
 import java.util.ArrayList;
 
 // 全局变量类

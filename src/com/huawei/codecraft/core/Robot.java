@@ -78,6 +78,7 @@ public class Robot {
         }else if (arriveBerth()){
             // 2、如果到达了泊口，卸货，任务结束
             Util.printPull(id);
+            bookBerth.addGood(bookGood);
             turnOffTask();
         }else {
             Util.printLog("convertTask ERROR!");
