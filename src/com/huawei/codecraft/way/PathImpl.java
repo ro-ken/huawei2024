@@ -1,8 +1,11 @@
 package com.huawei.codecraft.way;
 
-import com.huawei.codecraft.Const;
 import com.huawei.codecraft.util.Point;
-import com.huawei.codecraft.Util;
+import static com.huawei.codecraft.Util.printLog;
+import static com.huawei.codecraft.Const.mapWidth;
+import static  com.huawei.codecraft.way.Mapinfo.map;        // 引入 Mapinfo 中的 map 变量
+import static  com.huawei.codecraft.way.Mapinfo.isValid;    // 引入 Mapinfo 中的 isValid() 函数
+import com.huawei.codecraft.way.Mapinfo.Terrain;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -35,11 +38,11 @@ public class PathImpl implements Path{
     public ArrayList<Point> getPath(Point p1, Point p2) {
 
         if (!isAccessible(p1.x, p1.y) || !isAccessible(p2.x, p2.y)) {
-            Util.printLog("point is impossible");
+            printLog("point is impossible");
             return null;
         }
 
-        boolean[][] visited = new boolean[Const.mapWidth][Const.mapWidth];
+        boolean[][] visited = new boolean[mapWidth][mapWidth];
         Queue<Pos> queue = new LinkedList<>();
 
         Pos start = new Pos(p1, null); // 根据p1创建起点Pos
@@ -65,14 +68,40 @@ public class PathImpl implements Path{
                 }
             }
         }
-        Util.printLog(p1);
-        Util.printLog(p2);
-        Util.printLog("No way");
+        printLog(p1);
+        printLog(p2);
+        printLog("No way");
         return null;
     }
 
+    @Override
+    public ArrayList<Point> getToBerthPath(Point robotPos, Point BerthPoint) {
+        Point target = offsetBerthPoint(robotPos, BerthPoint);
+
+        return getPath(robotPos, target);
+    }
+
+    public Point offsetBerthPoint(Point robotPos, Point BerthPoint) {
+        // 假设最近泊位点为离机器人最近的泊位点
+        Point target = new Point();
+
+        if (robotPos.x > BerthPoint.x + 3) {
+            target.x = BerthPoint.x + 3;
+        } else {
+            target.x = Math.max(robotPos.x, BerthPoint.x);
+        }
+        if (robotPos.y > BerthPoint.y + 3) {
+            target.y = BerthPoint.y + 3;
+        }
+        else {
+            target.y = Math.max(robotPos.y, BerthPoint.y);
+        }
+
+        return  target;
+    }
+
     private static boolean isAccessible(int x, int y) {
-        return Mapinfo.isValid(x, y) && Mapinfo.map[x][y] >= 0;
+        return isValid(x, y) && Terrain.fromValue(map[x][y]) == Terrain.LAND;
     }
 
     private static ArrayList<Point> constructPath(Pos end) {
