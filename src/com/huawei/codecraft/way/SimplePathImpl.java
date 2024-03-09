@@ -32,4 +32,9 @@ public class SimplePathImpl implements Path{
 
         return res;
     }
+
+    @Override
+    public ArrayList<Point> getToBerthPath(Point robotPos, Point BerthPoint) {
+        return null;
+    }
 }

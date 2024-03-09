@@ -15,8 +15,8 @@ public class Route {
     public Route(Point pos,Robot robot){
         target = new Point(pos);
         this.robot = robot;
-        // 寻路
-        way = Const.path.getPath(robot.getPos(),target);
+        // 寻路,找不到路，为null
+        way = Const.path.getPath(robot.pos,target);
     }
 
     public Point peekNextPoint(){
@@ -28,7 +28,7 @@ public class Route {
             return target;
         }else {
             Point next = way.get(index++);
-            if (next.equals(robot.x,robot.y)){
+            if (next.equals(robot.pos)){
                 next = way.get(index++);   // 是自己的点，去下一个点
             }
             return next;

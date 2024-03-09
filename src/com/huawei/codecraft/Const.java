@@ -40,5 +40,6 @@ public class Const {
     public static ArrayList<Good> frameGoods= new ArrayList<>();    // 每一帧新产生的货物
     public static Path path = new PathImpl(); // 修改Path实现
     public static Map<Point,Berth> pointToBerth = new HashMap<>();
+    public static final int unreachableFps = 1000000;
 
 }

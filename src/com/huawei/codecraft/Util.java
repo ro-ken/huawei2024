@@ -24,7 +24,7 @@ public class Util {
         }
     }
 
-    // 打印日志函数
+    // 打印日志
     public static void printLog(Object info){
         if (test){
             log.println(info);
