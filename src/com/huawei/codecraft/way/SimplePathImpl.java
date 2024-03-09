@@ -3,6 +3,7 @@ package com.huawei.codecraft.way;
 import com.huawei.codecraft.util.Point;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 
 // 简单实现示例
 public class SimplePathImpl implements Path{
@@ -35,6 +36,16 @@ public class SimplePathImpl implements Path{
 
     @Override
     public ArrayList<Point> getToBerthPath(Point robotPos, Point BerthPoint) {
+        return null;
+    }
+
+    @Override
+    public ArrayList<Point> getPathWithBarrier(Point p1, Point p2, HashSet<Point> barriers) {
+        return null;
+    }
+
+    @Override
+    public ArrayList<Point> getHidePointPath(Point pos, ArrayList<Point> leftPath) {
         return null;
     }
 }

@@ -84,6 +84,41 @@ public class PathImpl implements Path{
         return getPathCommon(p1, p2, barriers::contains);
     }
 
+    @Override
+    public ArrayList<Point> getHidePointPath(Point pos, ArrayList<Point> leftPath) {
+        if (leftPath.size() < 2) {
+            printLog("Error: leftPath does not contain enough points");
+            return null;
+        }
+
+        // 对方机器人下一帧的位置
+        Point nextEnemyPosition = leftPath.get(1);
+        HashSet<Point> leftPathPoints = new HashSet<>(leftPath);
+
+        // 定义障碍物检测逻辑：只有nextEnemyPosition被视为障碍物
+        Predicate<Point> isBlocked = p -> p.equals(nextEnemyPosition);
+
+        // 遍历可能的避让方向
+        for (int[] direction : directions) {
+            int newX = pos.x + direction[0];
+            int newY = pos.y + direction[1];
+            Point newTarget = new Point(newX, newY);
+
+            // 检查新目标点是否在leftPath上且不是障碍物（nextEnemyPosition）
+            if (isAccessible(newX, newY) && !leftPathPoints.contains(newTarget)) {
+                // 使用getPathCommon检查从pos到newTarget的路径，避开nextEnemyPosition
+                ArrayList<Point> path = getPathCommon(pos, newTarget, isBlocked);
+                if (path != null && !path.isEmpty() && !leftPathPoints.contains(path.get(path.size() - 1))) {
+                    return path;
+                }
+            }
+        }
+
+        // 如果找不到合适的避让点，返回null
+        printLog("No valid hide point found");
+        return null;
+    }
+
     private static Point offsetBerthPoint(Point robotPos, Point BerthPoint) {
         // 假设最近泊位点为离机器人最近的泊位点
         Point target = new Point();
