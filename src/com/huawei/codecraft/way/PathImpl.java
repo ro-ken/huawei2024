@@ -24,7 +24,11 @@ public class PathImpl implements Path{
      */
     @Override
     public int getPathFps(Point p1, Point p2) {
-        return getPath(p1, p2).size();
+        ArrayList<Point> path = getPath(p1, p2);
+        if (path == null) {
+            return 10000000;
+        }
+        return path.size();
     }
 
     @Override
