@@ -20,4 +20,6 @@ public interface Path {
 
     // 拥有新障碍下的路径
     ArrayList<Point> getPathWithBarrier(Point p1,Point p2, HashSet<Point> barriers);
+
+    ArrayList<Point> getHidePointPath(Point pos, ArrayList<Point> leftPath);
 }
