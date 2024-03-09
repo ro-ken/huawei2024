@@ -21,12 +21,20 @@ import static com.huawei.codecraft.Const.*;
  */
 public class Main {
 
+
     public static void main(String[] args) throws FileNotFoundException {
         initLog();
-        init();
-        Mapinfo.init(map);
+        readInit();
+        myInit();
         printOk();
         running();
+    }
+
+    private static void myInit() {
+        Mapinfo.init(map);
+        for (Berth berth : berths) {
+            pointToBerth.put(berth.pos,berth);
+        }
     }
 
     public static void running(){
@@ -49,13 +57,8 @@ public class Main {
     }
 
     private static void handleFrame() {
-//        for (int i = 0; i < 3; i++) {
-//            printLog(robots[i]);
-//        }
-        for (int i = 0; i < 3; i++) {
-            printLog(boats[i]);
-            printLog(berths[i]);
-        }
+
+        frameInit();
 
         for (int i = 0; i < boat_num; i++) {
             boats[i].schedule();
@@ -64,9 +67,22 @@ public class Main {
             robots[i].schedule();
         }
 
+        Robot.printRobotMove();
     }
-    
-    public static void init() {
+
+    // 打印机器人移动信息
+
+
+    // 每一帧开始的初始化工作
+    private static void frameInit() {
+        Robot.frameRobotMove.clear();     // 清理上一帧移动信息
+        for (int i = 0; i < 3; i++) {
+            printLog(boats[i]);
+            printLog(berths[i]);
+        }
+    }
+
+    public static void readInit() {
         // 初始化地图
         for(int i = 0; i < mapWidth; i++) {
             char[] line = inStream.nextLine().toCharArray();
@@ -113,8 +129,8 @@ public class Main {
         }
         for(int i = 0; i < robot_num; i++) {
             robots[i].carry = inStream.nextInt();
-            robots[i].x = inStream.nextInt();
-            robots[i].y = inStream.nextInt();
+            robots[i].pos.x = inStream.nextInt();
+            robots[i].pos.y = inStream.nextInt();
             robots[i].status = inStream.nextInt();
         }
         for(int i = 0; i < boat_num; i ++) {
