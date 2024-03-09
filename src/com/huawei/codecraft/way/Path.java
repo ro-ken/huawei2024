@@ -14,4 +14,7 @@ public interface Path {
     // 获取两点的路径点
     ArrayList<Point> getPath(Point p1,Point p2);
 
+    // 获取机器人去泊口最佳的路径
+    ArrayList<Point> getToBerthPath(Point robotPos,Point BerthPoint);
+
 }
