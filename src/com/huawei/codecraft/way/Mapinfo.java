@@ -11,7 +11,6 @@ import static com.huawei.codecraft.Util.printLog;
 public class Mapinfo {
     public static int[][] map = new int[mapWidth][mapWidth];
 
-    // 地形类
     public enum Terrain {
         OBSTACLE(-2),
         SEA(-1),

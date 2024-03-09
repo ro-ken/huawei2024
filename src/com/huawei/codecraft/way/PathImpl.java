@@ -3,14 +3,13 @@ package com.huawei.codecraft.way;
 import com.huawei.codecraft.util.Point;
 import static com.huawei.codecraft.Util.printLog;
 import static com.huawei.codecraft.Const.mapWidth;
+import static com.huawei.codecraft.Const.unreachableFps;
 import static  com.huawei.codecraft.way.Mapinfo.map;        // 引入 Mapinfo 中的 map 变量
 import static  com.huawei.codecraft.way.Mapinfo.isValid;    // 引入 Mapinfo 中的 isValid() 函数
 import com.huawei.codecraft.way.Mapinfo.Terrain;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.Queue;
+import java.util.*;
+import java.util.function.Predicate;
 
 /**
  * ClassName: PathImpl
@@ -20,23 +19,7 @@ import java.util.Queue;
 public class PathImpl implements Path{
     private static final int[][] directions = {{1, 0}, {-1, 0}, {0, -1}, {0, 1}};
 
-    /**
-     * 获取路径长度
-     * @param p1 起点
-     * @param p2 终点
-     */
-    @Override
-    public int getPathFps(Point p1, Point p2) {
-        ArrayList<Point> path = getPath(p1, p2);
-        if (path == null) {
-            return 10000000;
-        }
-        return path.size();
-    }
-
-    @Override
-    public ArrayList<Point> getPath(Point p1, Point p2) {
-
+    private ArrayList<Point> getPathCommon(Point p1, Point p2, Predicate<Point> isBlocked) {
         if (!isAccessible(p1.x, p1.y) || !isAccessible(p2.x, p2.y)) {
             printLog("point is impossible");
             return null;
@@ -45,8 +28,8 @@ public class PathImpl implements Path{
         boolean[][] visited = new boolean[mapWidth][mapWidth];
         Queue<Pos> queue = new LinkedList<>();
 
-        Pos start = new Pos(p1, null); // 根据p1创建起点Pos
-        Pos end = new Pos(p2, null);   // 根据p2创建终点Pos
+        Pos start = new Pos(p1, null);
+        Pos end = new Pos(p2, null);
 
         queue.add(start);
         visited[start.pos.x][start.pos.y] = true;
@@ -54,20 +37,22 @@ public class PathImpl implements Path{
         while (!queue.isEmpty()) {
             Pos current = queue.poll();
 
-            if (current.pos.x == end.pos.x && current.pos.y == end.pos.y) { // 找到终点
+            if (current.pos.x == end.pos.x && current.pos.y == end.pos.y) {
                 return constructPath(current);
             }
 
             for (int[] direction : directions) {
                 int newX = current.pos.x + direction[0];
                 int newY = current.pos.y + direction[1];
+                Point newPoint = new Point(newX, newY);
 
-                if (isAccessible(newX, newY) && !visited[newX][newY]) {
+                if (isAccessible(newX, newY) && !visited[newX][newY] && !isBlocked.test(newPoint)) {
                     visited[newX][newY] = true;
-                    queue.add(new Pos(new Point(newX, newY), current));
+                    queue.add(new Pos(newPoint, current));
                 }
             }
         }
+
         printLog(p1);
         printLog(p2);
         printLog("No way");
@@ -75,13 +60,31 @@ public class PathImpl implements Path{
     }
 
     @Override
-    public ArrayList<Point> getToBerthPath(Point robotPos, Point BerthPoint) {
-        Point target = offsetBerthPoint(robotPos, BerthPoint);
-
-        return getPath(robotPos, target);
+    public int getPathFps(Point p1, Point p2) {
+        ArrayList<Point> path = getPathCommon(p1, p2, p -> false);
+        if (path == null) {
+            return unreachableFps;
+        }
+        return path.size();
     }
 
-    public Point offsetBerthPoint(Point robotPos, Point BerthPoint) {
+    @Override
+    public ArrayList<Point> getPath(Point p1, Point p2) {
+        return getPathCommon(p1, p2, p -> false);
+    }
+
+    @Override
+    public ArrayList<Point> getToBerthPath(Point robotPos, Point BerthPoint) {
+        Point target = offsetBerthPoint(robotPos, BerthPoint);
+        return getPathCommon(robotPos, target, p->false);
+    }
+
+    @Override
+    public ArrayList<Point> getPathWithBarrier(Point p1, Point p2, HashSet<Point> barriers) {
+        return getPathCommon(p1, p2, barriers::contains);
+    }
+
+    private static Point offsetBerthPoint(Point robotPos, Point BerthPoint) {
         // 假设最近泊位点为离机器人最近的泊位点
         Point target = new Point();
 
