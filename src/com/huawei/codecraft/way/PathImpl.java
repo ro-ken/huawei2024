@@ -6,7 +6,6 @@ import static com.huawei.codecraft.Const.mapWidth;
 import static com.huawei.codecraft.Const.unreachableFps;
 import static  com.huawei.codecraft.way.Mapinfo.map;        // 引入 Mapinfo 中的 map 变量
 import static  com.huawei.codecraft.way.Mapinfo.isValid;    // 引入 Mapinfo 中的 isValid() 函数
-import com.huawei.codecraft.way.Mapinfo.Terrain;
 
 import java.util.*;
 import java.util.function.Predicate;
@@ -19,49 +18,58 @@ import java.util.function.Predicate;
 public class PathImpl implements Path{
     private static final int[][] directions = {{1, 0}, {-1, 0}, {0, -1}, {0, 1}};
 
-    private ArrayList<Point> getPathCommon(Point p1, Point p2, Predicate<Point> isBlocked) {
+    @Override
+    public ArrayList<Point> getPath(Point p1, Point p2) {
+//        long startTime = System.nanoTime();  // Start timing
+
         if (!isAccessible(p1.x, p1.y) || !isAccessible(p2.x, p2.y)) {
             printLog("point is impossible");
             return null;
         }
 
-        boolean[][] visited = new boolean[mapWidth][mapWidth];
-        Queue<Pos> queue = new LinkedList<>();
+        PriorityQueue<Pos> openSet = new PriorityQueue<>(Comparator.comparingInt(Pos::f));
+        Map<Point, Pos> allNodes = new HashMap<>();
 
-        Pos start = new Pos(p1, null);
-        Pos end = new Pos(p2, null);
+        Pos start = new Pos(p1, null, 0, estimateHeuristic(p1, p2));
+        Pos end = new Pos(p2, null, 0, 0);
 
-        queue.add(start);
-        visited[start.pos.x][start.pos.y] = true;
+        openSet.add(start);
+        allNodes.put(p1, start);
 
-        while (!queue.isEmpty()) {
-            Pos current = queue.poll();
+        while (!openSet.isEmpty()) {
+            Pos current = openSet.poll();
 
-            if (current.pos.x == end.pos.x && current.pos.y == end.pos.y) {
+            if (current.pos.equals(p2)) {
+//                printLog("get path success");
+//                long endTime = System.nanoTime();  // End timing
+//                printLog("get path success, Time taken: " + (endTime - startTime) + " ns");
                 return constructPath(current);
             }
 
             for (int[] direction : directions) {
-                int newX = current.pos.x + direction[0];
-                int newY = current.pos.y + direction[1];
-                Point newPoint = new Point(newX, newY);
+                Point newPoint = new Point(current.pos.x + direction[0], current.pos.y + direction[1]);
 
-                if (isAccessible(newX, newY) && !visited[newX][newY] && !isBlocked.test(newPoint)) {
-                    visited[newX][newY] = true;
-                    queue.add(new Pos(newPoint, current));
+                if (!isAccessible(newPoint.x, newPoint.y)) {
+                    continue;
+                }
+
+                int newG = current.g + 1;  // 每一步代价为1
+                if (!allNodes.containsKey(newPoint) || newG < allNodes.get(newPoint).g) {
+                    int newH = estimateHeuristic(newPoint, p2);
+                    Pos next = new Pos(newPoint, current, newG, newH);
+                    openSet.add(next);
+                    allNodes.put(newPoint, next);
                 }
             }
         }
 
-        printLog(p1);
-        printLog(p2);
         printLog("No way");
         return null;
     }
 
     @Override
     public int getPathFps(Point p1, Point p2) {
-        ArrayList<Point> path = getPathCommon(p1, p2, p -> false);
+        ArrayList<Point> path = getPath(p1, p2);
         if (path == null) {
             return unreachableFps;
         }
@@ -69,19 +77,17 @@ public class PathImpl implements Path{
     }
 
     @Override
-    public ArrayList<Point> getPath(Point p1, Point p2) {
-        return getPathCommon(p1, p2, p -> false);
-    }
-
-    @Override
     public ArrayList<Point> getToBerthPath(Point robotPos, Point BerthPoint) {
         Point target = offsetBerthPoint(robotPos, BerthPoint);
-        return getPathCommon(robotPos, target, p->false);
+        return getPath(robotPos, target);
     }
 
     @Override
     public ArrayList<Point> getPathWithBarrier(Point p1, Point p2, HashSet<Point> barriers) {
-        return getPathCommon(p1, p2, barriers::contains);
+        changeMapinfo(barriers);
+        ArrayList<Point> path =  getPath(p1, p2);
+        restoreMapinfo(barriers);
+        return path;
     }
 
     @Override
@@ -91,32 +97,59 @@ public class PathImpl implements Path{
             return null;
         }
 
-        // 对方机器人下一帧的位置
+        // 对方机器人下一帧的位置被视为障碍物
         Point nextEnemyPosition = leftPath.get(1);
-        HashSet<Point> leftPathPoints = new HashSet<>(leftPath);
+        HashSet<Point> barriers = new HashSet<>();
+        barriers.add(nextEnemyPosition);
 
-        // 定义障碍物检测逻辑：只有nextEnemyPosition被视为障碍物
-        Predicate<Point> isBlocked = p -> p.equals(nextEnemyPosition);
+        // 在地图上临时标记对方机器人下一帧的位置为障碍物
+        changeMapinfo(barriers);
 
+        ArrayList<Point> path = null;
         // 遍历可能的避让方向
         for (int[] direction : directions) {
             int newX = pos.x + direction[0];
             int newY = pos.y + direction[1];
             Point newTarget = new Point(newX, newY);
 
-            // 检查新目标点是否在leftPath上且不是障碍物（nextEnemyPosition）
-            if (isAccessible(newX, newY) && !leftPathPoints.contains(newTarget)) {
-                // 使用getPathCommon检查从pos到newTarget的路径，避开nextEnemyPosition
-                ArrayList<Point> path = getPathCommon(pos, newTarget, isBlocked);
-                if (path != null && !path.isEmpty() && !leftPathPoints.contains(path.get(path.size() - 1))) {
-                    return path;
+            // 检查新目标点是否可达且不是leftPath的一部分
+            if (isAccessible(newX, newY) && !leftPath.contains(newTarget)) {
+                path = getPath(pos, newTarget);  // 尝试找到一条避让路径
+                // 如果找到有效路径且路径终点不在leftPath中，则返回该路径
+                if (path != null && !path.isEmpty() && !leftPath.contains(path.get(path.size() - 1))) {
+                    break;
+                } else {
+                    path = null;  // 没有找到有效路径，继续尝试
                 }
             }
         }
 
-        // 如果找不到合适的避让点，返回null
-        printLog("No valid hide point found");
-        return null;
+        // 恢复地图信息
+        restoreMapinfo(barriers);
+
+        if (path == null) {
+            printLog("No valid hide point found");
+        }
+        return path;
+    }
+
+    // 修改地图信息以添加障碍物
+    private void changeMapinfo(HashSet<Point> barriers) {
+        for (Point barrier : barriers) {
+            map[barrier.x][barrier.y] = -2;  // 标记障碍物
+        }
+    }
+
+    // 恢复地图信息
+    private void restoreMapinfo(HashSet<Point> barriers) {
+        for (Point barrier : barriers) {
+            map[barrier.x][barrier.y] = 0;  // 恢复为陆地
+        }
+    }
+
+    private int estimateHeuristic(Point p1, Point p2) {
+        // Example using Manhattan distance
+        return Math.abs(p1.x - p2.x) + Math.abs(p1.y - p2.y);
     }
 
     private static Point offsetBerthPoint(Point robotPos, Point BerthPoint) {
@@ -139,7 +172,7 @@ public class PathImpl implements Path{
     }
 
     private static boolean isAccessible(int x, int y) {
-        return isValid(x, y) && Terrain.fromValue(map[x][y]) == Terrain.LAND;
+        return isValid(x, y) && map[x][y] == 0;
     }
 
     private static ArrayList<Point> constructPath(Pos end) {
@@ -151,3 +184,5 @@ public class PathImpl implements Path{
         return path;
     }
 }
+
+
