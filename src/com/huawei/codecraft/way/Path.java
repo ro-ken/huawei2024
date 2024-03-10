@@ -12,7 +12,7 @@ public interface Path {
     // 获取两点的路径长度
     int getPathFps(Point p1,Point p2);
 
-    // 获取两点的路径点
+    // 获取两点的路径点，若不为null，收尾必须为p1,p2;
     ArrayList<Point> getPath(Point p1,Point p2);
 
     // 获取机器人去泊口最佳的路径。

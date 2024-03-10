@@ -25,14 +25,12 @@ public class Const {
     // 5艘船
     public static final int boat_num = 5;
 
-    // 总共帧数
+    // 总共帧数 5分钟
     public static final int totalFrame= 5 * 60 * 50;
     public static int money, boat_capacity, frameId;
     // 存放地图字符
     public static char[][] map = new char[mapWidth][mapWidth];
     public static Object[][] ObjectMap = new Object[mapWidth][mapWidth];
-
-//    public static int[][] gds = new int[N][N];
 
     public static Robot[] robots = new Robot[robot_num];
     public static Berth[] berths = new Berth[berth_num];

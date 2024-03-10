@@ -15,7 +15,6 @@ public class Util {
     public static  Scanner inStream = new Scanner(System.in) ;
     public static final PrintStream outStream = new PrintStream(new BufferedOutputStream(System.out));
     public static PrintStream log = null;
-    public static PrintStream path = null;
 
     public static void initLog() throws FileNotFoundException {
         if (test){
@@ -28,6 +27,12 @@ public class Util {
     public static void printLog(Object info){
         if (test){
             log.println(info);
+        }
+    }
+
+    public static void printErr(Object info){
+        if (test){
+            log.println("ERROR!--" + info);
         }
     }
 
