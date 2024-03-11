@@ -1,14 +1,13 @@
 package com.huawei.codecraft.way;
 
 import com.huawei.codecraft.util.Point;
-import static com.huawei.codecraft.Util.printLog;
-import static com.huawei.codecraft.Const.mapWidth;
-import static com.huawei.codecraft.Const.unreachableFps;
-import static  com.huawei.codecraft.way.Mapinfo.map;        // 引入 Mapinfo 中的 map 变量
-import static  com.huawei.codecraft.way.Mapinfo.isValid;    // 引入 Mapinfo 中的 isValid() 函数
 
 import java.util.*;
-import java.util.function.Predicate;
+
+import static com.huawei.codecraft.Const.unreachableFps;
+import static com.huawei.codecraft.Util.printLog;
+import static com.huawei.codecraft.way.Mapinfo.isValid;
+import static com.huawei.codecraft.way.Mapinfo.map;
 
 /**
  * ClassName: PathImpl
@@ -87,9 +86,10 @@ public class PathImpl implements Path{
         if (barriers.contains(p1)){
             barriers.remove(p1);
         }
-        changeMapinfo(barriers);
+        ArrayList<Point> blocks = new ArrayList<Point>(barriers);
+        changeMapinfo(blocks);
         ArrayList<Point> path =  getPath(p1, p2);
-        restoreMapinfo(barriers);
+        restoreMapinfo(blocks);
         return path;
     }
 
@@ -99,14 +99,14 @@ public class PathImpl implements Path{
             printLog("Error: leftPath does not contain enough points");
             return null;
         }
-        Point nextEnemyPosition = leftPath.get(1);
-        // 对方机器人下一帧的位置被视为障碍物
-        if (pos.equals(leftPath.get(1))) {
-            nextEnemyPosition = leftPath.get(0);
+        ArrayList<Point> barriers = new ArrayList<Point>();
+        barriers.add(leftPath.get(0));
+        if (!pos.equals(leftPath.get(1))) {
+            barriers.add(leftPath.get(1));
         }
 
-        HashSet<Point> barriers = new HashSet<>();
-        barriers.add(nextEnemyPosition);
+        // 创建一个空的HashSet<Point>
+        HashSet<Point> pointHashSet = new HashSet<>(barriers);
 
         // 在地图上临时标记对方机器人下一帧的位置为障碍物
         changeMapinfo(barriers);
@@ -118,10 +118,10 @@ public class PathImpl implements Path{
             Point newTarget = new Point(newX, newY);
 
             // 检查新目标点是否可达且不是leftPath的一部分
-            if (isAccessible(newX, newY) && !leftPath.contains(newTarget)) {
+            if (isAccessible(newX, newY) && !pointHashSet.contains(newTarget)) {
                 path = getPath(pos, newTarget);  // 尝试找到一条避让路径
                 // 如果找到有效路径且路径终点不在leftPath中，则返回该路径
-                if (path != null && !path.isEmpty() && !leftPath.contains(path.get(path.size() - 1))) {
+                if (path != null && !path.isEmpty()) {
                     break;
                 } else {
                     path = null;  // 没有找到有效路径，继续尝试
@@ -139,16 +139,21 @@ public class PathImpl implements Path{
     }
 
     // 修改地图信息以添加障碍物
-    private void changeMapinfo(HashSet<Point> barriers) {
+    private void changeMapinfo(ArrayList<Point> barriers) {
         for (Point barrier : barriers) {
+            if ( map[barrier.x][barrier.y] == -2) {
+                printLog("leftpath error,obstacle");
+            }
+//            printLog("change pos" + barrier + " obstacle");
             map[barrier.x][barrier.y] = -2;  // 标记障碍物
         }
     }
 
     // 恢复地图信息
-    private void restoreMapinfo(HashSet<Point> barriers) {
+    private void restoreMapinfo(ArrayList<Point> barriers) {
         for (Point barrier : barriers) {
             map[barrier.x][barrier.y] = 0;  // 恢复为陆地
+//            printLog("restore pos" + barrier + " land");
         }
     }
 
