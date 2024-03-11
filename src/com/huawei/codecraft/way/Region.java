@@ -13,11 +13,15 @@ import java.util.Set;
  * Description: 划分地图为不同的区域，方便搜索和寻路
  */
 public class Region {
-    private final int id;
-    private final Set<Berth> berths;
-    private final Set<Point> accessiblePoints;
-    private final Set<Robot> assignedRobots;
+    private final int id;                           // 区域 id
+    private final Set<Berth> berths;                // 区域中的泊位
+    private final Set<Point> accessiblePoints;      // 区域中的可达到点
+    private final Set<Robot> assignedRobots;        // 分配给区域的机器人
 
+    /**
+     * 构造函数
+     *
+     */
     public Region(int id) {
         this.id = id;
         this.berths = new HashSet<>();

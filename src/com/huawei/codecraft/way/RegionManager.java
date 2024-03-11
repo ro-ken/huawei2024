@@ -17,18 +17,22 @@ import static com.huawei.codecraft.way.Mapinfo.map;
  * Description: 管理region，向上提供接口
  */
 public class RegionManager {
-    private final List<Region> regions;
-    private final Map<Point, Region> pointRegionMap;
-    private final Map<Point, Map<Berth, List<Point>>> globalPointToPathMap;
-    private final Map<Berth, Map<Point, List<Point>>> globalBerthToPointPaths;
-    private final Map<Point, Map<Berth, List<Point>>> globalPointToBerthPaths;
+    private final List<Region> regions;     // 地图所有的region
+    private final Map<Point, Region> pointRegionMap;    // point 到 region 的映射，查找点属于的 region
+    private final Map<Point, Map<Berth, List<Point>>> globalPointToClosestBerthPath;    // 获取离点最近的泊位的路径
+    private final Map<Berth, Map<Point, List<Point>>> globalBerthToPointPaths;          // 获取泊位到某个点的路径
+    private final Map<Point, Map<Berth, List<Point>>> globalPointToBerthPaths;          // 获取点到某个泊位的路径
     private final Path pathFinder;  // Path 接口的引用
 
+    /**
+     * 构造函数
+     *
+     */
     public RegionManager(Path pathFinder) {
         this.regions = new ArrayList<>();
         this.pointRegionMap = new HashMap<>();
         this.pathFinder = pathFinder;  // 通过构造器注入 Path 实现
-        this.globalPointToPathMap = new HashMap<>();
+        this.globalPointToClosestBerthPath = new HashMap<>();
         this.globalBerthToPointPaths = new HashMap<>();
         this.globalPointToBerthPaths = new HashMap<>();
 //        createRegions();
@@ -36,6 +40,32 @@ public class RegionManager {
 //        splitRegions();
     }
 
+    /**
+     * 接口函数定义位置，向上提供接口
+     *
+     */
+    public Region getRegionByPoint(Point point) {
+        return pointRegionMap.get(point);
+    }
+
+    /**
+     * 创建初始的连通区域，根据地图的联通性划分
+     *
+     */
+    public void createRegions() {
+        for (Berth berth : berths) {
+            Point berthPoint = berth.pos;
+            if (!pointRegionMap.containsKey(berthPoint)) {
+                Region region = new Region(regions.size());
+                exploreRegion(berthPoint.x, berthPoint.y, region);
+                if (!region.getAccessiblePoints().isEmpty()) {
+                    regions.add(region);
+                }
+            }
+        }
+    }
+
+    // 开始探索地图，获取最初的region
     private void exploreRegion(int startX, int startY, Region region) {
         Queue<Point> queue = new LinkedList<>();
         queue.add(new Point(startX, startY));
@@ -69,27 +99,9 @@ public class RegionManager {
     }
 
     /**
-     * 创建初始的连通区域，根据地图的联通性划分
+     *  预先获取全局地图上所有的路径，点到泊位和泊位到点
      *
      */
-     public void createRegions() {
-        for (Berth berth : berths) {
-            Point berthPoint = berth.pos;
-            if (!pointRegionMap.containsKey(berthPoint)) {
-                Region region = new Region(regions.size());
-                exploreRegion(berthPoint.x, berthPoint.y, region);
-                if (!region.getAccessiblePoints().isEmpty()) {
-                    regions.add(region);
-                }
-            }
-        }
-    }
-
-    public Region getRegionByPoint(Point point) {
-        return pointRegionMap.get(point);
-    }
-
-    // 预先获取全局地图上所有的路径，点到泊位和泊位到点
     public void getFullPath() {
         // 为每个泊位计算到所有其他点的路径
         for (Berth berth : berths) {
@@ -140,6 +152,7 @@ public class RegionManager {
         targetMap.putAll(visitedPaths);
     }
 
+    // 暂留函数，待后续再看是否会用
     private void addBerthArea(Map<Point, Region> tempPointRegionMap, List<Region> newRegions) {
         for (Region region : newRegions) {
             for (Berth berth : region.getBerths()) {
@@ -153,7 +166,7 @@ public class RegionManager {
         }
     }
 
-    // 使用并查集进行聚类
+    // 并查集的定义，在泊位根据聚类是需要通过并查集确定唯一的集合
     public static class UnionFind {
         private final Map<Point, Point> parent;
 
@@ -189,7 +202,10 @@ public class RegionManager {
         }
     }
 
-    // 进一步划分区域
+    /**
+     * 对初始的region进一步划分，通过泊位之间的距离计算出阈值，作为聚类的条件
+     *
+     */
     public void splitRegions() {
         List<Region> newRegions = new ArrayList<>();
         for (Region largeRegion : regions) {
@@ -201,7 +217,7 @@ public class RegionManager {
 
             // 计算泊位间的距离并确定阈值
             int threshold = calculateThreshold(largeRegion);
-//             System.out.println("****threshold: " + threshold);
+
             // 基于阈值合并泊位到新区域
             mergeBerths2NewRegions(largeRegion, threshold, unionFind, newRegions);
 
@@ -275,24 +291,27 @@ public class RegionManager {
         }
     }
 
+    // 将剩余点进行分配，根据点离得最近的泊位作为区域划分的条件
     private void allocateRemainingPoints(Region largeRegion, List<Region> newRegions) {
 //        Map<Point, Region> tempPointRegionMap = new HashMap<>();
 //        addBerthArea(tempPointRegionMap, newRegions);
         for (Berth berth : largeRegion.getBerths()) {
             bfsFromBerth(berth);
         }
+
         // 根据bfs得到点到泊位的最短路进行划分点的所属区域
         allocatepoint2region(newRegions);
     }
 
+    // 从泊位开始bfs进行扩散，保留最短的路径
     private void bfsFromBerth(Berth berth) {
         Queue<Point> queue = new LinkedList<>();
         Point start = berth.pos;
         queue.add(start);
 
+        // 初始化每个点到起始泊位的路径为自己
         Map<Point, List<Point>> visitedPaths = new HashMap<>();
-        visitedPaths.put(start, new ArrayList<>());
-        visitedPaths.get(start).add(start);
+        visitedPaths.put(start, new ArrayList<>(Collections.singletonList(start)));
 
         boolean[][] visited = new boolean[mapWidth][mapWidth];
         visited[start.x][start.y] = true;
@@ -309,33 +328,40 @@ public class RegionManager {
                 if (pointRegionMap.containsKey(nextPoint) && !visited[newX][newY]) {
                     visited[newX][newY] = true;
 
-                    List<Point> newPath = new ArrayList<>(currentPath);
-                    newPath.add(nextPoint);
+                    // 不覆盖泊位自身的路径
+                    if (!nextPoint.equals(start)) {
+                        List<Point> newPath = new ArrayList<>(currentPath);
+                        newPath.add(nextPoint);
 
-                    globalPointToPathMap.compute(nextPoint, (k, v) -> {
-                        // 如果还没有存储任何到达nextPoint的路径，或者找到了一条更短的路径
-                        if (v == null) {
-                            v = new HashMap<>();
-                            v.put(berth, newPath);
-                        } else {
-                            List<Point> currentShortestPath = v.get(berth);
-                            // 如果对应berth的当前最短路径不存在或者新路径更短
-                            if (currentShortestPath == null || newPath.size() < currentShortestPath.size()) {
-                                v.put(berth, newPath);
-                            }
-                        }
-                        return v;
-                    });
+                        // 更新路径信息，仅当新路径更短时
+                        globalPointToClosestBerthPath.merge(nextPoint, new HashMap<Berth, List<Point>>() {{
+                                    put(berth, newPath);
+                                }},
+                                (existingPathMap, newPathMap) -> {
+                                    List<Point> existingPath = existingPathMap.get(berth);
+                                    if (existingPath == null || newPath.size() < existingPath.size()) {
+                                        existingPathMap.put(berth, newPath);
+                                    }
+                                    return existingPathMap;
+                                });
 
-                    visitedPaths.put(nextPoint, newPath);
+                        visitedPaths.put(nextPoint, newPath);
+                    }
+
                     queue.add(nextPoint);
                 }
             }
         }
+
+        // 将每个泊位的路径设置为只包含自己
+        Map<Berth, List<Point>> berthSelfPath = new HashMap<>();
+        berthSelfPath.put(berth, new ArrayList<>(Collections.singletonList(start)));
+        globalPointToClosestBerthPath.put(start, berthSelfPath);
     }
 
+    // 将点分配给其所属的区域，按照距离进行划分
     private void allocatepoint2region(List<Region> newRegions) {
-        for (Map.Entry<Point, Map<Berth, List<Point>>> entry : globalPointToPathMap.entrySet()) {
+        for (Map.Entry<Point, Map<Berth, List<Point>>> entry : globalPointToClosestBerthPath.entrySet()) {
             Point point = entry.getKey();
             Map<Berth, List<Point>> berthPathMap = entry.getValue();
             Berth closestBerth = Collections.min(berthPathMap.entrySet(), Comparator.comparingInt(e -> e.getValue().size())).getKey();
@@ -346,6 +372,7 @@ public class RegionManager {
         }
     }
 
+    // 根据泊位找到对应的区域
     private Region findRegionByBerth(Berth berth, List<Region> newRegions) {
         for (Region region : newRegions) {
             if (region.getBerths().contains(berth)) {
@@ -414,7 +441,7 @@ public class RegionManager {
             writer.write("Paths in Region 0:\n");
             for (Point point : regionZero.getAccessiblePoints()) {
                 // 获取该点到不同泊位的路径
-                Map<Berth, List<Point>> paths = globalPointToPathMap.get(point);
+                Map<Berth, List<Point>> paths = globalPointToClosestBerthPath.get(point);
                 if (paths != null) {
                     for (Map.Entry<Berth, List<Point>> entry : paths.entrySet()) {
                         Berth berth = entry.getKey();
