@@ -6,16 +6,33 @@ import com.huawei.codecraft.util.Point;
 import java.util.ArrayList;
 import java.util.HashSet;
 
-// 静态接口类，里面的方法上层调用，下层实现
+/**
+ * 路径接口，里面的方法上层调用，下层实现
+ */
 public interface Path {
 
-    // 获取两点的路径长度
-    int getPathFps(Point p1,Point p2);
+    /**
+     * 获取两点的路径长度
+     * @param src   源点
+     * @param dest  目的点
+     * @return  返回路径长度，找不到返回unreachableFps
+     */
+    int getPathFps(Point src,Point dest);
 
-    // 获取两点的路径点，若不为null，收尾必须为p1,p2;
-    ArrayList<Point> getPath(Point p1,Point p2);
+    /**
+     * 获取两点的路径点，若不为null，收尾必须为p1,p2;
+     * @param src   源节点
+     * @param dest  目的节点
+     * @return  返回源节点到目的节点的路径，找不到返回null
+     */
+    ArrayList<Point> getPath(Point src,Point dest);
 
-    // 获取机器人去泊口最佳的路径。
+    /**
+     * 获取机器人去泊口最佳的路径。
+     * @param robotPos  机器人位置
+     * @param BerthPoint    泊口位置
+     * @return 返回去往泊口的路径
+     */
     ArrayList<Point> getToBerthPath(Point robotPos,Point BerthPoint);
 
     /**
@@ -27,5 +44,11 @@ public interface Path {
      */
     ArrayList<Point> getPathWithBarrier(Point pos,Point target, HashSet<Point> barriers);
 
+    /**
+     * 找临时避让点
+     * @param pos   需要避让节点位置
+     * @param leftPath    对方节点的剩余路径，避让点不能在路径上
+     * @return  返回去往避让点的路径 ，没有返回null
+     */
     ArrayList<Point> getHidePointPath(Point pos, ArrayList<Point> leftPath);
 }

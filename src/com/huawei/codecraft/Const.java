@@ -11,6 +11,7 @@ import com.huawei.codecraft.way.SimplePathImpl;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 
 // 全局变量类
@@ -39,5 +40,7 @@ public class Const {
     public static Path path = new PathImpl(); // 修改Path实现
     public static Map<Point,Berth> pointToBerth = new HashMap<>();
     public static final int unreachableFps = 1000000;
+    public static HashSet<Robot> workRobots = new HashSet<>();// 每帧可以工作的机器人
+    public static HashSet<Point> invalidPoints = new HashSet<>();   // 每帧的无效点
 
 }

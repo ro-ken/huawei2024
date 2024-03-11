@@ -8,6 +8,8 @@ import com.huawei.codecraft.util.Twins;
 
 import java.util.*;
 
+import static com.huawei.codecraft.Const.workRobots;
+
 //机器人
 public class Robot {
     public int id;     // 机器人编号
@@ -21,7 +23,6 @@ public class Robot {
     public Route route; //
     public Point next;  // 当前帧需要移动的下一个点
     public RobotRunMode runMode = new RobotRunMode(this);
-    public static HashSet<Robot> frameRobotMove = new HashSet<>();  // 所有机器人移动信息
 
     public Robot(int id, int x, int y) {
         this.id = id;
@@ -89,29 +90,31 @@ public class Robot {
 
     // 统一处理机器人移动信息
     public static void printRobotMove() {
+        // 找出不能动的节点，其他节点要绕行
+
         // 找出有冲突的机器人
         Map<Point,Integer> pointMap = new HashMap<>();  // 所有机器人该帧经过的点,位置及个数
-        for (Robot robot : frameRobotMove) {
+        for (Robot robot : workRobots) {
             pointMap.merge(robot.pos, 1, Integer::sum);
             pointMap.merge(robot.next, 1, Integer::sum);
         }
         boolean flag;
         do{
              flag = false;
-            HashSet<Robot> clone = (HashSet<Robot>) frameRobotMove.clone();
+            HashSet<Robot> clone = (HashSet<Robot>) workRobots.clone();
             for (Robot robot : clone) {
                 if (pointMap.get(robot.next) == 1){
                     flag = true;    // 有节点退出
                     robot.printMove();
-                    frameRobotMove.remove(robot);
+                    workRobots.remove(robot);
                     pointMap.merge(robot.pos, -1, Integer::sum);
                     pointMap.merge(robot.next, -1, Integer::sum);
                 }
             }
-        }while (flag && !frameRobotMove.isEmpty());
+        }while (flag && !workRobots.isEmpty());
 
-        if (!frameRobotMove.isEmpty()){
-            handleConflict(new ArrayList<>(frameRobotMove));
+        if (!workRobots.isEmpty()){
+            handleConflict(new ArrayList<>(workRobots));
         }
     }
 
@@ -328,15 +331,12 @@ public class Robot {
     // 根据路线移动
     public void gotoNextPoint() {
         updateNextPoint();
-        if (next.clacGridDis(pos)>=2){
-            boolean success = changeRoad(route.target);
-            if (success){
-                updateNextPoint();
-            }else return;   // 找不到路
+        if (Const.invalidPoints.contains(next)){
+            changeRoadWithBarrier(route.target,Const.invalidPoints);   // 找新路
         }
-        if (!next.equals(pos)){
-            // 交由后面统一处理移动信息
-            frameRobotMove.add(this);
+
+        if (next.clacGridDis(pos)>=2){
+            changeRoad(route.target);
         }
     }
 
@@ -455,13 +455,20 @@ public class Robot {
     }
 
     // 换新的路
-    public boolean changeRoad(Point pos){
-        route.setNewWay(pos);
-        if (!route.target.equals(pos)){
-            Util.printLog(this.pos +"->"+pos +":tar"+route.target);
+    public boolean changeRoad(Point target){
+        route.setNewWay(target);
+        if (!route.target.equals(target)){
+            Util.printLog(this.pos +"->"+target +":tar"+route.target);
             Util.printErr("changeRoad 找不到路");
             return false;
         }
         return true;
     }
+
+    // 有障碍物下寻新路
+    private void changeRoadWithBarrier(Point target, HashSet<Point> barriers) {
+        ArrayList<Point> path = Const.path.getPathWithBarrier(pos, target, barriers);
+        route.setNewWay(path);
+    }
+
 }

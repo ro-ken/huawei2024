@@ -5,10 +5,7 @@
 package com.huawei.codecraft;
 
 import java.io.FileNotFoundException;
-import java.util.HashSet;
-import java.util.Random;
-import java.util.Scanner;
-import java.util.Set;
+import java.util.*;
 
 import com.huawei.codecraft.core.*;
 import com.huawei.codecraft.util.Point;
@@ -84,17 +81,29 @@ public class Main {
         for (int i = 0; i < boat_num; i++) {
             boats[i].schedule();
         }
-        for (int i = 0; i < testRobot; i++) {
-            robots[i].schedule();   // 任务调度
-            robots[i].gotoNextPoint();      // 去下一个点
+
+        for (Robot workRobot : workRobots) {
+            workRobot.schedule();   // 调度
+            workRobot.gotoNextPoint();  // 去下一个点
         }
         // 统一处理移动信息
         Robot.printRobotMove();
+        // 后续不能在调用workRobots，已被清理
     }
 
     // 每一帧开始的初始化工作
     private static void frameInit() {
-        Robot.frameRobotMove.clear();     // 清理上一帧移动信息
+        invalidPoints.clear();  //
+        workRobots.clear();     // 每帧初始化
+        for (int i = 0; i < robot_num; i++) {
+            // 找出所有冻结机器人，
+            if (robots[i].status == 0){
+                invalidPoints.add(robots[i].pos);
+            }else {
+                workRobots.add(robots[i]);
+            }
+        }
+
         for (int i = 0; i < testRobot; i++) {
 //            printLog(boats[i]);
 //            printLog(berths[i]);
