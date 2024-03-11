@@ -26,13 +26,23 @@ public class Util {
     // 打印日志
     public static void printLog(Object info){
         if (test){
-            log.println(info);
+            log.println("LOG::" + info);
+        }
+    }
+    public static void printDebug(Object info){
+        if (test){
+            log.println("DEBUG::" + info);
         }
     }
 
     public static void printErr(Object info){
         if (test){
-            log.println("ERROR!--" + info);
+            log.println("ERROR::" + info);
+        }
+    }
+    public static void printWarn(Object info){
+        if (test){
+            log.println("WARN::" + info);
         }
     }
 

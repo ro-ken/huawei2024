@@ -3,6 +3,7 @@ package com.huawei.codecraft.core;
 import com.huawei.codecraft.Const;
 import com.huawei.codecraft.Util;
 import com.huawei.codecraft.util.Point;
+import com.huawei.codecraft.util.RobotRunMode;
 import com.huawei.codecraft.util.Twins;
 
 import java.util.*;
@@ -19,7 +20,7 @@ public class Robot {
     public Berth bookBerth;  // 预定的产品
     public Route route; //
     public Point next;  // 当前帧需要移动的下一个点
-    public boolean hideMode = false;    // 是否是避让模式， 到临时点停2帧，等对方过了在走
+    public RobotRunMode runMode = new RobotRunMode(this);
     public static HashSet<Robot> frameRobotMove = new HashSet<>();  // 所有机器人移动信息
 
     public Robot(int id, int x, int y) {
@@ -30,23 +31,60 @@ public class Robot {
     }
 
     public void schedule() {
-        if (noTask()){
-            boolean picked = pickNewTask();
-            if (!picked) return;    // 没有可做的任务
+        if (runMode.isHideMode()){
+            // 临时躲避模式，暂时不考虑任务
+            if (arriveTarget()){
+                // 到达目的地
+                runMode.waitFrame ++;
+            }// 否则继续
+            if (runMode.tooLong() || runMode.waitFrame >=2){
+                Point tar = runMode.beNormal();
+                changeRoad(tar);
+            }
+        }else {
+            if (noTask()){
+                boolean picked = pickNewTask();
+                if (!picked) return;    // 没有可做的任务
+            }
+            doTask();
+            // 判断该怎么走
         }
-        doTask();
-        // 判断该怎么走
     }
 
     private void doTask() {
-        if (arriveTarget()){
-            convertTask();
+        if (!isCarry()){
+            if (arriveGood()){
+                // 1、如果到达了物品，捡起物品，换路线选择泊口
+                if (bookGood.isExist()){
+                    loadGood(); // 装货
+                    gotoBerth();    // 运货去泊口
+                }else {
+                    // 物品不存在，任务结束
+                    turnOffTask();
+                }
+            }
+        }else {
+            if (arriveBerth()){
+                // 2、如果到达了泊口，卸货，任务结束
+                unloadGood(); //卸货
+                bookBerth.addGood(bookGood);
+                turnOffTask();
+            }
         }
+
         // 到达目的地，可能任务结束，重新分配
         if (noTask()){
             pickNewTask();
         }
+    }
 
+    private void unloadGood() {
+        Util.printPull(id);
+        carry = 0;
+    }
+    private void loadGood() {
+        Util.printGet(id);
+        carry = 1;
     }
 
     // 统一处理机器人移动信息
@@ -55,6 +93,7 @@ public class Robot {
         Map<Point,Integer> pointMap = new HashMap<>();  // 所有机器人该帧经过的点,位置及个数
         for (Robot robot : frameRobotMove) {
             pointMap.merge(robot.pos, 1, Integer::sum);
+            pointMap.merge(robot.next, 1, Integer::sum);
         }
         boolean flag;
         do{
@@ -78,6 +117,7 @@ public class Robot {
 
     // 处理冲突的机器人移动信息
     private static void handleConflict(ArrayList<Robot> conflict) {
+        Util.printLog("conflict:->"+conflict);
         if (conflict.size()<2){
             for (Robot robot : conflict) {
                 robot.printMove();
@@ -96,6 +136,7 @@ public class Robot {
                     team.add(rob);
                 }
             }
+            Util.printLog("team：->"+team);
             handleTeamConflict(team);
         }while (!conflict.isEmpty());
     }
@@ -134,13 +175,20 @@ public class Robot {
         // 如果当前点有人，撤一步
         // 当前点无人，下一点有人，停留
         // 当前点无人，下一点无人，前进
-        Set<Point> points = new HashSet<>();
+        HashSet<Point> points = new HashSet<>();
         points.add(cores.getObj1().pos);
         points.add(cores.getObj1().next);
         points.add(cores.getObj2().pos);
         points.add(cores.getObj2().next);
         if (points.contains(robot.pos)){
-            robot.moveRobotBack();
+            ArrayList<Point> path = Const.path.getPathWithBarrier(robot.pos,robot.route.target, points);
+            if (path != null && path.size()-1 - robot.route.leftPathLen() < 8){
+                robot.route.setNewWay(path);
+                Util.printLog("handleOtherConflict:"+robot+path);
+                // 这里太挤了，优先换路
+            }else {
+                robot.moveRobotBack();
+            }
         }else {
             if (points.contains(robot.next)){
                 // 下一个点有人，停留
@@ -158,33 +206,59 @@ public class Robot {
 
 
     private static void handleCoreConflict(Twins<Robot,Robot> cores) {
+        // 先判断优先级,低的避让
         Robot rob1 = cores.getObj1();
         Robot rob2 = cores.getObj2();
-        Twins<ArrayList<Point>,Integer> newPath1 = changeRoadPath(rob1,rob2);
-        Twins<ArrayList<Point>,Integer> newPath2 = changeRoadPath(rob2,rob1);
-        int min = Math.min(newPath1.getObj2(),newPath2.getObj2());
-        if (min < 6){
-            // 认为可接受，绕路
-            if (newPath1.getObj2() == min){
-                rob1.route.setNewWay(newPath1.getObj1());
+        Robot master=null,slave=null; // master 高优先级，slave 低优先级
+        if (RobotRunMode.isDifferent(rob1,rob2)){
+            master = RobotRunMode.selectMaster(rob1,rob2);
+            slave = rob1 == master?rob2:rob1;
+            Util.printLog("优先级不同：master："+master+"slave"+slave);
+            Twins<ArrayList<Point>,Integer> newPath = changeRoadPath(slave,master);
+            if (newPath.getObj2()<6){
+                slave.route.setNewWay(newPath.getObj1());
             }else {
-                rob2.route.setNewWay(newPath2.getObj1());
+                newPath = findTmpPoint(slave,master);
+                if (newPath.getObj1() == null){
+                    Util.printWarn("slave 找不到避让点");
+                }else {
+                    slave.gotoHidePoint(newPath.getObj1(),master);
+                }
             }
+
         }else {
-            // 绕路太远，注意避让;
-            newPath1 = gotoTmpPoint(rob1,rob2);
-            newPath2 = gotoTmpPoint(rob1,rob2);
-            if (newPath1.getObj2() < newPath2.getObj2() ){
-                rob1.gotoHidePoint(newPath1.getObj1());
+            // 优先级相同
+            Twins<ArrayList<Point>,Integer> newPath1 = changeRoadPath(rob1,rob2);
+            Twins<ArrayList<Point>,Integer> newPath2 = changeRoadPath(rob2,rob1);
+            int min = Math.min(newPath1.getObj2(),newPath2.getObj2());
+            if (min < 6){
+                // 认为可接受，绕路
+                if (newPath1.getObj2() == min){
+                    rob1.route.setNewWay(newPath1.getObj1());
+                }else {
+                    rob2.route.setNewWay(newPath2.getObj1());
+                }
             }else {
-                rob2.gotoHidePoint(newPath2.getObj1());
+                // 绕路太远，注意避让;
+                newPath1 = findTmpPoint(rob1,rob2);
+                newPath2 = findTmpPoint(rob2,rob1);
+                if (newPath1.getObj1() == null && newPath2.getObj1() == null){
+                    Util.printErr("handleCoreConflict:都找不到避让点");
+                    Util.printLog(rob1.pos+"<-位置||障碍->"+rob2.route.getLeftPath());
+                }else {
+                    if (newPath1.getObj2() < newPath2.getObj2() ){
+                        rob1.gotoHidePoint(newPath1.getObj1(),rob2);
+                    }else {
+                        rob2.gotoHidePoint(newPath2.getObj1(),rob1);
+                    }
+                }
             }
         }
     }
 
-    private void gotoHidePoint(ArrayList<Point> path) {
-        // 去临时点
-        hideMode = true;
+    private void gotoHidePoint(ArrayList<Point> path,Robot master) {
+        Util.printLog("slave:"+this.id+"master"+master.id+"hide 点："+path);
+        runMode.setHideMode(master);  // 设置主从优先关系
         route.setNewWay(path);
     }
 
@@ -196,9 +270,10 @@ public class Robot {
         }
     }
 
-    private static Twins<ArrayList<Point>, Integer> gotoTmpPoint(Robot rob1, Robot rob2) {
+    private static Twins<ArrayList<Point>, Integer> findTmpPoint(Robot rob1, Robot rob2) {
         // rob1 给rob2让路，rob1去找临时点
         ArrayList<Point> path = Const.path.getHidePointPath(rob1.pos, rob2.route.getLeftPath());
+        Util.printDebug("gotoTmpPoint::pos:"+rob1.pos+"getLeftPath:"+rob2.route.getLeftPath()+" path:"+path);
         if (path == null){
             return new Twins<>(null,Const.unreachableFps);
         }
@@ -218,10 +293,12 @@ public class Robot {
         barriers.add(rob2.pos);
         barriers.add(rob2.next);
         ArrayList<Point> path = Const.path.getPathWithBarrier(rob1.pos,rob1.route.target, barriers);
+        Util.printDebug("changeRoadPath::pos:"+rob1.pos+"   target:"+rob1.route.target+"barriers:"+barriers+"   path:"+path);
         if (path == null){
             return new Twins<>(null,Const.unreachableFps);
         }
         int extraFps = path.size()-1 - rob1.route.leftPathLen();
+
         return new Twins<>(path,extraFps);
     }
 
@@ -257,8 +334,10 @@ public class Robot {
                 updateNextPoint();
             }else return;   // 找不到路
         }
-        frameRobotMove.add(this);
-        // 交由后面统一处理移动信息
+        if (!next.equals(pos)){
+            // 交由后面统一处理移动信息
+            frameRobotMove.add(this);
+        }
     }
 
     private void moveRobotBack() {
@@ -268,6 +347,7 @@ public class Robot {
 
     // 打印自己的移动信息
     public void printMove(){
+        Util.printLog("move:"+this);
         if (next == null){
             return;
         }
@@ -282,34 +362,23 @@ public class Robot {
         }
     }
 
-
-    // 切换任务
-    private void convertTask() {
-        if (arriveGood()){
-            // 1、如果到达了物品，捡起物品，换路线选择泊口
-            if (bookGood.isExist()){
-                Util.printGet(id);
-                changeRoad(bookBerth.pos);
-            }else {
-                // 物品不存在，任务结束
-                turnOffTask();
-            }
-        }else if (arriveBerth()){
-            // 2、如果到达了泊口，卸货，任务结束
-            Util.printPull(id);
-            bookBerth.addGood(bookGood);
-            turnOffTask();
-        }else {
-            Util.printErr("convertTask!");
-        }
+    private void gotoBerth() {
+        ArrayList<Point> path = Const.path.getToBerthPath(pos, bookBerth.pos);
+        route.setNewWay(path);
     }
 
     private boolean arriveBerth() {
-        return bookBerth.pos.equals(pos);
+        // 携带物品，并且到达目的地
+        return bookBerth.inMyPlace(pos);
     }
 
     private boolean arriveGood() {
+        // 且到达目的地
         return bookGood.pos.equals(pos);
+    }
+
+    private boolean isCarry() {
+        return carry == 1;
     }
 
     // 到达了目的地
@@ -331,17 +400,11 @@ public class Robot {
 
     @Override
     public String toString() {
-        Point next=null;
-        Point target=null;
-        if (route != null){
-            next = route.peekNextPoint();
-            target = route.target;
-        }
         return "Robot{" +
                 "id=" + id +
                 "," + pos +
                 ", next=" + next +
-                ", target=" + target +
+                ", target=" + route.target +
                 '}';
     }
 
@@ -394,8 +457,9 @@ public class Robot {
     // 换新的路
     public boolean changeRoad(Point pos){
         route.setNewWay(pos);
-        if (route.target != pos){
-            Util.printLog("ERROR! changeRoad 找不到路");
+        if (!route.target.equals(pos)){
+            Util.printLog(this.pos +"->"+pos +":tar"+route.target);
+            Util.printErr("changeRoad 找不到路");
             return false;
         }
         return true;

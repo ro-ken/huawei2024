@@ -21,10 +21,8 @@ public class Route {
         way = path;
         target = way.get(way.size()-1);
         index=0;
-        if (way.get(0).equals(robot.pos)){
-            // 让next点指向下一位
-            robot.updateNextPoint();
-        }
+        robot.next = robot.pos;
+        robot.updateNextPoint();
     }
 
     // 只有一个点，机器人原地待命
@@ -33,6 +31,7 @@ public class Route {
         way = new ArrayList<>();
         way.add(robotPos);
         index=0;
+        robot.next = robot.pos;
     }
     public void setNewWay(Point pos){
         if (pos.equals(robot.pos)){
@@ -41,9 +40,10 @@ public class Route {
         }
         else {
             // 寻路,找不到路，为null
-            ArrayList<Point> path = Const.path.getPath(robot.pos,target);
+            ArrayList<Point> path = Const.path.getPath(robot.pos,pos);
             if (path == null){
                 // 后续判断，如果target!=pos说明找不到路
+                Util.printErr(robot.pos +"::"+pos);
                 setWay(robot.pos);
             }else {
                 setWay(path);
@@ -51,11 +51,17 @@ public class Route {
         }
     }
     public void setNewWay(ArrayList<Point> path) {
-        setWay(path);
+        Util.printLog(robot+"新路径："+path);
+        if (path != null){
+            setWay(path);
+        }else {
+            setWay(robot.pos);
+            Util.printErr(robot.pos);
+        }
     }
 
     public Point peekNextPoint(){
-        return way.get(index);
+        return way.get(Math.min(index,way.size()-1));
     }
 
     public Point getNextPoint() {
@@ -87,10 +93,10 @@ public class Route {
 
     public ArrayList<Point> getLeftPath() {
         // 获取剩余路径
-        if (index == 0){
+        if (index <= 1){
             return way;
         }else {
-            return (ArrayList<Point>) way.subList(index-1,way.size());
+            return new ArrayList<Point>(way.subList(index-2, way.size()));
         }
     }
 

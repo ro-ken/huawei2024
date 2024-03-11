@@ -18,8 +18,14 @@ public interface Path {
     // 获取机器人去泊口最佳的路径。
     ArrayList<Point> getToBerthPath(Point robotPos,Point BerthPoint);
 
-    // 拥有新障碍下的路径
-    ArrayList<Point> getPathWithBarrier(Point p1,Point p2, HashSet<Point> barriers);
+    /**
+     * 获取拥有新障碍下的路径
+     * @param pos   起点
+     * @param target    目标终点
+     * @param barriers  新增的障碍物，两个点，点1 对方起点位置，点2 对方下一个点位置
+     * @return 返回新路径，没有则为null
+     */
+    ArrayList<Point> getPathWithBarrier(Point pos,Point target, HashSet<Point> barriers);
 
     ArrayList<Point> getHidePointPath(Point pos, ArrayList<Point> leftPath);
 }

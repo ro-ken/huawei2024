@@ -25,6 +25,7 @@ import static com.huawei.codecraft.Const.*;
  */
 public class Main {
 
+    public static int testRobot = 10;    // 测试机器人
 
     public static void main(String[] args) throws FileNotFoundException {
         initLog();
@@ -59,13 +60,11 @@ public class Main {
     public static void running(){
         input0();   // 第一帧机器人确定机器人序号
         for (int i = 0; i < totalFrame; i++) {
-
             printLog("frameId:"+frameId);
             updateBerth();
             handleFrame();
             printOk();
             input();
-            printLog("222:"+i);
         }
     }
 
@@ -85,7 +84,7 @@ public class Main {
         for (int i = 0; i < boat_num; i++) {
             boats[i].schedule();
         }
-        for (int i = 0; i < robot_num; i++) {
+        for (int i = 0; i < testRobot; i++) {
             robots[i].schedule();   // 任务调度
             robots[i].gotoNextPoint();      // 去下一个点
         }
@@ -96,7 +95,7 @@ public class Main {
     // 每一帧开始的初始化工作
     private static void frameInit() {
         Robot.frameRobotMove.clear();     // 清理上一帧移动信息
-        for (int i = 0; i < 10; i++) {
+        for (int i = 0; i < testRobot; i++) {
 //            printLog(boats[i]);
 //            printLog(berths[i]);
             printLog(robots[i]);
@@ -127,7 +126,6 @@ public class Main {
 
     public static void input() {
         frameId = inStream.nextInt();
-        printLog("frameId:" + frameId);
         money = inStream.nextInt();
         int goodsNum = inStream.nextInt();
         frameGoods.clear();

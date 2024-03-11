@@ -20,7 +20,6 @@ public class Good {
     public Good(int x,int y, int value,int curFrame) {
         this.pos = new Point(x,y);
         this.value = value;
-        // todo 当前帧是否算进去？
         deadFrame = curFrame + maxSurvive-1;
     }
 

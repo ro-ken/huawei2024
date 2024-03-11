@@ -33,7 +33,7 @@ public class Point {
 
     @Override
     public String toString() {
-        return "P(" + x +"," + y +')';
+        return "(" + x +"," + y +')';
     }
 
     @Override

@@ -33,7 +33,6 @@ public class Berth {
     //将每帧新加的货物更新自己列表
     public void updateGoodList(ArrayList<Good> frameGoods) {
         for (Good good:frameGoods){
-            Util.printErr(pos +"::" + good.pos);
             double fps = Const.path.getPathFps(pos,good.pos) * 2;   // 一个来回
             double cost = fps/good.value;
             Pair<Good> pair = new Pair<>(good,cost);
@@ -108,6 +107,10 @@ public class Berth {
 
     public void addBoat(Boat boat) {
         bookBoats.add(boat);
+    }
+
+    public boolean inMyPlace(Point pos) {
+        return pos.x >= this.pos.x && pos.x <= this.pos.x + 3 && pos.y >= this.pos.y && pos.y <= this.pos.y + 3;
     }
 }
 

@@ -10,6 +10,14 @@ public class Twins <T1,T2>{
         this.obj2 = obj2;
     }
 
+    @Override
+    public String toString() {
+        return "Twins{" +
+                "obj1=" + obj1 +
+                ", obj2=" + obj2 +
+                '}';
+    }
+
     public T1 getObj1() {
         return obj1;
     }
