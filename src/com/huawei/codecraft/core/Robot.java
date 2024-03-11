@@ -8,7 +8,7 @@ import com.huawei.codecraft.util.Twins;
 
 import java.util.*;
 
-import static com.huawei.codecraft.Const.workRobots;
+import static com.huawei.codecraft.Const.*;
 
 //机器人
 public class Robot {
@@ -94,7 +94,11 @@ public class Robot {
 
         // 找出有冲突的机器人
         Map<Point,Integer> pointMap = new HashMap<>();  // 所有机器人该帧经过的点,位置及个数
-        for (Robot robot : workRobots) {
+        for (Robot robot : robots) {
+            if (robot.next.equals(robot.pos)){
+                workRobots.remove(robot);
+                invalidPoints.add(robot.pos);   // 不能动，无效机器人
+            }
             pointMap.merge(robot.pos, 1, Integer::sum);
             pointMap.merge(robot.next, 1, Integer::sum);
         }
@@ -121,11 +125,11 @@ public class Robot {
     // 处理冲突的机器人移动信息
     private static void handleConflict(ArrayList<Robot> conflict) {
         Util.printLog("conflict:->"+conflict);
-        if (conflict.size()<2){
-            for (Robot robot : conflict) {
-                robot.printMove();
-            }
-        }
+//        if (conflict.size()<2){
+//            for (Robot robot : conflict) {
+//                robot.printMove();
+//            }
+//        }
         do {
             // 找出互相冲突的机器人
             Robot robot = conflict.remove(0);
@@ -153,7 +157,9 @@ public class Robot {
         // 找到冲突的主要矛盾，2个点，其他点避让
         if (team.size()<2){
             // 错误
-            Util.printErr("handleTeamConflict");
+            for (Robot robot : team) {
+                robot.changeRoadWithBarrier(robot.route.target,invalidPoints);
+            }
             return;
         }
         Twins<Robot,Robot> cores = null; // 碰撞的两个核心点
@@ -394,6 +400,8 @@ public class Robot {
             if (!flag) return false;        // 不能到达该路
             turnOnTask();
             Util.printLog("picked task robot:"+id + ",good"+bookGood+"berth:"+bookBerth);
+        }else {
+            Util.printWarn("did not find job");
         }
         return picked;
     }
