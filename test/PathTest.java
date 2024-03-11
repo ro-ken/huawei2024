@@ -11,9 +11,10 @@ public class PathTest {
     public void test01(){
         Path path = new SimplePathImpl();
         ArrayList<Point> path1 = path.getPath(new Point(36, 172), new Point(9, 147));
+        int fps  = path.getPathFps(new Point(36, 172), new Point(9, 147));
         ArrayList<Point> path2 = path.getPath(new Point(1, 3), new Point(1, 3));
         System.out.println(path1);
-        System.out.println(path2);
+        System.out.println(fps);
     }
 
     @Test
