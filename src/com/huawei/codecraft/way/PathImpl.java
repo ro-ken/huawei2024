@@ -23,7 +23,7 @@ public class PathImpl implements Path{
 //        long startTime = System.nanoTime();  // Start timing
 
         if (!isAccessible(p1.x, p1.y) || !isAccessible(p2.x, p2.y)) {
-            printLog("point is impossible");
+//            printLog("point is impossible");
             return null;
         }
 
@@ -63,7 +63,7 @@ public class PathImpl implements Path{
             }
         }
 
-        printLog("No way");
+//        printLog("No way");
         return null;
     }
 
@@ -84,6 +84,9 @@ public class PathImpl implements Path{
 
     @Override
     public ArrayList<Point> getPathWithBarrier(Point p1, Point p2, HashSet<Point> barriers) {
+        if (barriers.contains(p1)){
+            barriers.remove(p1);
+        }
         changeMapinfo(barriers);
         ArrayList<Point> path =  getPath(p1, p2);
         restoreMapinfo(barriers);
@@ -96,15 +99,17 @@ public class PathImpl implements Path{
             printLog("Error: leftPath does not contain enough points");
             return null;
         }
-
-        // 对方机器人下一帧的位置被视为障碍物
         Point nextEnemyPosition = leftPath.get(1);
+        // 对方机器人下一帧的位置被视为障碍物
+        if (pos.equals(leftPath.get(1))) {
+            nextEnemyPosition = leftPath.get(0);
+        }
+
         HashSet<Point> barriers = new HashSet<>();
         barriers.add(nextEnemyPosition);
 
         // 在地图上临时标记对方机器人下一帧的位置为障碍物
         changeMapinfo(barriers);
-
         ArrayList<Point> path = null;
         // 遍历可能的避让方向
         for (int[] direction : directions) {
