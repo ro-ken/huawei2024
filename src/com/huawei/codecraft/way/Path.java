@@ -5,6 +5,7 @@ import com.huawei.codecraft.util.Point;
 
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.Map;
 
 /**
  * 路径接口，里面的方法上层调用，下层实现
@@ -51,4 +52,11 @@ public interface Path {
      * @return  返回去往避让点的路径 ，没有返回null
      */
     ArrayList<Point> getHidePointPath(Point pos, ArrayList<Point> leftPath);
+
+//    /**
+//     * 获取全局对地图的路径
+//     * @param berthPos 泊口的左上角位置
+//     * @return  整张地图点对于到泊口路径map
+//     */
+//    Map<Point, ArrayList<Point>> getMapPathToBerth(Point berthPos);
 }

@@ -8,6 +8,7 @@ import java.io.FileNotFoundException;
 import java.util.*;
 
 import com.huawei.codecraft.core.*;
+import com.huawei.codecraft.zone.RegionManager;
 import com.huawei.codecraft.util.Point;
 import com.huawei.codecraft.way.Mapinfo;
 
@@ -35,6 +36,24 @@ public class Main {
     // 追加初始化工作
     private static void myInit() {
         Mapinfo.init(map);
+        initRobot();
+        // 初始化船舶
+        for (int i = 0; i < boat_num; i++) {
+            boats[i] = new Boat(i);
+        }
+        for (Berth berth : berths) {
+            pointToBerth.put(berth.pos,berth);
+        }
+        regionManager = new RegionManager(path);
+        initZone();
+    }
+
+    private static void initZone() {
+
+    }
+
+    // 初始化机器人信息
+    private static void initRobot() {
         int id = 0;
         for (int i = 0; i < mapWidth; i++) {
             for (int j = 0; j < mapWidth; j++) {
@@ -44,13 +63,6 @@ public class Main {
                 }
             }
             if (id == robot_num) break; //
-        }
-        // 初始化船舶
-        for (int i = 0; i < boat_num; i++) {
-            boats[i] = new Boat(i);
-        }
-        for (Berth berth : berths) {
-            pointToBerth.put(berth.pos,berth);
         }
     }
 

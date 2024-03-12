@@ -1,7 +1,8 @@
-package com.huawei.codecraft.way;
+package com.huawei.codecraft.zone;
 
 import com.huawei.codecraft.core.Berth;
 import com.huawei.codecraft.util.Point;
+import com.huawei.codecraft.way.Path;
 
 import java.io.*;
 import java.util.*;
@@ -35,9 +36,15 @@ public class RegionManager {
         this.globalPointToClosestBerthPath = new HashMap<>();
         this.globalBerthToPointPaths = new HashMap<>();
         this.globalPointToBerthPaths = new HashMap<>();
-//        createRegions();
+//        createRegions();  // 两者是否重复遍历
 //        getFullPath();
 //        splitRegions();
+
+        // 给berth的mapPath赋值
+        for (Map.Entry<Berth, Map<Point, List<Point>>> entry : globalBerthToPointPaths.entrySet()) {
+            Berth berth = entry.getKey();
+            berth.mapPath = entry.getValue();
+        }
     }
 
     /**

@@ -18,6 +18,7 @@ public class Berth {
     public Set<Boat> bookBoats = new HashSet<>();
     public Deque<Good> existGoods = new LinkedList<>();     // 泊口存在的货物
     public int existValue=0;           // 泊口货物总价值
+    public Map<Point,List<Point>> mapPath = new HashMap<>();   //  地图所有点到该泊位的路径信息
 
     public Berth(int id) {
         pos = new Point();
@@ -112,5 +113,7 @@ public class Berth {
     public boolean inMyPlace(Point pos) {
         return pos.x >= this.pos.x && pos.x <= this.pos.x + 3 && pos.y >= this.pos.y && pos.y <= this.pos.y + 3;
     }
+
+
 }
 

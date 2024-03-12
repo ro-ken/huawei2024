@@ -12,9 +12,9 @@ public class Route {
     public Point target;    // 要抵达的目标
     public ArrayList<Point> way = new ArrayList<>();
     public int index=0;
-    public Route(Point pos,Robot robot){
+    public Route(Robot robot){
         this.robot = robot;
-        setNewWay(pos);
+        setNewWay(robot.pos);
     }
 
     private void setWay(ArrayList<Point> path) {
@@ -58,10 +58,6 @@ public class Route {
             setWay(robot.pos);
             Util.printErr(robot.pos);
         }
-    }
-
-    public Point peekNextPoint(){
-        return way.get(Math.min(index,way.size()-1));
     }
 
     public Point getNextPoint() {

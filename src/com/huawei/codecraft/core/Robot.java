@@ -27,7 +27,7 @@ public class Robot {
     public Robot(int id, int x, int y) {
         this.id = id;
         pos = new Point(x,y);
-        route = new Route(pos,this);
+        route = new Route(this);
         next = pos;
     }
 
@@ -464,6 +464,7 @@ public class Robot {
 
     // 换新的路
     public boolean changeRoad(Point target){
+//        if (pointToBerth.)
         route.setNewWay(target);
         if (!route.target.equals(target)){
             Util.printLog(this.pos +"->"+target +":tar"+route.target);

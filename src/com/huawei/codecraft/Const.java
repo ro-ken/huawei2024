@@ -4,10 +4,11 @@ import com.huawei.codecraft.core.Berth;
 import com.huawei.codecraft.core.Boat;
 import com.huawei.codecraft.core.Good;
 import com.huawei.codecraft.core.Robot;
+import com.huawei.codecraft.zone.RegionManager;
 import com.huawei.codecraft.util.Point;
 import com.huawei.codecraft.way.Path;
 import com.huawei.codecraft.way.PathImpl;
-import com.huawei.codecraft.way.SimplePathImpl;
+import com.huawei.codecraft.zone.Zone;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -38,9 +39,11 @@ public class Const {
     public static Boat[] boats = new Boat[boat_num];
     public static ArrayList<Good> frameGoods= new ArrayList<>();    // 每一帧新产生的货物
     public static Path path = new PathImpl(); // 修改Path实现
-    public static Map<Point,Berth> pointToBerth = new HashMap<>();
-    public static final int unreachableFps = 1000000;
+    public static Map<Point,Berth> pointToBerth = new HashMap<>();  // 左上角位置到泊位的映射
+    public static final int unreachableFps = 1000000;       // 不可达的时间
     public static HashSet<Robot> workRobots = new HashSet<>();// 每帧可以工作的机器人
     public static HashSet<Point> invalidPoints = new HashSet<>();   // 每帧的无效点
+    public static ArrayList<Zone> Zones = new ArrayList<>();    // 陆地划分的区域
+    public static RegionManager regionManager;
 
 }

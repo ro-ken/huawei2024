@@ -1,4 +1,4 @@
-package com.huawei.codecraft.way;
+package com.huawei.codecraft.zone;
 
 import com.huawei.codecraft.core.Berth;
 import com.huawei.codecraft.core.Robot;
