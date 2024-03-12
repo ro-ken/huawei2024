@@ -11,6 +11,7 @@ import java.util.stream.Collectors;
 
 import static com.huawei.codecraft.Const.*;
 import static com.huawei.codecraft.way.Mapinfo.isValid;
+import static com.huawei.codecraft.Util.printLog;
 import static com.huawei.codecraft.way.Mapinfo.map;
 
 /**
@@ -38,7 +39,7 @@ public class RegionManager {
         this.globalPointToClosestBerthPath = new HashMap<>();
         createRegions();
         splitRegions();
-        assignRobots();
+//        assignRobots();
     }
 
     /**
@@ -293,7 +294,23 @@ public class RegionManager {
         }
 
         // 将每个泊位的路径信息更新到泊位对象
-        berth.mapPath.putAll(visitedPaths);
+        for (Map.Entry<Point, List<Point>> entry : visitedPaths.entrySet()) {
+            List<Point> path = entry.getValue();
+            Point endPoint = path.get(path.size() - 1);
+
+            // 确保路径以泊位为起点，或者路径终点为泊位需要反转
+            if (!path.isEmpty() && (path.get(0).equals(start) || endPoint.equals(start))) {
+                if (endPoint.equals(start)) {
+                    // 如果路径的终点是泊位，则反转路径
+                    Collections.reverse(path);
+                    // 反转后，起点应该是泊位，我们将反转后的路径存储
+                    berth.mapPath.put(entry.getKey(), path);
+                } else {
+                    // 路径以泊位为起点，直接存储
+                    berth.mapPath.put(entry.getKey(), path);
+                }
+            }
+        }
 
         // 保证泊位点归属于泊位的所在区域
         globalPointToClosestBerthPath.computeIfAbsent(start, k -> new HashMap<>()).put(berth, new ArrayList<>(Collections.singletonList(start)));
@@ -344,6 +361,10 @@ public class RegionManager {
         for (Robot robot : robots) {  // 直接使用 robots，无需 Const.robots
             // 获取机器人的当前位置
             Point robotPosition = robot.pos;
+            if (robotPosition == null) {
+                printLog("Robot position is null!");
+                continue;
+            }
 
             // 判断该机器人属于哪个zone
             for (Zone zone : zones) {
