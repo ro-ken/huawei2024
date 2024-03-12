@@ -19,10 +19,10 @@ import static com.huawei.codecraft.way.Mapinfo.map;
  */
 public class RegionManager {
     private final List<Region> regions;     // 地图所有的region
+    private final Set<Zone> zones;         // 地图的大连通区域
     private final Map<Point, Region> pointRegionMap;    // point 到 region 的映射，查找点属于的 region
     private final Map<Point, Map<Berth, List<Point>>> globalPointToClosestBerthPath;    // 获取离点最近的泊位的路径
-    private final Map<Berth, Map<Point, List<Point>>> globalBerthToPointPaths;          // 获取泊位到某个点的路径
-    private final Map<Point, Map<Berth, List<Point>>> globalPointToBerthPaths;          // 获取点到某个泊位的路径
+
     private final Path pathFinder;  // Path 接口的引用
 
     /**
@@ -31,20 +31,17 @@ public class RegionManager {
      */
     public RegionManager(Path pathFinder) {
         this.regions = new ArrayList<>();
+        this.zones = new HashSet<>();
         this.pointRegionMap = new HashMap<>();
         this.pathFinder = pathFinder;  // 通过构造器注入 Path 实现
         this.globalPointToClosestBerthPath = new HashMap<>();
-        this.globalBerthToPointPaths = new HashMap<>();
-        this.globalPointToBerthPaths = new HashMap<>();
-//        createRegions();  // 两者是否重复遍历
-//        getFullPath();
-//        splitRegions();
+        createRegions();
+        splitRegions();
+//        initZoneRobots();
+    }
 
-        // 给berth的mapPath赋值
-        for (Map.Entry<Berth, Map<Point, List<Point>>> entry : globalBerthToPointPaths.entrySet()) {
-            Berth berth = entry.getKey();
-            berth.mapPath = entry.getValue();
-        }
+    private void initZoneRobots() {
+
     }
 
     /**
@@ -106,15 +103,15 @@ public class RegionManager {
     }
 
     /**
-     *  预先获取全局地图上所有的路径，点到泊位和泊位到点
-     *
+     *  TODO：需要被整合，现在时间有点超时，和 allocateRemainingPoints()进行整合
+     * 预先获取全局地图上所有的路径，点到泊位和泊位到点,需
      */
     public void getFullPath() {
         // 为每个泊位计算到所有其他点的路径
         for (Berth berth : berths) {
             Map<Point, List<Point>> berthPaths = new HashMap<>();
             bfsFromBerthForFullPaths(berth, berthPaths);
-            globalBerthToPointPaths.put(berth, berthPaths);
+//            globalBerthToPointPaths.put(berth, berthPaths);
 
             // 根据计算出的泊位到点的路径构建点到泊位的路径
             for (Map.Entry<Point, List<Point>> entry : berthPaths.entrySet()) {
@@ -123,8 +120,8 @@ public class RegionManager {
                 List<Point> reversedPath = new ArrayList<>(path);
                 Collections.reverse(reversedPath); // 反转路径
 
-                globalPointToBerthPaths.computeIfAbsent(point, k -> new HashMap<>());
-                globalPointToBerthPaths.get(point).put(berth, reversedPath);
+//                globalPointToBerthPaths.computeIfAbsent(point, k -> new HashMap<>());
+//                globalPointToBerthPaths.get(point).put(berth, reversedPath);
             }
         }
     }
@@ -225,8 +222,14 @@ public class RegionManager {
             // 计算泊位间的距离并确定阈值
             int threshold = calculateThreshold(largeRegion);
 
+            // 创建新的 Zone 对象并添加区域相关信息
+            Zone zone = new Zone(zones.size());
+            zone.accessPoints.addAll(largeRegion.getAccessiblePoints());
+            zone.berths.addAll(largeRegion.getBerths());
+
             // 基于阈值合并泊位到新区域
-            mergeBerths2NewRegions(largeRegion, threshold, unionFind, newRegions);
+            mergeBerths2NewRegions(largeRegion, threshold, unionFind, newRegions, zone);
+            zones.add(zone);  // 将 Zone 添加到全局列表
 
             // 将大区域内剩余的点分配到最近的新区域
             allocateRemainingPoints(largeRegion, newRegions);
@@ -267,7 +270,7 @@ public class RegionManager {
 
 
     // 将根据阈值划分的泊位进行聚合，定义新的region
-    private void mergeBerths2NewRegions(Region largeRegion, int threshold, UnionFind unionFind, List<Region> newRegions) {
+    private void mergeBerths2NewRegions(Region largeRegion, int threshold, UnionFind unionFind, List<Region> newRegions, Zone zone) {
         ArrayList<Berth> berthsList = new ArrayList<>(largeRegion.getBerths());
         for (int i = 0; i < berthsList.size(); i++) {
             for (int j = i + 1; j < berthsList.size(); j++) {
@@ -289,6 +292,7 @@ public class RegionManager {
                 Region region = new Region(newRegions.size());
                 newRegions.add(region);  // 先添加，确保ID的唯一性
                 rootToRegion.put(root, region);
+                zone.regions.add(region);  // 将新区域添加到Zone的regions集合中
             }
             Region region = rootToRegion.get(root);
             Berth berth = pointToBerth.get(point);
@@ -316,7 +320,6 @@ public class RegionManager {
         Point start = berth.pos;
         queue.add(start);
 
-        // 初始化每个点到起始泊位的路径为自己
         Map<Point, List<Point>> visitedPaths = new HashMap<>();
         visitedPaths.put(start, new ArrayList<>(Collections.singletonList(start)));
 
@@ -335,46 +338,56 @@ public class RegionManager {
                 if (pointRegionMap.containsKey(nextPoint) && !visited[newX][newY]) {
                     visited[newX][newY] = true;
 
-                    // 不覆盖泊位自身的路径
-                    if (!nextPoint.equals(start)) {
-                        List<Point> newPath = new ArrayList<>(currentPath);
-                        newPath.add(nextPoint);
+                    List<Point> newPath = new ArrayList<>(currentPath);
+                    newPath.add(nextPoint);
 
-                        // 更新路径信息，仅当新路径更短时
-                        globalPointToClosestBerthPath.merge(nextPoint, new HashMap<Berth, List<Point>>() {{
-                                    put(berth, newPath);
-                                }},
-                                (existingPathMap, newPathMap) -> {
-                                    List<Point> existingPath = existingPathMap.get(berth);
-                                    if (existingPath == null || newPath.size() < existingPath.size()) {
-                                        existingPathMap.put(berth, newPath);
-                                    }
-                                    return existingPathMap;
-                                });
+                    visitedPaths.put(nextPoint, newPath);
+                    queue.add(nextPoint);  // 将新探索点加入队列
 
-                        visitedPaths.put(nextPoint, newPath);
-                    }
-
-                    queue.add(nextPoint);
+                    // 更新全局最短路径信息
+                    globalPointToClosestBerthPath.compute(nextPoint, (k, existingPaths) -> {
+                        if (existingPaths == null) {
+                            existingPaths = new HashMap<>();
+                        }
+                        List<Point> existingPath = existingPaths.get(berth);
+                        if (existingPath == null || newPath.size() < existingPath.size()) {
+                            existingPaths.put(berth, newPath);
+                        }
+                        return existingPaths;
+                    });
                 }
             }
         }
 
-        // 将每个泊位的路径设置为只包含自己
-        Map<Berth, List<Point>> berthSelfPath = new HashMap<>();
-        berthSelfPath.put(berth, new ArrayList<>(Collections.singletonList(start)));
-        globalPointToClosestBerthPath.put(start, berthSelfPath);
+        // 将每个泊位的路径信息更新到泊位对象
+        berth.mapPath.putAll(visitedPaths);
+
+        // 保证泊位点归属于泊位的所在区域
+        globalPointToClosestBerthPath.computeIfAbsent(start, k -> new HashMap<>()).put(berth, new ArrayList<>(Collections.singletonList(start)));
     }
+
 
     // 将点分配给其所属的区域，按照距离进行划分
     private void allocatepoint2region(List<Region> newRegions) {
         for (Map.Entry<Point, Map<Berth, List<Point>>> entry : globalPointToClosestBerthPath.entrySet()) {
             Point point = entry.getKey();
-            Map<Berth, List<Point>> berthPathMap = entry.getValue();
-            Berth closestBerth = Collections.min(berthPathMap.entrySet(), Comparator.comparingInt(e -> e.getValue().size())).getKey();
-            Region region = findRegionByBerth(closestBerth, newRegions);
-            if (region != null) {
-                region.addAccessiblePoint(point);
+            Map<Berth, List<Point>> closestPaths = entry.getValue();
+
+            Berth closestBerth = null;
+            List<Point> shortestPath = null;
+
+            for (Map.Entry<Berth, List<Point>> berthEntry : closestPaths.entrySet()) {
+                if (shortestPath == null || berthEntry.getValue().size() < shortestPath.size()) {
+                    closestBerth = berthEntry.getKey();
+                    shortestPath = berthEntry.getValue();
+                }
+            }
+
+            if (closestBerth != null) {
+                Region region = findRegionByBerth(closestBerth, newRegions);
+                if (region != null) {
+                    region.addAccessiblePoint(point);
+                }
             }
         }
     }
@@ -434,66 +447,25 @@ public class RegionManager {
         }
     }
 
-    public void printRegionZeroPathsDetails() {
-        // 假定0号区域存在
-        Region regionZero = regions.get(0);
-        String fileName = "path.txt";
-
-        try (BufferedWriter writer = new BufferedWriter(new FileWriter(fileName))) {
-            if (regionZero == null) {
-                writer.write("Region 0 does not exist.");
-                return;
+    public void printZoneDetails() {
+        System.out.println("Zone details:");
+        for (Zone zone : zones) {
+            System.out.println("Zone ID: " + zone.id);
+            System.out.println("  Number of Regions: " + zone.regions.size());
+            for (Region region : zone.regions) {
+                System.out.println("    Region ID: " + region.getId());
+                System.out.println("    Number of Points: " + region.getAccessiblePoints().size());
             }
-
-            writer.write("Paths in Region 0:\n");
-            for (Point point : regionZero.getAccessiblePoints()) {
-                // 获取该点到不同泊位的路径
-                Map<Berth, List<Point>> paths = globalPointToClosestBerthPath.get(point);
-                if (paths != null) {
-                    for (Map.Entry<Berth, List<Point>> entry : paths.entrySet()) {
-                        Berth berth = entry.getKey();
-                        List<Point> path = entry.getValue();
-                        writer.write("Path from " + point + " to Berth " + berth.pos + ":\n");
-                        for (Point pathPoint : path) {
-                            writer.write(pathPoint + " ");
-                        }
-                        writer.write("\n");  // 换行，分隔不同路径
-                    }
-                }
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
         }
     }
 
-    public void printPointToBerthPathsDetails() {
-        String fileName = "point2berth.txt";
-        try (BufferedWriter writer = new BufferedWriter(new FileWriter(fileName))) {
-            writer.write("Paths from Points to Berths:\n");
-            for (Map.Entry<Point, Map<Berth, List<Point>>> entry : globalPointToBerthPaths.entrySet()) {
-                Point point = entry.getKey();
-                Map<Berth, List<Point>> paths = entry.getValue();
-                for (Map.Entry<Berth, List<Point>> pathEntry : paths.entrySet()) {
-                    Berth berth = pathEntry.getKey();
-                    List<Point> path = pathEntry.getValue();
-                    writer.write("Path from " + point + " to Berth " + berth.pos + ":\n");
-                    for (Point pathPoint : path) {
-                        writer.write(pathPoint + " ");
-                    }
-                    writer.newLine();
-                }
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
 
     public void printBerthToPointPathsDetails() {
         String fileName = "berth2point.txt";
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(fileName))) {
             writer.write("Paths from Berths to Points:\n");
             for (Berth berth : berths) {
-                Map<Point, List<Point>> paths = globalBerthToPointPaths.get(berth);
+                Map<Point, List<Point>> paths = berth.mapPath;
                 if (paths != null) {
                     for (Map.Entry<Point, List<Point>> entry : paths.entrySet()) {
                         Point point = entry.getKey();

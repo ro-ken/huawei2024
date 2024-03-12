@@ -3,7 +3,7 @@ import com.huawei.codecraft.util.Point;
 import com.huawei.codecraft.way.Mapinfo;
 import com.huawei.codecraft.way.Path;
 import com.huawei.codecraft.way.PathImpl;
-import com.huawei.codecraft.way.RegionManager;
+import com.huawei.codecraft.zone.RegionManager;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -97,15 +97,13 @@ public class PathTest2 {
             regionManager.printRegionDetails();
             System.out.println("*********************************************");
 
-            System.out.println("*************get full Path**************");
-            regionManager.getFullPath();
-            regionManager.printBerthToPointPathsDetails();
-            regionManager.printPointToBerthPathsDetails();
-            System.out.println("*********************************************");
-
             System.out.println("*************second splitRegion**************");
             regionManager.splitRegions();
-//            regionManager.printPointDetails();
+
+            regionManager.printRegionDetails();
+            regionManager.printZoneDetails();
+            regionManager.printPointDetails();
+            regionManager.printBerthToPointPathsDetails();
             System.out.println("*********************************************");
 
             long endTime = System.nanoTime();  // End timing
