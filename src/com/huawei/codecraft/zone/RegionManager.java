@@ -1,6 +1,7 @@
 package com.huawei.codecraft.zone;
 
 import com.huawei.codecraft.core.Berth;
+import com.huawei.codecraft.core.Robot;
 import com.huawei.codecraft.util.Point;
 import com.huawei.codecraft.way.Path;
 
@@ -37,11 +38,7 @@ public class RegionManager {
         this.globalPointToClosestBerthPath = new HashMap<>();
         createRegions();
         splitRegions();
-//        initZoneRobots();
-    }
-
-    private void initZoneRobots() {
-
+        assignRobots();
     }
 
     /**
@@ -53,7 +50,7 @@ public class RegionManager {
     }
 
     /**
-     * 创建初始的连通区域，根据地图的联通性划分
+     * @function 创建初始的连通区域，根据地图的联通性划分
      *
      */
     public void createRegions() {
@@ -103,74 +100,10 @@ public class RegionManager {
     }
 
     /**
-     *  TODO：需要被整合，现在时间有点超时，和 allocateRemainingPoints()进行整合
-     * 预先获取全局地图上所有的路径，点到泊位和泊位到点,需
+     * ClassName: RegionManager
+     * Package: com.huawei.codecraft.way
+     * Description: 为berth进行聚类的时候，根据并查集，使集合唯一
      */
-    public void getFullPath() {
-        // 为每个泊位计算到所有其他点的路径
-        for (Berth berth : berths) {
-            Map<Point, List<Point>> berthPaths = new HashMap<>();
-            bfsFromBerthForFullPaths(berth, berthPaths);
-//            globalBerthToPointPaths.put(berth, berthPaths);
-
-            // 根据计算出的泊位到点的路径构建点到泊位的路径
-            for (Map.Entry<Point, List<Point>> entry : berthPaths.entrySet()) {
-                Point point = entry.getKey();
-                List<Point> path = entry.getValue();
-                List<Point> reversedPath = new ArrayList<>(path);
-                Collections.reverse(reversedPath); // 反转路径
-
-//                globalPointToBerthPaths.computeIfAbsent(point, k -> new HashMap<>());
-//                globalPointToBerthPaths.get(point).put(berth, reversedPath);
-            }
-        }
-    }
-
-    private void bfsFromBerthForFullPaths(Berth berth, Map<Point, List<Point>> targetMap) {
-        Queue<Point> queue = new LinkedList<>();
-        Map<Point, List<Point>> visitedPaths = new HashMap<>();
-        Point start = berth.pos;
-
-        queue.add(start);
-        visitedPaths.put(start, new ArrayList<>(Collections.singletonList(start)));
-
-        while (!queue.isEmpty()) {
-            Point current = queue.poll();
-            List<Point> currentPath = visitedPaths.get(current);
-
-            for (int[] dir : new int[][]{{0, 1}, {0, -1}, {-1, 0}, {1, 0}}) {
-                int newX = current.x + dir[0];
-                int newY = current.y + dir[1];
-                Point nextPoint = new Point(newX, newY);
-
-                if (pointRegionMap.containsKey(nextPoint) && !visitedPaths.containsKey(nextPoint)) {
-                    List<Point> newPath = new ArrayList<>(currentPath);
-                    newPath.add(nextPoint);
-                    visitedPaths.put(nextPoint, newPath);
-                    queue.add(nextPoint);
-                }
-            }
-        }
-
-        // 保存从泊口到所有点的路径
-        targetMap.putAll(visitedPaths);
-    }
-
-    // 暂留函数，待后续再看是否会用
-    private void addBerthArea(Map<Point, Region> tempPointRegionMap, List<Region> newRegions) {
-        for (Region region : newRegions) {
-            for (Berth berth : region.getBerths()) {
-                Point topLeft = berth.pos;
-                for (int dx = 0; dx < 4; dx++) {
-                    for (int dy = 0; dy < 4; dy++) {
-                        tempPointRegionMap.put(new Point(topLeft.x + dx, topLeft.y + dy), region);
-                    }
-                }
-            }
-        }
-    }
-
-    // 并查集的定义，在泊位根据聚类是需要通过并查集确定唯一的集合
     public static class UnionFind {
         private final Map<Point, Point> parent;
 
@@ -207,7 +140,7 @@ public class RegionManager {
     }
 
     /**
-     * 对初始的region进一步划分，通过泊位之间的距离计算出阈值，作为聚类的条件
+     * @function 对初始的region进一步划分，通过泊位之间的距离计算出阈值，作为聚类的条件
      *
      */
     public void splitRegions() {
@@ -400,6 +333,99 @@ public class RegionManager {
             }
         }
         return null;
+    }
+
+    /**
+     * @function 为zone分配机器人，
+     *
+     */
+    private void assignRobots() {
+        // 遍历每个机器人
+        for (Robot robot : robots) {  // 直接使用 robots，无需 Const.robots
+            // 获取机器人的当前位置
+            Point robotPosition = robot.pos;
+
+            // 判断该机器人属于哪个zone
+            for (Zone zone : zones) {
+                // 如果机器人的当前位置是zone中的一个可达点
+                if (zone.accessPoints.contains(robotPosition)) {
+                    // 将机器人添加到该zone的机器人集合中
+                    zone.robots.add(robot);
+                    break; // 找到所属zone后不需要继续判断其他zone
+                }
+            }
+        }
+    }
+
+    /**********************************************************************************
+     * 暂留接口函数，后续看测试是否需要，后续整理在删除
+     * @function getFullPath: 获取所有的点到泊位，泊位到点的路径
+     * @function bfsFromBerthForFullPaths: bfs遍历，在getFullPath中被调用
+     * @function addBerthArea: 确定berth的区域，暂时好像没用
+     * *********************************************************************************
+     */
+    public void getFullPath() {
+        // 为每个泊位计算到所有其他点的路径
+        for (Berth berth : berths) {
+            Map<Point, List<Point>> berthPaths = new HashMap<>();
+            bfsFromBerthForFullPaths(berth, berthPaths);
+//            globalBerthToPointPaths.put(berth, berthPaths);
+
+            // 根据计算出的泊位到点的路径构建点到泊位的路径
+            for (Map.Entry<Point, List<Point>> entry : berthPaths.entrySet()) {
+                Point point = entry.getKey();
+                List<Point> path = entry.getValue();
+                List<Point> reversedPath = new ArrayList<>(path);
+                Collections.reverse(reversedPath); // 反转路径
+
+//                globalPointToBerthPaths.computeIfAbsent(point, k -> new HashMap<>());
+//                globalPointToBerthPaths.get(point).put(berth, reversedPath);
+            }
+        }
+    }
+
+    private void bfsFromBerthForFullPaths(Berth berth, Map<Point, List<Point>> targetMap) {
+        Queue<Point> queue = new LinkedList<>();
+        Map<Point, List<Point>> visitedPaths = new HashMap<>();
+        Point start = berth.pos;
+
+        queue.add(start);
+        visitedPaths.put(start, new ArrayList<>(Collections.singletonList(start)));
+
+        while (!queue.isEmpty()) {
+            Point current = queue.poll();
+            List<Point> currentPath = visitedPaths.get(current);
+
+            for (int[] dir : new int[][]{{0, 1}, {0, -1}, {-1, 0}, {1, 0}}) {
+                int newX = current.x + dir[0];
+                int newY = current.y + dir[1];
+                Point nextPoint = new Point(newX, newY);
+
+                if (pointRegionMap.containsKey(nextPoint) && !visitedPaths.containsKey(nextPoint)) {
+                    List<Point> newPath = new ArrayList<>(currentPath);
+                    newPath.add(nextPoint);
+                    visitedPaths.put(nextPoint, newPath);
+                    queue.add(nextPoint);
+                }
+            }
+        }
+
+        // 保存从泊口到所有点的路径
+        targetMap.putAll(visitedPaths);
+    }
+
+    // 暂留函数，待后续再看是否会用
+    private void addBerthArea(Map<Point, Region> tempPointRegionMap, List<Region> newRegions) {
+        for (Region region : newRegions) {
+            for (Berth berth : region.getBerths()) {
+                Point topLeft = berth.pos;
+                for (int dx = 0; dx < 4; dx++) {
+                    for (int dy = 0; dy < 4; dy++) {
+                        tempPointRegionMap.put(new Point(topLeft.x + dx, topLeft.y + dy), region);
+                    }
+                }
+            }
+        }
     }
 
     /**********************************************************************************
