@@ -34,12 +34,21 @@ public class Berth {
     //将每帧新加的货物更新自己列表
     public void updateGoodList(ArrayList<Good> frameGoods) {
         for (Good good:frameGoods){
-            double fps = Const.path.getPathFps(pos,good.pos) * 2;   // 一个来回
+            double fps = getPathFps(good.pos)*2;    // 一个来回
             double cost = fps/good.value;
             Pair<Good> pair = new Pair<>(good,cost);
             goodList.add(pair);
         }
     }
+
+    public int getPathFps(Point pos) {
+        if (mapPath.containsKey(pos)){
+            return mapPath.get(pos).size();
+        }else {
+            return Const.unreachableFps;
+        }
+    }
+
     // 取最佳货物
     public Good getBestGood(){
         ArrayList<Good> useless = new ArrayList<>();// 无效货物

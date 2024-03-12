@@ -27,14 +27,9 @@ public class Main {
 
     public static void main(String[] args) throws FileNotFoundException {
         initLog();
-        long t1 = System.nanoTime();
         readInit();
-        long t2 = System.nanoTime();
         myInit();
-        long t3 = System.nanoTime();
         printOk();
-        long t4 = System.nanoTime();
-        printLog("readInit："+(t2-t1)/1000+"us+myInit："+(t3-t2)/1000+"us+printOk："+(t4-t3)/1000);
         running();
     }
 
@@ -73,21 +68,12 @@ public class Main {
 
     public static void running(){
         input0();   // 第一帧机器人确定机器人序号
-        long start=System.nanoTime();
-        long end=System.nanoTime();
         for (int i = 0; i < totalFrame; i++) {
             printLog("frameId:"+frameId);
-            long t1 = System.nanoTime();
-            printLog("input时间："+(t1-start)/1000);
             updateBerth();
-            long t2 = System.nanoTime();
             handleFrame();
-            long t3 = System.nanoTime();
             printOk();
-            end = System.nanoTime();
-            printLog("frame时间："+(end-start)/1000+"us+input："+(t1-start)/1000+"us+update时间："+(t2-t1)/1000+"us+handleFrame："+(t3-t2)/1000+"us+ok："+(end-t3)/1000);
             input();
-            start = System.nanoTime();
         }
     }
 
