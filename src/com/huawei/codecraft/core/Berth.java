@@ -110,8 +110,8 @@ public class Berth {
         bookBoats.add(boat);
     }
 
-    public boolean inMyPlace(Point pos) {
-        return pos.x >= this.pos.x && pos.x <= this.pos.x + 3 && pos.y >= this.pos.y && pos.y <= this.pos.y + 3;
+    public boolean  inMyPlace(Point pos) {
+        return pos.x >= this.pos.x-1 && pos.x <= this.pos.x + 2 && pos.y >= this.pos.y-1 && pos.y <= this.pos.y + 2;
     }
 
 

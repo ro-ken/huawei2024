@@ -135,8 +135,8 @@ public class Main {
         for (int i = 0; i < berth_num; i++) {
             int id = inStream.nextInt();
             berths[id] = new Berth(id);
-            berths[id].pos.x = inStream.nextInt();
-            berths[id].pos.y = inStream.nextInt();
+            berths[id].pos.x = inStream.nextInt() + 1;  // 以右下的那个点作为这个泊位的代表点
+            berths[id].pos.y = inStream.nextInt() + 1;
             berths[id].transport_time = inStream.nextInt();
             berths[id].loading_speed = inStream.nextInt();
         }

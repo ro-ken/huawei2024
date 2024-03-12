@@ -5,6 +5,7 @@ import com.huawei.codecraft.util.Point;
 
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -51,7 +52,7 @@ public interface Path {
      * @param leftPath    对方节点的剩余路径，避让点不能在路径上
      * @return  返回去往避让点的路径 ，没有返回null
      */
-    ArrayList<Point> getHidePointPath(Point pos, ArrayList<Point> leftPath);
+    ArrayList<Point> getHidePointPath(Point pos, List<Point> leftPath);
 
 //    /**
 //     * 获取全局对地图的路径

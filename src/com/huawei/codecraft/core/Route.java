@@ -5,19 +5,21 @@ import com.huawei.codecraft.Util;
 import com.huawei.codecraft.util.Point;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 public class Route {
 
     Robot robot;
     public Point target;    // 要抵达的目标
-    public ArrayList<Point> way = new ArrayList<>();
+    public List<Point> way = new ArrayList<>();
     public int index=0;
     public Route(Robot robot){
         this.robot = robot;
         setNewWay(robot.pos);
     }
 
-    private void setWay(ArrayList<Point> path) {
+    private void setWay(List<Point> path) {
         way = path;
         target = way.get(way.size()-1);
         index=0;
@@ -37,20 +39,40 @@ public class Route {
         if (pos.equals(robot.pos)){
             // 原地待命
             setWay(robot.pos);
+            return;
         }
-        else {
-            // 寻路,找不到路，为null
-            ArrayList<Point> path = Const.path.getPath(robot.pos,pos);
-            if (path == null){
-                // 后续判断，如果target!=pos说明找不到路
-                Util.printErr(robot.pos +"::"+pos);
-                setWay(robot.pos);
-            }else {
-                setWay(path);
+        if (Const.pointToBerth.containsKey(pos)){
+            // 该点是泊位的距离
+            Berth berth = Const.pointToBerth.get(pos);
+            List<Point> path = berth.mapPath.get(robot.pos);
+            Util.printDebug("setNewWay1:berth"+berth.pos+"pos"+robot.pos+"path"+path);
+            if (path != null){
+                List<Point> path1 = new ArrayList<>(path);
+                Collections.reverse(path1);  // 保存的是泊位到点的路径，需要翻转
+                setNewWay(path1);
+                return;
+            }
+        }else if (Const.pointToBerth.containsKey(robot.pos)){
+            // 机器人所在的点是泊位的点
+            Berth berth = Const.pointToBerth.get(robot.pos);
+            List<Point> path = berth.mapPath.get(pos);
+            Util.printDebug("setNewWay2:berth"+berth.pos+"pos"+robot.pos+"path"+path);
+            if (path != null){
+                setNewWay(path);
+                return;
             }
         }
+        // 没有保存路径，自己寻路
+        ArrayList<Point> path = Const.path.getPath(robot.pos,pos);
+        if (path == null){
+            // 后续判断，如果target!=pos说明找不到路
+            Util.printErr("setNewWay:找不到路"+robot.pos +"->"+pos);
+            setWay(robot.pos);
+        }else {
+            setWay(path);
+        }
     }
-    public void setNewWay(ArrayList<Point> path) {
+    public void setNewWay(List<Point> path) {
         Util.printLog(robot+"新路径："+path);
         if (path != null){
             setWay(path);
@@ -87,7 +109,7 @@ public class Route {
         return way.size() - index;
     }
 
-    public ArrayList<Point> getLeftPath() {
+    public List<Point> getLeftPath() {
         // 获取剩余路径
         if (index <= 1){
             return way;

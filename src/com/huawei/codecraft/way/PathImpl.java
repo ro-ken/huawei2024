@@ -94,7 +94,7 @@ public class PathImpl implements Path{
     }
 
     @Override
-    public ArrayList<Point> getHidePointPath(Point pos, ArrayList<Point> leftPath) {
+    public ArrayList<Point> getHidePointPath(Point pos, List<Point> leftPath) {
         if (leftPath.size() < 2) {
             printLog("Error: leftPath does not contain enough points");
             return null;
