@@ -139,8 +139,10 @@ public class Main {
             berths[id].pos.y = inStream.nextInt() + 1;
             berths[id].transport_time = inStream.nextInt();
             berths[id].loading_speed = inStream.nextInt();
+            Util.printLog("泊口："+berths[id]);
         }
         boat_capacity = inStream.nextInt();
+        Util.printLog("船的容量："+boat_capacity);
         inStream.nextLine();
         String okk = inStream.nextLine();
     }

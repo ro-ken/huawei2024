@@ -485,11 +485,11 @@ public class Robot {
     }
 
     // 选择泊口
-    private Berth pickBerth() {
+    public Berth pickBerth() {
         int minFps = 1000000000;
         Berth target=null;
         for (Berth berth: Const.berths){
-            int fps = Const.path.getPathFps(pos,berth.pos);
+            int fps = berth.getPathFps(pos);
             if (fps<minFps){
                 minFps = fps;
                 target = berth;
