@@ -124,5 +124,16 @@ public class Berth {
     }
 
 
+    public int expectLoadTime(int t0) {
+        // 在T0的时间内预计产生的货物需要装多长时间
+        // todo
+        return 20;
+    }
+
+    public int getPredictGoodNum(int time) {
+        // 从现在开始 持续time时间，返回预计有多少货物
+        // todo
+        return existGoods.size() + 10;
+    }
 }
 

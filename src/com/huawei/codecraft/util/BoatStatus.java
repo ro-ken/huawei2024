@@ -5,4 +5,5 @@ public enum BoatStatus {
     SHIP,   // 使向码头
     LOAD,   // 装货
     GO     // 去虚拟点
+
 }

@@ -8,6 +8,7 @@ import java.io.FileNotFoundException;
 import java.util.*;
 
 import com.huawei.codecraft.core.*;
+import com.huawei.codecraft.zone.Region;
 import com.huawei.codecraft.zone.RegionManager;
 import com.huawei.codecraft.util.Point;
 import com.huawei.codecraft.way.Mapinfo;
@@ -37,19 +38,20 @@ public class Main {
     private static void myInit() {
         Mapinfo.init(map);
         initRobot();
-        // 初始化船舶
-        for (int i = 0; i < boat_num; i++) {
-            boats[i] = new Boat(i);
-        }
+
         for (Berth berth : berths) {
             pointToBerth.put(berth.pos,berth);
         }
         regionManager = new RegionManager(path);
-        initZone();
+        initBoat();
     }
 
-    private static void initZone() {
-
+    private static void initBoat() {
+        // 初始化船舶
+        for (int i = 0; i < boat_num; i++) {
+            boats[i] = new Boat(i);
+        }
+        Boat.init();
     }
 
     // 初始化机器人信息
@@ -90,17 +92,18 @@ public class Main {
 
         frameInit();
 
+        // 处理轮船调度
         for (int i = 0; i < boat_num; i++) {
             boats[i].schedule();
         }
 
+        // 处理机器人调度
         for (Robot workRobot : workRobots) {
             workRobot.schedule();   // 调度
             workRobot.gotoNextPoint();  // 去下一个点
         }
         // 统一处理移动信息
         Robot.printRobotMove();
-        // 后续不能在调用workRobots，已被清理
     }
 
     // 每一帧开始的初始化工作
@@ -141,8 +144,8 @@ public class Main {
             berths[id].loading_speed = inStream.nextInt();
             Util.printLog("泊口："+berths[id]);
         }
-        boat_capacity = inStream.nextInt();
-        Util.printLog("船的容量："+boat_capacity);
+        Boat.capacity = inStream.nextInt();
+        Util.printLog("船的容量："+Boat.capacity);
         inStream.nextLine();
         String okk = inStream.nextLine();
     }

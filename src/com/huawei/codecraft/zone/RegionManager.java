@@ -1,5 +1,6 @@
 package com.huawei.codecraft.zone;
 
+import com.huawei.codecraft.Util;
 import com.huawei.codecraft.core.Berth;
 import com.huawei.codecraft.core.Robot;
 import com.huawei.codecraft.util.Point;
@@ -20,8 +21,7 @@ import static com.huawei.codecraft.way.Mapinfo.map;
  * Description: 管理region，向上提供接口
  */
 public class RegionManager {
-    private final List<Region> regions;     // 地图所有的region
-    private final Set<Zone> zones;         // 地图的大连通区域
+    public final List<Region> regions;     // 地图所有的region
     private final Map<Point, Region> pointRegionMap;    // point 到 region 的映射，查找点属于的 region
     private final Map<Point, Map<Berth, List<Point>>> globalPointToClosestBerthPath;    // 获取离点最近的泊位的路径
 
@@ -33,13 +33,16 @@ public class RegionManager {
      */
     public RegionManager(Path pathFinder) {
         this.regions = new ArrayList<>();
-        this.zones = new HashSet<>();
         this.pointRegionMap = new HashMap<>();
         this.pathFinder = pathFinder;  // 通过构造器注入 Path 实现
         this.globalPointToClosestBerthPath = new HashMap<>();
         createRegions();
         splitRegions();
-//        assignRobots();
+        assignRobots();
+        for (Zone zone : zones) {
+            printLog(zone);
+        }
+
     }
 
     /**

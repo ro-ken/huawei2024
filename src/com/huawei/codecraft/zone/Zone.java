@@ -24,4 +24,14 @@ public class Zone {
     public void addRegion(Region region) {
         this.regions.add(region);
     }
+
+    @Override
+    public String toString() {
+        return "Zone{" +
+                "id=" + id +
+                ", robots=" + robots +
+                ", berths=" + berths +
+                ", regions=" + regions +
+                '}';
+    }
 }

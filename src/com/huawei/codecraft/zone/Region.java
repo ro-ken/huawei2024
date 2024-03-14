@@ -4,6 +4,7 @@ import com.huawei.codecraft.core.Berth;
 import com.huawei.codecraft.core.Robot;
 import com.huawei.codecraft.util.Point;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -13,10 +14,10 @@ import java.util.Set;
  * Description: 划分地图为不同的区域，方便搜索和寻路
  */
 public class Region {
-    private final int id;                           // 区域 id
-    private final Set<Berth> berths;                // 区域中的泊位
-    private final Set<Point> accessiblePoints;      // 区域中的可达到点
-    private final Set<Robot> assignedRobots;        // 分配给区域的机器人
+    public final int id;                           // 区域 id
+    public final Set<Berth> berths;                // 区域中的泊位
+    public final Set<Point> accessiblePoints;      // 区域中的可达到点
+    public final Set<Robot> assignedRobots;        // 分配给区域的机器人
 
     /**
      * 构造函数
@@ -55,5 +56,44 @@ public class Region {
 
     public Set<Robot> getAssignedRobots() {
         return assignedRobots;
+    }
+
+    @Override
+    public String toString() {
+        return "Region{" +
+                "id=" + id +
+                ", berths=" + berths +
+                ", assignedRobots=" + assignedRobots +
+                '}';
+    }
+
+    // 获取该区域内两个最近的泊口,次近的，...
+    public ArrayList<Berth> getCloestTwinsBerth() {
+        if (berths.size()<2){
+            return new ArrayList<>();
+        }
+        if (berths.size() == 2){
+            return new ArrayList<>(berths);
+        }
+        ArrayList<Berth> clone = new ArrayList<>(berths);
+        ArrayList<Berth> res = new ArrayList<>();
+        do {
+            ArrayList<Berth> tmp = new ArrayList<>(clone);
+            Berth b0 = clone.get(0);
+            Berth b1 = clone.get(1);
+            int min = b0.getPathFps(b1.pos);
+            for (int i = 0; i < tmp.size()-1; i++) {
+                for (int j = i+1; j < tmp.size(); j++) {
+                    if (tmp.get(i).getPathFps(tmp.get(j).pos) < min){
+                        min = tmp.get(i).getPathFps(tmp.get(j).pos);
+                        b0 = tmp.get(i) ; b1 = tmp.get(j);
+                    }
+                }
+            }
+            res.add(b0);res.add(b1);
+            clone.remove(b0);clone.remove(b1);
+        }while (clone.size()>=2);
+
+        return res;
     }
 }

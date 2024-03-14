@@ -29,7 +29,8 @@ public class Const {
 
     // 总共帧数 5分钟
     public static final int totalFrame= 5 * 60 * 50;
-    public static int money, boat_capacity, frameId;
+    public static final int b2bFps = 500;   // 泊位到泊位时间
+    public static int money, frameId;
     // 存放地图字符
     public static char[][] map = new char[mapWidth][mapWidth];
     public static Object[][] ObjectMap = new Object[mapWidth][mapWidth];
@@ -43,7 +44,7 @@ public class Const {
     public static final int unreachableFps = 1000000;       // 不可达的时间
     public static HashSet<Robot> workRobots = new HashSet<>();// 每帧可以工作的机器人
     public static HashSet<Point> invalidPoints = new HashSet<>();   // 每帧的无效点
-    public static ArrayList<Zone> Zones = new ArrayList<>();    // 陆地划分的区域
+    public static ArrayList<Zone> zones = new ArrayList<>();    // 陆地划分的区域
     public static RegionManager regionManager;
 
 }
