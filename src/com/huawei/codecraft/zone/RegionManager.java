@@ -169,6 +169,9 @@ public class RegionManager {
 
             // 将大区域内剩余的点分配到最近的新区域
             allocateRemainingPoints(largeRegion, newRegions);
+
+            // 为新分割的 region 添加邻近的region
+            addNeighborRegion(newRegions);
         }
 
         // 更新区域集合
@@ -236,6 +239,38 @@ public class RegionManager {
             }
         }
     }
+
+    // 为新分割的 region 增加邻居 region
+    private void addNeighborRegion(List<Region> newRegions) {
+        for (Region currentRegion : newRegions) {
+            Map<Region, Integer> neighborDistances = new HashMap<>(); // 应该在这里初始化，保证每个区域的邻居信息是独立的
+
+            for (Berth currentBerth : currentRegion.getBerths()) {
+                for (Region potentialNeighborRegion : newRegions) {
+                    if (currentRegion == potentialNeighborRegion) {
+                        continue; // Skip self
+                    }
+
+                    for (Berth neighborBerth : potentialNeighborRegion.getBerths()) {
+                        List<Point> path = currentBerth.mapPath.get(neighborBerth.pos);
+                        if (path != null) {
+                            int currentDistance = path.size();
+                            neighborDistances.merge(potentialNeighborRegion, currentDistance, Math::min);
+                        }
+                    }
+                }
+            }
+
+            List<Map.Entry<Region, Integer>> sortedNeighbors = new ArrayList<>(neighborDistances.entrySet());
+            sortedNeighbors.sort(Map.Entry.comparingByValue());
+
+            currentRegion.neighborRegions.clear(); // Ensure neighborRegions is empty before adding new neighbors
+            for (Map.Entry<Region, Integer> entry : sortedNeighbors) {
+                currentRegion.neighborRegions.add(entry.getKey());
+            }
+        }
+    }
+
 
     // 将剩余点进行分配，根据点离得最近的泊位作为区域划分的条件
     private void allocateRemainingPoints(Region largeRegion, List<Region> newRegions) {
@@ -468,6 +503,34 @@ public class RegionManager {
             }
             System.out.println("  Accessible points in region: " + region.getAccessiblePoints().size());
             System.out.println("  Assigned robots in region: " + region.getAssignedRobots().size());
+        }
+    }
+
+    private int getShortestDistanceBetweenRegions(Region region1, Region region2) {
+        int shortestDistance = unreachableFps;
+
+        for (Berth berth1 : region1.berths) {
+            for (Berth berth2 : region2.berths) {
+                List<Point> path = berth1.mapPath.get(berth2.pos);
+                if (path != null && path.size() < shortestDistance) {
+                    shortestDistance = path.size();
+                }
+            }
+        }
+
+        return shortestDistance;
+    }
+
+    public void printNeighborRegionsDetails() {
+        System.out.println("Total regions: " + regions.size());
+        for (Region region : regions) {
+            System.out.println("Region ID: " + region.id);
+            System.out.println("  Neighbor regions and distances:");
+
+            for (Region neighborRegion : region.neighborRegions) {
+                int distance = getShortestDistanceBetweenRegions(region, neighborRegion);
+                System.out.println("    Neighbor Region ID: " + neighborRegion.id + ", Distance: " + distance);
+            }
         }
     }
 

@@ -18,6 +18,7 @@ public class Region {
     public final Set<Berth> berths;                // 区域中的泊位
     public final Set<Point> accessiblePoints;      // 区域中的可达到点
     public final Set<Robot> assignedRobots;        // 分配给区域的机器人
+    public final ArrayList<Region> neighborRegions;     // 距离当前region最近的region
 
     /**
      * 构造函数
@@ -28,6 +29,7 @@ public class Region {
         this.berths = new HashSet<>();
         this.accessiblePoints = new HashSet<>();
         this.assignedRobots = new HashSet<>();
+        this.neighborRegions = new ArrayList<>();
     }
 
     public void addBerth(Berth berth) {
@@ -57,7 +59,9 @@ public class Region {
     public Set<Robot> getAssignedRobots() {
         return assignedRobots;
     }
-
+    public ArrayList<Region> getNeighborRegions() {
+        return neighborRegions;
+    }
     @Override
     public String toString() {
         return "Region{" +
