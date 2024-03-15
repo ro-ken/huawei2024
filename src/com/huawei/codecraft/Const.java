@@ -42,6 +42,8 @@ public class Const {
     public static Path path = new PathImpl(); // 修改Path实现
     public static Map<Point,Berth> pointToBerth = new HashMap<>();  // 左上角位置到泊位的映射
     public static final int unreachableFps = 1000000;       // 不可达的时间
+    public static final double upperQuantile = 0.1;         // 上分位点
+    public static final int minThreshold = 40;              // 设定的最大阈值, 超过这个就不合并
     public static HashSet<Robot> workRobots = new HashSet<>();// 每帧可以工作的机器人
     public static HashSet<Point> invalidPoints = new HashSet<>();   // 每帧的无效点
     public static ArrayList<Zone> zones = new ArrayList<>();    // 陆地划分的区域

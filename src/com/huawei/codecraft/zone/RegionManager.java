@@ -1,6 +1,5 @@
 package com.huawei.codecraft.zone;
 
-import com.huawei.codecraft.Util;
 import com.huawei.codecraft.core.Berth;
 import com.huawei.codecraft.core.Robot;
 import com.huawei.codecraft.util.Point;
@@ -11,8 +10,8 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static com.huawei.codecraft.Const.*;
-import static com.huawei.codecraft.way.Mapinfo.isValid;
 import static com.huawei.codecraft.Util.printLog;
+import static com.huawei.codecraft.way.Mapinfo.isValid;
 import static com.huawei.codecraft.way.Mapinfo.map;
 
 /**
@@ -199,10 +198,9 @@ public class RegionManager {
         if (distances.isEmpty()) {
             return unreachableFps;
         }
-
         Collections.sort(distances);
-        int thresholdIndex = (int) (distances.size() * 0.1);  // 调整百分比以得到所需阈值大小
-        return distances.get(thresholdIndex);
+        int thresholdIndex = (int) (distances.size() * upperQuantile);  // 调整百分比以得到所需阈值大小
+        return Math.min(distances.get(thresholdIndex), minThreshold);
     }
 
 
