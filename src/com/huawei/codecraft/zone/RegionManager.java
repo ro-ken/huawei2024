@@ -1,7 +1,10 @@
 package com.huawei.codecraft.zone;
 
+import com.huawei.codecraft.Util;
 import com.huawei.codecraft.core.Berth;
+import com.huawei.codecraft.core.Good;
 import com.huawei.codecraft.core.Robot;
+import com.huawei.codecraft.util.Pair;
 import com.huawei.codecraft.util.Point;
 import com.huawei.codecraft.way.Path;
 
@@ -37,12 +40,16 @@ public class RegionManager {
         this.globalPointToClosestBerthPath = new HashMap<>();
         createRegions();
         splitRegions();
-        assignRobots();
+        assignRobotsToZone();
+        assignRobotsToRegion(); // 给区域分配机器人
+
         for (Zone zone : zones) {
             printLog(zone);
         }
 
     }
+
+
 
     /**
      * 接口函数定义位置，向上提供接口
@@ -100,6 +107,33 @@ public class RegionManager {
             queue.add(new Point(x, y + 1));
             queue.add(new Point(x, y - 1));
         }
+    }
+
+    public void addNewGood(Good newGood) {
+        if (newGood == null){
+            Util.printErr("addNewGood newGood == null");
+            return;
+        }
+        // 增加新物品
+        Region region = pointRegionMap.get(newGood.pos);
+        if (region == null){
+            Util.printErr("addNewGood region == null");
+            return;
+        }
+        Berth berth = region.getPointToBerth(newGood.pos);
+        if (berth == null){
+            Util.printErr("addNewGood berth == null");
+            return;
+        }
+
+        // 计算物品的价值
+        Pair<Good> pair = berth.calcGoodValue(newGood);
+
+        // 下面是原子操作，不能分开
+        berth.domainGoodsByTime.add(newGood);
+        berth.domainGoodsByValue.add(pair);
+        region.regionGoodsByTime.add(newGood);
+        region.regionGoodsByValue.add(pair);
     }
 
     /**
@@ -392,7 +426,7 @@ public class RegionManager {
      * @function 为zone分配机器人，
      *
      */
-    private void assignRobots() {
+    private void assignRobotsToZone() {
         // 遍历每个机器人
         for (Robot robot : robots) {  // 直接使用 robots，无需 Const.robots
             // 获取机器人的当前位置
@@ -412,6 +446,29 @@ public class RegionManager {
                 }
             }
         }
+    }
+
+    /**
+     * 给每个区域静态划分机器人，保证每个区域至少一个机器人，机器人少于区域数另说
+     */
+    private void assignRobotsToRegion() {
+        for (Region region : regions) {
+            region.calcStaticValue();
+        }
+
+
+        // 区域、机器人双向引用
+        for (Zone zone : zones) {
+            // 取出每个联通区有那些区域以及机器人
+            // 先计算每个区域该分多少机器人
+            int region_num = zone.regions.size();
+            int robot_num = zone.robots.size();
+
+
+
+        }
+
+
     }
 
     /**********************************************************************************
@@ -502,7 +559,7 @@ public class RegionManager {
                 System.out.println("    Berth at: " + berth.pos);
             }
             System.out.println("  Accessible points in region: " + region.getAccessiblePoints().size());
-            System.out.println("  Assigned robots in region: " + region.getAssignedRobots().size());
+            System.out.println("  Assigned robots in region: " + region.staticAssignRobots.size());
         }
     }
 
@@ -551,7 +608,7 @@ public class RegionManager {
                     }
                     writer.println();  // Move to the next line after printing all points of the region.
                 }
-                writer.println("  Assigned robots in region: " + region.getAssignedRobots().size());
+                writer.println("  Assigned robots in region: " + region.staticAssignRobots.size());
             }
         } catch (Exception e) {
             e.printStackTrace();
