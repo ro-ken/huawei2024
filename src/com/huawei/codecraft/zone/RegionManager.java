@@ -237,7 +237,7 @@ public class RegionManager {
         }
         Collections.sort(distances);
         int thresholdIndex = (int) (distances.size() * upperQuantile);  // 调整百分比以得到所需阈值大小
-        return Math.min(distances.get(thresholdIndex), minThreshold);
+        return Math.min(distances.get(thresholdIndex), maxThreshold);
     }
 
 
@@ -277,12 +277,12 @@ public class RegionManager {
     // 为新分割的 region 增加邻居 region
     private void addNeighborRegion(List<Region> newRegions) {
         for (Region currentRegion : newRegions) {
-            Map<Region, Integer> neighborDistances = new HashMap<>(); // 应该在这里初始化，保证每个区域的邻居信息是独立的
+            Map<Region, Integer> neighborDistances = new HashMap<>();
 
             for (Berth currentBerth : currentRegion.getBerths()) {
                 for (Region potentialNeighborRegion : newRegions) {
                     if (currentRegion == potentialNeighborRegion) {
-                        continue; // Skip self
+                        continue;
                     }
 
                     for (Berth neighborBerth : potentialNeighborRegion.getBerths()) {
@@ -298,7 +298,7 @@ public class RegionManager {
             List<Map.Entry<Region, Integer>> sortedNeighbors = new ArrayList<>(neighborDistances.entrySet());
             sortedNeighbors.sort(Map.Entry.comparingByValue());
 
-            currentRegion.neighborRegions.clear(); // Ensure neighborRegions is empty before adding new neighbors
+            currentRegion.neighborRegions.clear();
             for (Map.Entry<Region, Integer> entry : sortedNeighbors) {
                 currentRegion.neighborRegions.add(entry.getKey());
             }
@@ -315,7 +315,7 @@ public class RegionManager {
         }
 
         // 根据bfs得到点到泊位的最短路进行划分点的所属区域
-        allocatepoint2region(newRegions);
+        allocatePoints2region(newRegions);
     }
 
     // 从泊位开始bfs进行扩散，保留最短的路径
@@ -387,8 +387,8 @@ public class RegionManager {
     }
 
 
-    // 将点分配给其所属的区域，按照距离进行划分
-    private void allocatepoint2region(List<Region> newRegions) {
+    // 将点分配给其所属的区域，按照距离进行划分,同时记录该长度
+    private void allocatePoints2region(List<Region> newRegions) {
         for (Map.Entry<Point, Map<Berth, List<Point>>> entry : globalPointToClosestBerthPath.entrySet()) {
             Point point = entry.getKey();
             Map<Berth, List<Point>> closestPaths = entry.getValue();
@@ -407,6 +407,10 @@ public class RegionManager {
                 Region region = findRegionByBerth(closestBerth, newRegions);
                 if (region != null) {
                     region.addAccessiblePoint(point);
+
+                    // 更新路径长度的统计信息
+                    int pathLength = shortestPath.size() - 1; // 减1以排除起始点本身
+                    region.pathLenToNumMap.merge(pathLength, 1, Integer::sum);
                 }
             }
         }
@@ -559,7 +563,11 @@ public class RegionManager {
                 System.out.println("    Berth at: " + berth.pos);
             }
             System.out.println("  Accessible points in region: " + region.getAccessiblePoints().size());
-            System.out.println("  Assigned robots in region: " + region.staticAssignRobots.size());
+//            System.out.println("  Assigned robots in region: " + region.getAssignedRobots().size());
+            System.out.println("  Path lengths and their frequencies: ");
+            for (Map.Entry<Integer, Integer> entry : region.getPathLenToNumMap().entrySet()) {
+                System.out.println("    Path length: " + entry.getKey() + ", Number of points: " + entry.getValue());
+            }
         }
     }
 

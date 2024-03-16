@@ -37,7 +37,7 @@ public class Region {
         this.staticAssignRobots = new HashSet<>();
         this.neighborRegions = new ArrayList<>();
         this.realAssignRobots = new HashSet<>();
-        pathLenToNumMap = new HashMap<>();
+        this.pathLenToNumMap = new HashMap<>();
     }
 
     public void addBerth(Berth berth) {
@@ -64,6 +64,11 @@ public class Region {
     public ArrayList<Region> getNeighborRegions() {
         return neighborRegions;
     }
+
+    public Map<Integer, Integer> getPathLenToNumMap() {
+        return pathLenToNumMap;
+    }
+
     @Override
     public String toString() {
         return "Region{" +
