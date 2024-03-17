@@ -22,15 +22,15 @@ public class Region {
     public final int id;                           // 区域 id
     public Zone zone;   // 该区域对应的zone;
     public final Set<Berth> berths;                // 区域中的泊位
-    public final Set<Point> accessiblePoints;      // 区域中的可达到点
+    public final Set<Point> accessiblePoints;      // 该区域管理的点
     public final Map<Integer,Integer> pathLenToNumMap;      // 计算区域点到泊口长度对应个数的map
-    public final Set<Robot> assignedRobots;        // 初始静态分配给区域的机器人
+    public final Set<Robot> assignedRobots;        // 分配给区域的机器人
     public double expLen1,expLen2 ;     // 分配一个、两个机器人的期望搬运距离
     public  int staticAssignNum = 0;        // 静态分配给区域的机器人个数
-    public final Set<Robot> realAssignRobots;        // 真实分配给区域的机器人
     public final ArrayList<Region> neighborRegions;     // 距离当前region最近的region
     public PriorityQueue<Pair<Good>> regionGoodsByValue = new PriorityQueue<>();  // 需要被运输的货物,按照单位价值排序
     public Deque<Good> regionGoodsByTime = new LinkedList<>();      // 需要被运输的货物,按照时间先后排序
+    public TreeMap<Integer,Integer> disToNum = new TreeMap<>();     // 物品离泊口距离到数量的映射，距离泊口多少米的地方出现了几次
 
     /**
      * 构造函数
@@ -42,7 +42,6 @@ public class Region {
         this.accessiblePoints = new HashSet<>();
         this.assignedRobots = new HashSet<>();
         this.neighborRegions = new ArrayList<>();
-        this.realAssignRobots = new HashSet<>();
         this.pathLenToNumMap = new HashMap<>();
     }
 
@@ -84,8 +83,6 @@ public class Region {
     public String toString() {
         return "Region{" +
                 "id=" + id +
-                ", berths=" + berths +
-                ", assignedRobots=" + assignedRobots +
                 '}';
     }
 
@@ -180,11 +177,13 @@ public class Region {
     }
 
     public void addNewGood(Good newGood) {
-        Berth berth = regionManager.getPointBelongedBerth(newGood.pos);
+        Berth berth = regionManager.globalPointToClosestBerth.get(newGood.pos);
         if (berth == null){
             Util.printErr("addNewGood berth == null");
             return;
         }
+        int dis = berth.mapPath.get(newGood.pos).size();
+        disToNum.merge(dis, 1, Integer::sum);   // 统计自身区域的物品数
         // 计算物品的价值
         Pair<Good> pair = berth.calcGoodValue(newGood);
         // 下面是原子操作，不能分开
@@ -195,11 +194,10 @@ public class Region {
     }
 
     public Twins<Berth,Good> getLeastGood() {
-        Util.printDebug("查看拥有物品"+regionGoodsByTime);
         // 获取最久的物品
         while (!regionGoodsByTime.isEmpty()){
             Good good = regionGoodsByTime.pop();
-            Berth berth = regionManager.getPointBelongedBerth(good.pos);
+            Berth berth = regionManager.globalPointToClosestBerth.get(good.pos);
             berth.removeDomainGood(good);   // 能与不能都删掉
             if (berth.canCarryGood(good)){
                 return new Twins<>(berth,good);
@@ -226,9 +224,80 @@ public class Region {
         this.zone = zone;
     }
 
-    public boolean pointInMyRegion(Point pos) {
-        // 这个点在我的区域中
-        Berth berth = regionManager.getPointBelongedBerth(pos);
-        return berths.contains(berth);
+    public double removeRobotLoss() {
+        // 计算删除一个机器人的单位价值损失
+        int num = assignedRobots.size();
+        if (num == 0)  return 0;
+        double v1 = calcCurRegionValue(num);
+        double v2 = calcCurRegionValue(num-1);
+        Util.printDebug(this+"loss R num:"+num+"v1:"+v1+"v2:"+v2);
+        return v1-v2;
+    }
+
+    public double addRobotProfit() {
+        // 计算得到一个机器人的单位价值增益
+        int num = assignedRobots.size();
+        double v1 = calcCurRegionValue(num);
+        double v2 = calcCurRegionValue(num+1);
+        Util.printDebug(this+"profit R num:"+num+"v1:"+v1+"v2:"+v2);
+        return v2-v1;
+    }
+
+    // 这个只有在帧数够多的时候才能计算，不然可能出现偶然性
+    private double calcCurRegionValue(int num) {
+        // 计算该区域机器人数量为num时单位时间产生的收益
+        double totalTime = Good.maxSurvive * num;
+        // 统计totalTime时长内的总价值，按价值高低排序
+        double countDis = 0;// countNum 计算的事从0到frameID的物品，我们要计算0-totalTime的物品，所有物品数要倍除
+        double factor = frameId / totalTime;
+        double countNum = 0;
+        for (Map.Entry<Integer, Integer> entry : disToNum.entrySet()) {
+            double realNum = entry.getValue() / factor;
+            countDis = entry.getKey() * realNum * 2;   // 来回时间 * 2
+            countNum += realNum;
+            if (countDis > totalTime){
+                double t = (countDis - totalTime)/2;
+                countNum -= t / entry.getKey(); // 多加了，减回去
+                break;  // 时间到了
+            }
+        }
+
+        // 单位价值为总价值/时间
+        double totalValue = countNum * avgGoodValue;
+        double expValue = totalValue / totalTime;   // 期望价值
+
+        // 期望价值还要结合现有货物算综合价值
+        int realTime = 0;   // 已存在
+        int realValue = 0;
+        // 计算区域已存在价值，只统计价值大于期望的点认为是有价值的
+        for (Pair<Good> pair : regionGoodsByValue) {
+            if (pair.getValue() > expValue){
+                // 注意这两者价值计算是否统一
+                Good good = pair.getKey();  // 后续可将无用的good去掉
+                int fps = getClosestBerthPathFps(good.pos);
+                if (fps > good.leftFps()) continue;
+                realTime += fps * 2;
+                realValue += good.value;
+            }
+        }
+        // 计算一个周期的平均价值 = 周期期望价值 + 现有价值 / 周期
+        double totalAvg = (totalValue + realValue )/(totalTime + realTime);
+
+        return totalAvg;
+    }
+
+
+    public double calcToRegionDis(Region tar) {
+        // 计算到其他region的价值
+        // 计算最近两个泊口的距离
+        int min = unreachableFps;
+        for (Berth berth : this.berths) {
+            Berth ber = tar.getClosestBerthByPos(berth.pos);
+            int dis = berth.mapPath.get(ber.pos).size();
+            if (dis < min){
+                min = dis;
+            }
+        }
+        return min;
     }
 }

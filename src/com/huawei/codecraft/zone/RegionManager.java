@@ -43,9 +43,9 @@ public class RegionManager {
         assignRobotsToZone();
 
 
-        for (Berth berth : berths) {
-            Util.printDebug(berth+":"+berth.mapPath+"size:"+berth.mapPath.size());
-        }
+//        for (Berth berth : berths) {
+//            Util.printDebug(berth+":"+berth.mapPath+"size:"+berth.mapPath.size());
+//        }
 
 
         assignRobotsToRegion(); // 给区域分配机器人
@@ -56,9 +56,9 @@ public class RegionManager {
 
         Util.printLog("打印区域分配信息");
         Util.printDebug(pointRegionMap);
-        for (Map.Entry<Point, Region> pointRegionEntry : pointRegionMap.entrySet()) {
-            printLog(pointRegionEntry.getKey()+"->"+pointRegionEntry.getValue().getId());
-        }
+//        for (Map.Entry<Point, Region> pointRegionEntry : pointRegionMap.entrySet()) {
+//            printLog(pointRegionEntry.getKey()+"->"+pointRegionEntry.getValue().getId());
+//        }
 //        for (Map.Entry<Point, Map<Berth, List<Point>>> pointMapEntry : globalPointToClosestBerthPath.entrySet()) {
 //            Util.printDebug(pointMapEntry.getKey());
 //            for (Map.Entry<Berth, List<Point>> entry : pointMapEntry.getValue().entrySet()) {
@@ -143,7 +143,6 @@ public class RegionManager {
         }
         // 增加新物品
         Region region = pointRegionMap.get(newGood.pos);
-//        Region region = getPointBelongedBerth(newGood.pos).region; // todo 暂时用用
         if (region == null){
             Util.printErr("addNewGood region == null");
             return;
@@ -155,29 +154,6 @@ public class RegionManager {
         printLog(region.regionGoodsByTime);
         printLog(region.regionGoodsByValue);
     }
-
-    // 返回该点对应的泊口以及路径
-    public Twins<Berth,List<Point>> getPointBelongedBerthAndPath(Point pos) {
-        // 返回该点属于哪个泊口
-//        Map<Berth, List<Point>> berthListMap = globalPointToClosestBerth.get();
-//        for (Map.Entry<Berth, List<Point>> entry : berthListMap.entrySet()) {
-//            return new Twins<>(entry.getKey(),entry.getValue());
-//        }
-        return null;
-    }
-
-    // 找出该区域下点对应的berth
-    public Berth getPointBelongedBerth(Point pos) {
-//        Twins<Berth, List<Point>> pointBelongBerth = regionManager.getPointBelongedBerthAndPath(pos);
-        Region region = pointRegionMap.get(pos);
-        Berth berth = region.getClosestBerthByPos(pos);     // todo 暂时用用
-        if (berth == null){
-            Util.printErr("getPointToBerth");
-            return null;
-        }
-        return berth;
-    }
-
 
     /**
      * ClassName: RegionManager
@@ -472,84 +448,16 @@ public class RegionManager {
             region.calcStaticValue();
         }
         //计算每个区域应该分多少机器人
-        assignRegionRobotNum();
-        // 直到了分配的数量以后，加下来分配具体的机器人
-        printRegion();
-        assignSpecificRegionRobot();
-    }
-
-    private void assignSpecificRegionRobot() {
+        for (Zone zone : zones) {
+            zone.assignRegionRobotNum();
+        }
+//        printRegion();
         // 给每个区域具体划分机器人，看其位置，就近划分
         for (Zone zone : zones) {
-            ArrayList<Robot> rs = new ArrayList<>(zone.robots);
-            for (Region region : zone.regions) {
-                for (int i = 0; i < region.staticAssignNum; i++) {
-                    Robot tar =rs.get(0);
-                    int min = region.getClosestBerthPathFps(tar.pos);
-                    for (int j = 1; j < rs.size(); j++) {
-                        int t = region.getClosestBerthPathFps(rs.get(j).pos);
-                        if (t < min){
-                            min = t;
-                            tar = rs.get(j);
-                        }
-                    }
-                    region.assignRobots(tar); // 将该机器人分配好
-                    rs.remove(tar);
-                }
-            }
-            if (!rs.isEmpty()){
-                Util.printErr("assignSpecificRegionRobot:有机器人未被分配！");
-            }
+            zone.assignSpecificRegionRobot();
         }
     }
 
-    private void assignRegionRobotNum() {
-        //计算每个区域应该分多少机器人
-        for (Zone zone : zones) {
-            // 取出每个联通区有那些区域以及机器人
-            // 先计算每个区域该分多少机器人
-            int region_num = zone.regions.size();
-            int robot_num = zone.robots.size();
-            if (region_num > robot_num){
-                ArrayList<Region> regs = new ArrayList<>(zone.regions);
-                // 区域数多，每次选出价值最大的
-                while (robot_num > 0){
-                    Region tar = regs.get(0);
-                    for (Region reg : regs) {
-                        if (reg.expLen1 < tar.expLen1){
-                            tar = reg;  // 选择期望小的
-                        }
-                    }
-                    tar.staticAssignNum = 1;
-                    robot_num --;
-                    regs.remove(tar);
-                }
-            }else {
-                ArrayList<Region> regs = new ArrayList<>(zone.regions);
-                // 机器人更多
-                for (Region reg : regs) {
-                    reg.staticAssignNum = 1;    // 每个泊口先分一个
-                }
-                robot_num -= region_num;
-                while (robot_num > 0){
-                    regs = new ArrayList<>(zone.regions);
-                    for (int i = 0; i < region_num; i++) {
-                        if (robot_num == 0) break;  // 分完了
-                        // 直到分完所有机器人
-                        Region tar = regs.get(0);
-                        for (Region reg : regs) {
-                            if (reg.expLen2 < tar.expLen2){
-                                tar = reg;  // 选择期望小的
-                            }
-                        }
-                        tar.staticAssignNum += 1;
-                        robot_num --;
-                        regs.remove(tar);
-                    }
-                }
-            }
-        }
-    }
 
     /**********************************************************************************
      * 暂留接口函数，后续看测试是否需要，后续整理在删除

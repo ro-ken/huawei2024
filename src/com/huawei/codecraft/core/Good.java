@@ -11,7 +11,7 @@ public class Good {
     public Point pos;
     // 物品消失帧数
     public int deadFrame;
-    private static final int maxSurvive = 20*50;
+    public static final int maxSurvive = 20*50;
     // 价值
     public int value;
     private Robot bookRobot ;  // 被预定的机器

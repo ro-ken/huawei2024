@@ -2,6 +2,7 @@ package com.huawei.codecraft.core;
 
 import com.huawei.codecraft.Const;
 import com.huawei.codecraft.Util;
+import com.huawei.codecraft.util.Pair;
 import com.huawei.codecraft.util.Point;
 import com.huawei.codecraft.util.RobotRunMode;
 import com.huawei.codecraft.util.Twins;
@@ -62,7 +63,7 @@ public class Robot {
         // 这个调度是机器人要换区域了，手里可能没有任务
         // 如果区域有物品，拿该区域的物品，切换正常模式，没有则走到底
         // 为了防止复杂计算，先设计到了区域再选择物品
-        if (region.pointInMyRegion(this.pos)){
+        if (region.accessiblePoints.contains(this.pos)){
             Util.printDebug("changeRegionSched ： 到达本区域id:"+region.id+""+this.pos);
             changeRegionMode = false;
         }
@@ -76,6 +77,11 @@ public class Robot {
         doTask();            // 判断该怎么走
         // 到达目的地，可能任务结束，重新分配
         if (noTask()){
+//            boolean success=region.zone.reAssignRobot(this);
+//            if (!success){
+//                // 要换区域则，要先到区域
+//                pickNewTask();
+//            }
             pickNewTask();
         }
     }
@@ -496,10 +502,25 @@ public class Robot {
 
     // 选择物品和泊口
     private Twins<Berth,Good> pickBerthAndGood() {
-        Twins<Berth,Good> twins = pickLeastGood();
+        // 这是经过全局调度之后的结果，
+//        Twins<Berth,Good> twins = pickLeastGood();
+        Twins<Berth,Good> twins = pickBestValueGood();
 
 
         return twins;
+    }
+
+    private Twins<Berth, Good> pickBestValueGood() {
+        while (!region.regionGoodsByValue.isEmpty()){
+            Pair<Good> pair = region.regionGoodsByValue.poll();
+            Good good = pair.getKey();
+            Berth berth = regionManager.globalPointToClosestBerth.get(good.pos);
+            berth.removeDomainGood(pair);   // 能与不能都删掉
+            if (berth.canCarryGood(good)){
+                return new Twins<>(berth,good);
+            }
+        }
+        return null;
     }
 
     private Twins<Berth, Good> pickLeastGood() {

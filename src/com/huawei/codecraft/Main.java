@@ -38,7 +38,7 @@ public class Main {
     public static void running(){
         input0();   // 第一帧机器人确定机器人序号
         for (int i = 0; i < totalFrame; i++) {
-            printLog("frameId:"+frameId);
+            printLog("-------------frameId:"+frameId+"--------------");
             frameInit();
             handleFrame();
             printOk();
@@ -97,15 +97,8 @@ public class Main {
 
     // 每一帧开始的初始化工作
     private static void frameInit() {
-        for (Good frameGood : frameGoods) {
-            printLog(frameGood);
-        }
-        countGoodNum += frameGoods.size();
-        for (Good good : frameGoods) {
-            countGoodValue += good.value;
-            regionManager.addNewGood(good);
-        }
 
+        updateGoodInfo();
         invalidPoints.clear();  //
         workRobots.clear();     // 每帧初始化
         for (int i = 0; i < robot_num; i++) {
@@ -119,6 +112,20 @@ public class Main {
 
         for (int i = 0; i < testRobot; i++) {
             printLog(robots[i]);
+        }
+    }
+
+    private static void updateGoodInfo() {
+        if (!frameGoods.isEmpty()){
+            for (Good frameGood : frameGoods) {
+                printLog(frameGood);
+            }
+            countGoodNum += frameGoods.size();
+            for (Good good : frameGoods) {
+                countGoodValue += good.value;
+                regionManager.addNewGood(good);
+            }
+            avgGoodValue = countGoodValue / countGoodNum;
         }
     }
 

@@ -39,21 +39,11 @@ public class Berth {
         this.loading_speed = loading_speed;
     }
 
-    //将每帧新加的货物更新自己列表
-    public void updateGoodList(ArrayList<Good> frameGoods) {
-        for (Good good:frameGoods){
-            double fps = getPathFps(good.pos)*2;    // 一个来回
-            double cost = fps/good.value;
-            Pair<Good> pair = new Pair<>(good,cost);
-            goodList.add(pair);
-        }
-    }
-
     public Pair<Good> calcGoodValue(Good good) {
         // 上层判断非空再传下来
         double fps = getPathFps(good.pos)*2;    // 一个来回
-        double cost = fps/good.value;
-        Pair<Good> pair = new Pair<>(good,cost);
+        double value = good.value/fps;
+        Pair<Good> pair = new Pair<>(good,value);
         return pair;
     }
 
@@ -123,7 +113,7 @@ public class Berth {
     public boolean canCarryGood(Good good) {
         // 计算能否去取该货物，默认机器人在泊口
         int fps = getPathFps(good.pos);
-        if (fps > good.leftFps() + 4 && good.isNotBook()){
+        if (fps < good.leftFps() + 4 && good.isNotBook()){
             // 加几帧弹性时间，怕绕路
             return true;
         }
@@ -132,17 +122,26 @@ public class Berth {
 
     public void removeDomainGood(Good good) {
         // 清除管理区域的货物,统一删除region中的
-        domainGoodsByTime.remove(good);
         Pair<Good> tar = null;
         for (Pair<Good> pair : domainGoodsByValue) {
-            if (pair.getObject() == good){
+            if (pair.getKey() == good){
                 tar = pair;
                 break;
             }
         }
-        domainGoodsByValue.remove(tar);
+        if (tar == null){
+            Util.printErr("removeDomainGood");
+            return;
+        }
+        removeDomainGood(tar);
+    }
+
+    public void removeDomainGood(Pair<Good> pair) {
+        Good good = pair.getKey();
+        domainGoodsByTime.remove(good);
+        domainGoodsByValue.remove(pair);
         region.regionGoodsByTime.remove(good);
-        region.regionGoodsByValue.remove(tar);
+        region.regionGoodsByValue.remove(pair);
     }
 }
 

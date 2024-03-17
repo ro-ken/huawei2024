@@ -51,5 +51,6 @@ public class Const {
     public static RegionManager regionManager;
     public static int countGoodNum = 0;     //已经生成的物品总数，到时候算平均价值
     public static double countGoodValue = 0;   //已经生成的物品总价值
+    public static double avgGoodValue;      // 货物的平均价值，每帧更新
 
 }
