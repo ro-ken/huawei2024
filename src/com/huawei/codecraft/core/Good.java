@@ -45,4 +45,8 @@ public class Good {
     public boolean isExist() {
         return deadFrame >= Const.frameId;
     }
+
+    public int leftFps() {
+        return deadFrame - Const.frameId;
+    }
 }

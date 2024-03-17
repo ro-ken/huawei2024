@@ -8,7 +8,6 @@ import java.io.FileNotFoundException;
 import java.util.*;
 
 import com.huawei.codecraft.core.*;
-import com.huawei.codecraft.zone.Region;
 import com.huawei.codecraft.zone.RegionManager;
 import com.huawei.codecraft.util.Point;
 import com.huawei.codecraft.way.Mapinfo;
@@ -26,6 +25,8 @@ public class Main {
 
     public static int testRobot = 10;    // 测试机器人
 
+    public static int totalValue = 0;
+
     public static void main(String[] args) throws FileNotFoundException {
         initLog();
         readInit();
@@ -34,11 +35,21 @@ public class Main {
         running();
     }
 
+    public static void running(){
+        input0();   // 第一帧机器人确定机器人序号
+        for (int i = 0; i < totalFrame; i++) {
+            printLog("frameId:"+frameId);
+            frameInit();
+            handleFrame();
+            printOk();
+            input();
+        }
+    }
+
     // 追加初始化工作
     private static void myInit() {
         Mapinfo.init(map);
         initRobot();
-
         for (Berth berth : berths) {
             pointToBerth.put(berth.pos,berth);
         }
@@ -68,29 +79,7 @@ public class Main {
         }
     }
 
-    public static void running(){
-        input0();   // 第一帧机器人确定机器人序号
-        for (int i = 0; i < totalFrame; i++) {
-            printLog("frameId:"+frameId);
-            updateBerth();
-            handleFrame();
-            printOk();
-            input();
-        }
-    }
-
-    private static void updateBerth() {
-        for (Good frameGood : frameGoods) {
-            printLog(frameGood);
-        }
-        for (Berth berth:berths) {
-            berth.updateGoodList(frameGoods);
-        }
-    }
-
     private static void handleFrame() {
-
-        frameInit();
 
         // 处理轮船调度
         for (int i = 0; i < boat_num; i++) {
@@ -108,6 +97,15 @@ public class Main {
 
     // 每一帧开始的初始化工作
     private static void frameInit() {
+        for (Good frameGood : frameGoods) {
+            printLog(frameGood);
+        }
+        countGoodNum += frameGoods.size();
+        for (Good good : frameGoods) {
+            countGoodValue += good.value;
+            regionManager.addNewGood(good);
+        }
+
         invalidPoints.clear();  //
         workRobots.clear();     // 每帧初始化
         for (int i = 0; i < robot_num; i++) {
@@ -120,8 +118,6 @@ public class Main {
         }
 
         for (int i = 0; i < testRobot; i++) {
-//            printLog(boats[i]);
-//            printLog(berths[i]);
             printLog(robots[i]);
         }
     }

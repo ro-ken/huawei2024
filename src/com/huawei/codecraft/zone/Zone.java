@@ -23,6 +23,7 @@ public class Zone {
 
     public void addRegion(Region region) {
         this.regions.add(region);
+        region.setZone(this);
     }
 
     @Override

@@ -5,6 +5,7 @@ import com.huawei.codecraft.Util;
 import com.huawei.codecraft.util.Point;
 import com.huawei.codecraft.util.RobotRunMode;
 import com.huawei.codecraft.util.Twins;
+import com.huawei.codecraft.zone.Region;
 
 import java.util.*;
 
@@ -22,6 +23,8 @@ public class Robot {
     public Berth bookBerth;  // 预定的产品
     public Route route; //
     public Point next;  // 当前帧需要移动的下一个点
+    public Region region;   // 机器人属于的区域，区域初始化赋值
+    public boolean changeRegionMode;    // 是否是换区域模式，这个模式下可以不拿物品朝目标区域走
     public RobotRunMode runMode = new RobotRunMode(this);
 
     public Robot(int id, int x, int y) {
@@ -33,22 +36,47 @@ public class Robot {
 
     public void schedule() {
         if (runMode.isHideMode()){
-            // 临时躲避模式，暂时不考虑任务
-            if (arriveTarget()){
-                // 到达目的地
-                runMode.waitFrame ++;
-            }// 否则继续
-            if (runMode.tooLong() || runMode.waitFrame >=2){
-                Point tar = runMode.beNormal();
-                changeRoad(tar);
-            }
+            hideSched();
         }else {
-            if (noTask()){
-                boolean picked = pickNewTask();
-                if (!picked) return;    // 没有可做的任务
+            if (changeRegionMode){
+                changeRegionSched();
+            }else {
+                normalSched();
             }
-            doTask();
-            // 判断该怎么走
+        }
+    }
+
+    private void hideSched() {
+        // 临时躲避模式，暂时不考虑任务
+        if (arriveTarget()){
+            // 到达目的地
+            runMode.waitFrame ++;
+        }// 否则继续
+        if (runMode.tooLong() || runMode.waitFrame >=2){
+            Point tar = runMode.beNormal();
+            changeRoad(tar);
+        }
+    }
+
+    private void changeRegionSched() {
+        // 这个调度是机器人要换区域了，手里可能没有任务
+        // 如果区域有物品，拿该区域的物品，切换正常模式，没有则走到底
+        // 为了防止复杂计算，先设计到了区域再选择物品
+        if (region.pointInMyRegion(this.pos)){
+            Util.printDebug("changeRegionSched ： 到达本区域id:"+region.id+""+this.pos);
+            changeRegionMode = false;
+        }
+    }
+
+    private void normalSched() {
+        if (noTask()){
+            boolean picked = pickNewTask();
+            if (!picked) return;    // 没有可做的任务
+        }
+        doTask();            // 判断该怎么走
+        // 到达目的地，可能任务结束，重新分配
+        if (noTask()){
+            pickNewTask();
         }
     }
 
@@ -68,20 +96,24 @@ public class Robot {
             if (arriveBerth()){
                 // 2、如果到达了泊口，卸货，任务结束
                 unloadGood(); //卸货
-                bookBerth.addGood(bookGood);
                 turnOffTask();
             }
         }
-
-        // 到达目的地，可能任务结束，重新分配
-        if (noTask()){
-            pickNewTask();
-        }
+    }
+    public void assignRegion(Region region){
+        this.region = region;
+        changeRegionMode = true;
+        Berth berth=region.getClosestBerthByPos(pos);
+//        Util.printDebug("机器人区域分配信息：");
+//        Util.printLog(this + "->" + region);
+//        Util.printLog("berth:"+berth);
+        changeRoad(berth.pos);  // 先去这个点
     }
 
     private void unloadGood() {
         Util.printPull(id);
         carry = 0;
+        bookBerth.addBerthGood(bookGood);
     }
     private void loadGood() {
         Util.printGet(id);
@@ -414,14 +446,8 @@ public class Robot {
         }
     }
 
-//    private void gotoBerth() {
-//        ArrayList<Point> path = Const.path.getToBerthPath(pos, bookBerth.pos);
-//        route.setNewWay(bookBerth.pos);
-//    }
-
     private boolean arriveBerth() {
         // 携带物品，并且到达目的地
-        Util.printDebug("已到达 " +this +" berth:"+bookBerth.pos );
         return bookBerth.inMyPlace(pos);
     }
 
@@ -439,18 +465,23 @@ public class Robot {
         return route.target.equals(pos);
     }
 
-    // 选择一个任务
+    // 当前机器人没有任务，选择一个任务
     private boolean pickNewTask() {
-        boolean picked = pickBerthAndGood();
-        if (picked){
-            boolean flag = changeRoad(bookGood.pos);
-            if (!flag) return false;        // 不能到达该路
-            turnOnTask();
-            Util.printLog("picked task robot:"+id + ",good"+bookGood+"berth:"+bookBerth);
+        Twins<Berth,Good> twins = pickBerthAndGood();
+        if (twins != null){
+            boolean canArrive = changeRoad(twins.getObj2().pos);
+            if (canArrive){
+                setBook(twins.getObj2(),twins.getObj1());
+                turnOnTask();
+                Util.printLog("picked task robot:"+id + ",good"+bookGood+"berth:"+bookBerth);
+                return true;
+            }else {
+                Util.printErr("pickNewTask:pick good can't arrive!"+this+twins.getObj2());
+            }
         }else {
-            Util.printWarn("did not find job");
+            Util.printWarn("pickNewTask:didn't find job"+this);
         }
-        return picked;
+        return false;
     }
 
     @Override
@@ -464,16 +495,18 @@ public class Robot {
     }
 
     // 选择物品和泊口
-    private boolean pickBerthAndGood() {
-        // 1、先选择与自己最近的泊口
-        // 2、选择与泊口最近的物品
-        Berth closest = pickBerth();
-        Good good = closest.getBestGood();
-        if (good != null){
-            setBook(good,closest);
-            return true;
-        }
-        return false;
+    private Twins<Berth,Good> pickBerthAndGood() {
+        Twins<Berth,Good> twins = pickLeastGood();
+
+
+        return twins;
+    }
+
+    private Twins<Berth, Good> pickLeastGood() {
+        // 选择最久远的任务，防止没有任务做
+        // 1、选择本区域最早的物品
+        Twins<Berth,Good> twins = region.getLeastGood();
+        return twins;
     }
 
     //预定物品
@@ -481,7 +514,6 @@ public class Robot {
         bookGood = good;
         good.setBook(this);
         bookBerth = berth;
-        berth.setBook(good);
     }
 
     // 选择泊口

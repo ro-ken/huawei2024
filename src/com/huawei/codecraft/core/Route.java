@@ -78,7 +78,7 @@ public class Route {
             setWay(path);
         }else {
             setWay(robot.pos);
-            Util.printErr(robot.pos);
+            Util.printErr("setNewWay，传入path为null，机器人位置："+robot.pos);
         }
     }
 

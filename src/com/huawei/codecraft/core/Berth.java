@@ -1,9 +1,11 @@
 package com.huawei.codecraft.core;
 
 import com.huawei.codecraft.Const;
+import com.huawei.codecraft.Main;
 import com.huawei.codecraft.Util;
 import com.huawei.codecraft.util.Pair;
 import com.huawei.codecraft.util.Point;
+import com.huawei.codecraft.zone.Region;
 
 import java.util.*;
 
@@ -13,8 +15,10 @@ public class Berth {
     public Point pos;
     public int transport_time;
     public int loading_speed;
-    public PriorityQueue<Pair<Good>> goodList = new PriorityQueue<>(30);
-    public Set<Good> bookGoods = new HashSet<>();
+    public Region region;  // 该泊口属于的区域，在区域初始化赋值
+    public PriorityQueue<Pair<Good>> goodList = new PriorityQueue<>();
+    public PriorityQueue<Pair<Good>> domainGoodsByValue = new PriorityQueue<>();  // 需要被运输的货物,按照单位价值排序
+    public Deque<Good> domainGoodsByTime = new LinkedList<>();      // 需要被运输的货物,按照时间先后排序
     public Set<Boat> bookBoats = new HashSet<>();
     public Deque<Good> existGoods = new LinkedList<>();     // 泊口存在的货物
     public int existValue=0;           // 泊口货物总价值
@@ -23,6 +27,10 @@ public class Berth {
     public Berth(int id) {
         pos = new Point();
         this.id = id;
+    }
+
+    public void assignRegion(Region region){
+        this.region = region;
     }
 
     public Berth(int x, int y, int transport_time, int loading_speed) {
@@ -41,7 +49,16 @@ public class Berth {
         }
     }
 
+    public Pair<Good> calcGoodValue(Good good) {
+        // 上层判断非空再传下来
+        double fps = getPathFps(good.pos)*2;    // 一个来回
+        double cost = fps/good.value;
+        Pair<Good> pair = new Pair<>(good,cost);
+        return pair;
+    }
+
     public int getPathFps(Point pos) {
+//        Util.printDebug(mapPath);
         if (mapPath.containsKey(pos)){
             return mapPath.get(pos).size();
         }else {
@@ -49,59 +66,25 @@ public class Berth {
         }
     }
 
-    // 取最佳货物
-    public Good getBestGood(){
-        ArrayList<Good> useless = new ArrayList<>();// 无效货物
-        Good target = null;
-        for (Pair<Good> pair : goodList) {
-            Good good = pair.getObject();
-            if (timeNotEnough(good)){
-                useless.add(good);
-                continue;
-            }
-            if (good.isNotBook()){
-                // 未被预定，可选
-                target = good;
-                break;
-            }else {
-                useless.add(good);
-            }
-        }
-        removeBookGoods(useless);
-        return target;
-    }
-
-    private void removeBookGoods(ArrayList<Good> useless) {
-
-    }
-
     @Override
     public String toString() {
-        return "Berth{" +
+        return "berth{" +
                 "id=" + id +
                 ", pos=" + pos +
-                ", transport_time=" + transport_time +
-                ", loading_speed=" + loading_speed +
+//                ", transport_time=" + transport_time +
+//                ", loading_speed=" + loading_speed +
                 '}';
     }
 
-    // 时间不够了
-    private boolean timeNotEnough(Good good) {
-        return false;
-    }
-
-    public void setBook(Good good) {
-        bookGoods.add(good);
-    }
-
-    public void addGood(Good good){
-        bookGoods.remove(good);
+    // 增加码头的货物
+    public void addBerthGood(Good good){
         existGoods.add(good);
         existValue += good.value;
     }
     public void removeGood(){
         Good good = existGoods.pop();
         existValue -= good.value;
+        Main.totalValue += good.value;
         if (existValue <0){
             existValue = 0;
             Util.printLog("ERROR! existValue <0");
@@ -134,6 +117,32 @@ public class Berth {
         // 从现在开始 持续time时间，返回预计有多少货物
         // todo
         return existGoods.size() + 10;
+    }
+
+
+    public boolean canCarryGood(Good good) {
+        // 计算能否去取该货物，默认机器人在泊口
+        int fps = getPathFps(good.pos);
+        if (fps > good.leftFps() + 4 && good.isNotBook()){
+            // 加几帧弹性时间，怕绕路
+            return true;
+        }
+        return false;
+    }
+
+    public void removeDomainGood(Good good) {
+        // 清除管理区域的货物,统一删除region中的
+        domainGoodsByTime.remove(good);
+        Pair<Good> tar = null;
+        for (Pair<Good> pair : domainGoodsByValue) {
+            if (pair.getObject() == good){
+                tar = pair;
+                break;
+            }
+        }
+        domainGoodsByValue.remove(tar);
+        region.regionGoodsByTime.remove(good);
+        region.regionGoodsByValue.remove(tar);
     }
 }
 

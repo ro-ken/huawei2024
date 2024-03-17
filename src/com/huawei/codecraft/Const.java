@@ -44,9 +44,12 @@ public class Const {
     public static final int unreachableFps = 1000000;       // 不可达的时间
     public static final double upperQuantile = 0.1;         // 上分位点
     public static final int maxThreshold = 40;              // 设定的最大阈值, 超过这个就不合并
+    public static double expGoodNum = 2450;     // 期望总物品数，官方回答：15/100 * 15000
     public static HashSet<Robot> workRobots = new HashSet<>();// 每帧可以工作的机器人
     public static HashSet<Point> invalidPoints = new HashSet<>();   // 每帧的无效点
     public static ArrayList<Zone> zones = new ArrayList<>();    // 陆地划分的区域
     public static RegionManager regionManager;
+    public static int countGoodNum = 0;     //已经生成的物品总数，到时候算平均价值
+    public static double countGoodValue = 0;   //已经生成的物品总价值
 
 }

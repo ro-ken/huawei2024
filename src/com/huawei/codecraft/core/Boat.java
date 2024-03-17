@@ -54,6 +54,7 @@ public class Boat {
         }
         if (status == BoatStatus.LOAD){
             if (mustGotoVirtual()){
+                clacGoods();//结算货物
                 goToVirtual();
             }else {
                 if (isLoadFinish()){
@@ -66,9 +67,6 @@ public class Boat {
                     changeBerthAndShip(berth);
                 }
             }
-        }
-        if(status == BoatStatus.GO){
-            Util.printErr("lastPeriodSched!");
         }
     }
 
@@ -180,11 +178,10 @@ public class Boat {
             berthList.remove(0);
             berthList.remove(0);
         }
-        Util.printDebug("打印boats 分配信息");
-        for (Boat boat : boats) {
-            Util.printDebug(boat.id + ":"+boat.task.berths);
-        }
-
+//        Util.printDebug("打印boats 分配信息");
+//        for (Boat boat : boats) {
+//            Util.printDebug(boat.id + ":"+boat.task.berths);
+//        }
     }
 
 

@@ -6,6 +6,7 @@ import com.huawei.codecraft.core.Good;
 import com.huawei.codecraft.core.Robot;
 import com.huawei.codecraft.util.Pair;
 import com.huawei.codecraft.util.Point;
+import com.huawei.codecraft.util.Twins;
 import com.huawei.codecraft.way.Path;
 
 import java.io.*;
@@ -13,6 +14,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static com.huawei.codecraft.Const.*;
+import static com.huawei.codecraft.Util.printDebug;
 import static com.huawei.codecraft.Util.printLog;
 import static com.huawei.codecraft.way.Mapinfo.isValid;
 import static com.huawei.codecraft.way.Mapinfo.map;
@@ -25,7 +27,7 @@ import static com.huawei.codecraft.way.Mapinfo.map;
 public class RegionManager {
     public final List<Region> regions;     // 地图所有的region
     private final Map<Point, Region> pointRegionMap;    // point 到 region 的映射，查找点属于的 region
-    private final Map<Point, Map<Berth, List<Point>>> globalPointToClosestBerthPath;    // 获取离点最近的泊位的路径
+    public final Map<Point, Map<Berth, List<Point>>> globalPointToClosestBerthPath;    // 获取离点最近的泊位的路径
 
     private final Path pathFinder;  // Path 接口的引用
 
@@ -41,15 +43,42 @@ public class RegionManager {
         createRegions();
         splitRegions();
         assignRobotsToZone();
+
+
+        for (Berth berth : berths) {
+            Util.printDebug(berth+":"+berth.mapPath+"size:"+berth.mapPath.size());
+        }
+
+
         assignRobotsToRegion(); // 给区域分配机器人
 
         for (Zone zone : zones) {
             printLog(zone);
         }
 
+        Util.printLog("打印区域分配信息");
+        Util.printDebug(pointRegionMap);
+//        for (Map.Entry<Point, Region> pointRegionEntry : pointRegionMap.entrySet()) {
+//            printLog(pointRegionEntry.getKey()+"->"+pointRegionEntry.getValue().getId());
+//        }
+//        for (Map.Entry<Point, Map<Berth, List<Point>>> pointMapEntry : globalPointToClosestBerthPath.entrySet()) {
+//            Util.printDebug(pointMapEntry.getKey());
+//            for (Map.Entry<Berth, List<Point>> entry : pointMapEntry.getValue().entrySet()) {
+//                Util.printDebug(entry.getKey());
+//            }
+//        }
+
+
+        printRegion();
     }
 
-
+    void printRegion(){
+        for (Region region : regions) {
+            printLog(region);
+            printLog(region.staticAssignNum);
+            printLog(region.assignedRobots);
+        }
+    }
 
     /**
      * 接口函数定义位置，向上提供接口
@@ -116,25 +145,41 @@ public class RegionManager {
         }
         // 增加新物品
         Region region = pointRegionMap.get(newGood.pos);
+//        Region region = getPointBelongedBerth(newGood.pos).region; // todo 暂时用用
         if (region == null){
             Util.printErr("addNewGood region == null");
             return;
         }
-        Berth berth = region.getPointToBerth(newGood.pos);
-        if (berth == null){
-            Util.printErr("addNewGood berth == null");
-            return;
-        }
 
-        // 计算物品的价值
-        Pair<Good> pair = berth.calcGoodValue(newGood);
-
-        // 下面是原子操作，不能分开
-        berth.domainGoodsByTime.add(newGood);
-        berth.domainGoodsByValue.add(pair);
-        region.regionGoodsByTime.add(newGood);
-        region.regionGoodsByValue.add(pair);
+        region.addNewGood(newGood);
+        printDebug("打印新增物品信息");
+        printLog(region);
+        printLog(region.regionGoodsByTime);
+        printLog(region.regionGoodsByValue);
     }
+
+    // 返回该点对应的泊口以及路径
+    public Twins<Berth,List<Point>> getPointBelongedBerthAndPath(Point pos) {
+        // 返回该点属于哪个泊口
+        Map<Berth, List<Point>> berthListMap = globalPointToClosestBerthPath.get(pos);
+        for (Map.Entry<Berth, List<Point>> entry : berthListMap.entrySet()) {
+            return new Twins<>(entry.getKey(),entry.getValue());
+        }
+        return null;
+    }
+
+    // 找出该区域下点对应的berth
+    public Berth getPointBelongedBerth(Point pos) {
+//        Twins<Berth, List<Point>> pointBelongBerth = regionManager.getPointBelongedBerthAndPath(pos);
+        Region region = pointRegionMap.get(pos);
+        Berth berth = region.getClosestBerthByPos(pos);     // todo 暂时用用
+        if (berth == null){
+            Util.printErr("getPointToBerth");
+            return null;
+        }
+        return berth;
+    }
+
 
     /**
      * ClassName: RegionManager
@@ -264,7 +309,8 @@ public class RegionManager {
                 Region region = new Region(newRegions.size());
                 newRegions.add(region);  // 先添加，确保ID的唯一性
                 rootToRegion.put(root, region);
-                zone.regions.add(region);  // 将新区域添加到Zone的regions集合中
+                zone.addRegion(region); // 将新区域添加到Zone的regions集合中
+//                zone.regions.add(region);
             }
             Region region = rootToRegion.get(root);
             Berth berth = pointToBerth.get(point);
@@ -319,7 +365,7 @@ public class RegionManager {
     }
 
     // 从泊位开始bfs进行扩散，保留最短的路径
-    private void bfsFromBerth(Berth berth) {
+    private void bfsFromBerth2(Berth berth) {
         Queue<Point> queue = new LinkedList<>();
         Point start = berth.pos;
         queue.add(start);
@@ -387,31 +433,145 @@ public class RegionManager {
     }
 
 
+//    private void bfsFromBerth(Berth berth) {
+//        Queue<Point> queue = new LinkedList<>();
+//        Point start = berth.pos;
+//        queue.add(start);
+//
+//        Map<Point, List<Point>> visitedPaths = new HashMap<>();
+//        visitedPaths.put(start, new ArrayList<>(Collections.singletonList(start)));
+//
+//        boolean[][] visited = new boolean[mapWidth][mapWidth];
+//        visited[start.x][start.y] = true;
+//
+//        while (!queue.isEmpty()) {
+//            Point current = queue.poll();
+//            List<Point> currentPath = visitedPaths.get(current);
+//
+//            for (int[] dir : new int[][]{{0, 1}, {0, -1}, {-1, 0}, {1, 0}}) {
+//                int newX = current.x + dir[0];
+//                int newY = current.y + dir[1];
+//                Point nextPoint = new Point(newX, newY);
+//
+//                if (pointRegionMap.containsKey(nextPoint) && !visited[newX][newY]) {
+//                    visited[newX][newY] = true;
+//
+//                    List<Point> newPath = new ArrayList<>(currentPath);
+//                    newPath.add(nextPoint);
+//
+//                    visitedPaths.put(nextPoint, newPath);
+//                    queue.add(nextPoint);  // 将新探索点加入队列
+//
+//                    // 更新全局最短路径信息
+//                    // 只保留到最近泊位的最短路径
+//                    globalPointToClosestBerthPath.compute(nextPoint, (point, berthToPathMap) -> {
+//                        if (berthToPathMap == null) {
+//                            berthToPathMap = new HashMap<>();
+//                            berthToPathMap.put(berth, newPath);
+//                        } else {
+//                            for (Map.Entry<Berth, List<Point>> entry : berthToPathMap.entrySet()) {
+//                                List<Point> existingPath = entry.getValue();
+//                                if (newPath.size() < existingPath.size()) {
+//                                    berthToPathMap.clear(); // 清除旧的更长的路径
+//                                    berthToPathMap.put(berth, newPath); // 更新为更短的路径
+//                                    break;
+//                                }
+//                            }
+//                        }
+//                        return berthToPathMap;
+//                    });
+//                }
+//            }
+//        }
+//
+//        // 将每个泊位的路径信息更新到泊位对象
+//        for (Map.Entry<Point, List<Point>> entry : visitedPaths.entrySet()) {
+//            List<Point> path = entry.getValue();
+//            Point endPoint = path.get(path.size() - 1);
+//
+//            // 确保路径以泊位为起点，或者路径终点为泊位需要反转
+//            if (!path.isEmpty() && (path.get(0).equals(start) || endPoint.equals(start))) {
+//                if (endPoint.equals(start)) {
+//                    berth.mapPath.put(entry.getKey(), path);
+//                }
+//            }
+//
+//            // 保证泊位点归属于泊位的所在区域
+//            globalPointToClosestBerthPath.computeIfAbsent(start, k -> new HashMap<>()).put(berth, new ArrayList<>(Collections.singletonList(start)));
+//        }
+//    }
+
+
+    private void bfsFromBerth(Berth berth) {
+        Queue<Point> queue = new LinkedList<>();
+        Point start = berth.pos;
+        queue.add(start);
+
+        Map<Point, List<Point>> visitedPaths = new HashMap<>();
+        visitedPaths.put(start, new ArrayList<>(Collections.singletonList(start)));
+
+        boolean[][] visited = new boolean[mapWidth][mapWidth];
+        visited[start.x][start.y] = true;
+
+        while (!queue.isEmpty()) {
+            Point current = queue.poll();
+            List<Point> currentPath = visitedPaths.get(current);
+
+            for (int[] dir : new int[][]{{0, 1}, {0, -1}, {-1, 0}, {1, 0}}) {
+                int newX = current.x + dir[0];
+                int newY = current.y + dir[1];
+                Point nextPoint = new Point(newX, newY);
+
+                if (pointRegionMap.containsKey(nextPoint) && !visited[newX][newY]) {
+                    visited[newX][newY] = true;
+
+                    List<Point> newPath = new ArrayList<>(currentPath);
+                    newPath.add(nextPoint);
+
+                    visitedPaths.put(nextPoint, newPath);
+                    queue.add(nextPoint);  // 将新探索点加入队列
+
+                    // 更新全局最短路径信息
+                    // 只保留到最近泊位的最短路径
+                    globalPointToClosestBerthPath.compute(nextPoint, (point, currentShortestPathMap) -> {
+                        if (currentShortestPathMap == null) {
+                            currentShortestPathMap = new HashMap<>();
+                            currentShortestPathMap.put(berth, newPath);
+                        } else {
+                            List<Point> currentShortestPath = currentShortestPathMap.entrySet().iterator().next().getValue();
+                            if (newPath.size() < currentShortestPath.size()) {
+                                currentShortestPathMap.clear();  // Clear all previous records
+                                currentShortestPathMap.put(berth, newPath);  // Update with the new shortest path
+                            }
+                        }
+                        return currentShortestPathMap;
+                    });
+                }
+            }
+        }
+    }
+
     // 将点分配给其所属的区域，按照距离进行划分,同时记录该长度
     private void allocatePoints2region(List<Region> newRegions) {
         for (Map.Entry<Point, Map<Berth, List<Point>>> entry : globalPointToClosestBerthPath.entrySet()) {
             Point point = entry.getKey();
-            Map<Berth, List<Point>> closestPaths = entry.getValue();
+            Map<Berth, List<Point>> closestPathMap = entry.getValue();
 
-            Berth closestBerth = null;
-            List<Point> shortestPath = null;
+            // Since there is only one entry per point, directly access it
+            Map.Entry<Berth, List<Point>> closestEntry = closestPathMap.entrySet().iterator().next();
+            Berth closestBerth = closestEntry.getKey();
+            List<Point> shortestPath = closestEntry.getValue();
 
-            for (Map.Entry<Berth, List<Point>> berthEntry : closestPaths.entrySet()) {
-                if (shortestPath == null || berthEntry.getValue().size() < shortestPath.size()) {
-                    closestBerth = berthEntry.getKey();
-                    shortestPath = berthEntry.getValue();
-                }
-            }
+            Region region = findRegionByBerth(closestBerth, newRegions);
+            if (region != null) {
+                region.addAccessiblePoint(point);
 
-            if (closestBerth != null) {
-                Region region = findRegionByBerth(closestBerth, newRegions);
-                if (region != null) {
-                    region.addAccessiblePoint(point);
+                // 更新点到区域的映射
+                pointRegionMap.put(point, region);
 
-                    // 更新路径长度的统计信息
-                    int pathLength = shortestPath.size() - 1; // 减1以排除起始点本身
-                    region.pathLenToNumMap.merge(pathLength, 1, Integer::sum);
-                }
+                // 更新路径长度的统计信息
+                int pathLength = shortestPath.size() - 1;  // 减1以排除起始点本身
+                region.pathLenToNumMap.merge(pathLength, 1, Integer::sum);
             }
         }
     }
@@ -456,23 +616,88 @@ public class RegionManager {
      * 给每个区域静态划分机器人，保证每个区域至少一个机器人，机器人少于区域数另说
      */
     private void assignRobotsToRegion() {
+        // 不行的话按照距离前80个点为准
         for (Region region : regions) {
             region.calcStaticValue();
         }
+        //计算每个区域应该分多少机器人
+        assignRegionRobotNum();
+        // 直到了分配的数量以后，加下来分配具体的机器人
+        printRegion();
+        assignSpecificRegionRobot();
+    }
 
+    private void assignSpecificRegionRobot() {
+        // 给每个区域具体划分机器人，看其位置，就近划分
+        for (Zone zone : zones) {
+            ArrayList<Robot> rs = new ArrayList<>(zone.robots);
+            for (Region region : zone.regions) {
+                for (int i = 0; i < region.staticAssignNum; i++) {
+                    Robot tar =rs.get(0);
+                    int min = region.getClosestBerthPathFps(tar.pos);
+                    for (int j = 1; j < rs.size(); j++) {
+                        int t = region.getClosestBerthPathFps(rs.get(j).pos);
+                        if (t < min){
+                            min = t;
+                            tar = rs.get(j);
+                        }
+                    }
+                    region.assignRobots(tar); // 将该机器人分配好
+                    rs.remove(tar);
+                }
+            }
+            if (!rs.isEmpty()){
+                Util.printErr("assignSpecificRegionRobot:有机器人未被分配！");
+            }
+        }
+    }
 
-        // 区域、机器人双向引用
+    private void assignRegionRobotNum() {
+        //计算每个区域应该分多少机器人
         for (Zone zone : zones) {
             // 取出每个联通区有那些区域以及机器人
             // 先计算每个区域该分多少机器人
             int region_num = zone.regions.size();
             int robot_num = zone.robots.size();
-
-
-
+            if (region_num > robot_num){
+                ArrayList<Region> regs = new ArrayList<>(zone.regions);
+                // 区域数多，每次选出价值最大的
+                while (robot_num > 0){
+                    Region tar = regs.get(0);
+                    for (Region reg : regs) {
+                        if (reg.expLen1 < tar.expLen1){
+                            tar = reg;  // 选择期望小的
+                        }
+                    }
+                    tar.staticAssignNum = 1;
+                    robot_num --;
+                    regs.remove(tar);
+                }
+            }else {
+                ArrayList<Region> regs = new ArrayList<>(zone.regions);
+                // 机器人更多
+                for (Region reg : regs) {
+                    reg.staticAssignNum = 1;    // 每个泊口先分一个
+                }
+                robot_num -= region_num;
+                while (robot_num > 0){
+                    regs = new ArrayList<>(zone.regions);
+                    for (int i = 0; i < region_num; i++) {
+                        if (robot_num == 0) break;  // 分完了
+                        // 直到分完所有机器人
+                        Region tar = regs.get(0);
+                        for (Region reg : regs) {
+                            if (reg.expLen2 < tar.expLen2){
+                                tar = reg;  // 选择期望小的
+                            }
+                        }
+                        tar.staticAssignNum += 1;
+                        robot_num --;
+                        regs.remove(tar);
+                    }
+                }
+            }
         }
-
-
     }
 
     /**********************************************************************************
@@ -616,7 +841,7 @@ public class RegionManager {
                     }
                     writer.println();  // Move to the next line after printing all points of the region.
                 }
-                writer.println("  Assigned robots in region: " + region.staticAssignRobots.size());
+                writer.println("  Assigned robots in region: " + region.assignedRobots.size());
             }
         } catch (Exception e) {
             e.printStackTrace();
