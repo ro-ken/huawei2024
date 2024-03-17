@@ -106,7 +106,9 @@ public class Main {
             if (robots[i].status == 0){
                 invalidPoints.add(robots[i].pos);
             }else {
-                workRobots.add(robots[i]);
+                if (robots[i].region != null){
+                    workRobots.add(robots[i]);
+                }
             }
         }
 
