@@ -44,6 +44,7 @@ public class Const {
     public static final int unreachableFps = 1000000;       // 不可达的时间
     public static final double upperQuantile = 0.1;         // 上分位点
     public static final int maxThreshold = 40;              // 设定的最大阈值, 超过这个就不合并
+    public static final double minPointsPercent = 0.045;    // 设定的最小点数百分比，区域拥有泊位少于0.045，则直接不合并
     public static double expGoodNum = 2450;     // 期望总物品数，官方回答：15/100 * 15000
     public static HashSet<Robot> workRobots = new HashSet<>();// 每帧可以工作的机器人
     public static HashSet<Point> invalidPoints = new HashSet<>();   // 每帧的无效点

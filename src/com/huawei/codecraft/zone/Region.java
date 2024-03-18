@@ -1,6 +1,5 @@
 package com.huawei.codecraft.zone;
 
-import com.huawei.codecraft.Const;
 import com.huawei.codecraft.Util;
 import com.huawei.codecraft.core.Berth;
 import com.huawei.codecraft.core.Good;
@@ -21,6 +20,7 @@ import static com.huawei.codecraft.Const.*;
  */
 public class Region {
     public final int id;                           // 区域 id
+    public int points;                             // 区域拥有的点数
     public Zone zone;   // 该区域对应的zone;
     public final Set<Berth> berths;                // 区域中的泊位
     public final Set<Point> accessiblePoints;      // 该区域管理的点
