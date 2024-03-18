@@ -33,12 +33,12 @@ public class RegionManager {
      */
     public RegionManager(Path pathFinder) {
         this.pathFinder = pathFinder;  // 通过构造器注入 Path 实现
-        createInitialRegions();
-        getFullPathsFromPoints2Berths();
-        initGlobalPoint2ClosestBerthMap();
-        splitRegions();
-        assignRobotsToZone();
-        assignRobotsToRegion(); // 给区域分配机器人
+//        createInitialRegions();
+//        getFullPathsFromPoints2Berths();
+//        initGlobalPoint2ClosestBerthMap();
+//        splitRegions();
+//        assignRobotsToZone();
+//        assignRobotsToRegion(); // 给区域分配机器人
 //        printAll();
 
     }
@@ -270,8 +270,14 @@ public class RegionManager {
 
         // 然后按照每个根节点下的泊位点数总和进行进一步处理
         Map<Point, Integer> rootPointsSum = calculateRootPointsSum(berthsList, unionFind);
+
+        // 创建区域并分配泊位
         Map<Point, Region> rootToRegion = new HashMap<>();
-        secondMergeByPointsCounts(berthsList, unionFind, newRegions, zone, rootPointsSum, rootToRegion);
+        Set<Berth> unassignedBerths = new HashSet<>(berthsList);
+        secondMergeByPointsCounts(berthsList, unionFind, newRegions, zone, rootPointsSum, rootToRegion, unassignedBerths);
+
+        // 处理未分配的泊位
+        processUnassignedBerths(unassignedBerths, berthsList, unionFind, rootToRegion, newRegions, zone);
     }
 
     // 按照距离进行第一次聚类
@@ -299,65 +305,58 @@ public class RegionManager {
     }
 
     // 对已经聚好类的泊位进行创建新区域
-    private void secondMergeByPointsCounts(ArrayList<Berth> berthsList, UnionFind unionFind, List<Region> newRegions, Zone zone, Map<Point, Integer> rootPointsSum, Map<Point, Region> rootToRegion) {
-        List<Berth> unassignedBerths = new ArrayList<>();
-
-        // 标记所有未达到创建区域条件的泊位
-        for (Berth berth : berthsList) {
-            Point root = unionFind.find(berth.pos);
-            if (!rootPointsSum.containsKey(root) || rootPointsSum.get(root) < minPointsPercent * pointRegionMap.size()) {
-                unassignedBerths.add(berth);
-            } else if (!rootToRegion.containsKey(root)) {
-                // 为达标的聚合创建新区域
+    private void secondMergeByPointsCounts(ArrayList<Berth> berthsList, UnionFind unionFind, List<Region> newRegions, Zone zone, Map<Point, Integer> rootPointsSum, Map<Point, Region> rootToRegion, Set<Berth> unassignedBerths) {
+        for (Point root : rootPointsSum.keySet()) {
+            // 如果这个聚类的总点数足以形成一个区域
+            if (rootPointsSum.get(root) >= minPointsPercent * pointRegionMap.size()) {
                 Region region = new Region(newRegions.size());
                 newRegions.add(region);
                 zone.addRegion(region);
                 rootToRegion.put(root, region);
 
-                // 将属于这个根节点的所有泊位加入新区域
-                for (Berth b : berthsList) {
-                    if (unionFind.find(b.pos).equals(root)) {
-                        region.addBerth(b);
-                        pointRegionMap.put(b.pos, region);
+                // 遍历所有泊位，将属于这个根节点的泊位加入新区域，并从未分配泊位中移除
+                for (Berth berth : berthsList) {
+                    if (unionFind.find(berth.pos).equals(root)) {
+                        region.addBerth(berth);
+                        pointRegionMap.put(berth.pos, region);
+                        unassignedBerths.remove(berth);
                     }
                 }
             }
         }
-
-        // 单独处理未分配的泊位，尝试与其他未分配泊位合并或加入最近的已存在区域
-        for (Berth unassignedBerth : unassignedBerths) {
-            processUnassignedBerth(unassignedBerth, berthsList, unionFind, rootToRegion, newRegions, minPointsPercent);
-        }
     }
 
-    // 对未分配的泊位进一步处理，看是否能够合并
-    private void processUnassignedBerth(Berth unassignedBerth, ArrayList<Berth> berthsList, UnionFind unionFind, Map<Point, Region> rootToRegion, List<Region> newRegions, double minPointsPercent) {
-        // 查找最近的已分配或未分配泊位
-        Berth nearestBerth = findNearestBerth(unassignedBerth, berthsList, unionFind, rootToRegion);
-        // 检查是否找到最近泊位且该泊位已被分配区域
-        if (nearestBerth != null && rootToRegion.containsKey(unionFind.find(nearestBerth.pos))) {
-            Region nearestRegion = rootToRegion.get(unionFind.find(nearestBerth.pos));
-            nearestRegion.addBerth(unassignedBerth);
-            pointRegionMap.put(unassignedBerth.pos, nearestRegion);
-        } else if (nearestBerth != null) {
-            // 最近的泊位也未分配区域，检查是否可以合并创建新区域
-            int combinedPoints = unassignedBerth.points + nearestBerth.points;
-            if (combinedPoints >= minPointsPercent * pointRegionMap.size()) {
-                // 创建新区域并分配两个泊位
-                Region newRegion = new Region(newRegions.size());
-                newRegions.add(newRegion);
-                newRegion.addBerth(unassignedBerth);
-                newRegion.addBerth(nearestBerth);
-                pointRegionMap.put(unassignedBerth.pos, newRegion);
-                pointRegionMap.put(nearestBerth.pos, newRegion);
-                rootToRegion.put(unionFind.find(unassignedBerth.pos), newRegion);
-                rootToRegion.put(unionFind.find(nearestBerth.pos), newRegion);
-            } else {
-                // 合并未达标，将unassignedBerth合并到现有的最近区域
-                Region closestRegion = findClosestRegion(unassignedBerth, newRegions);
-                closestRegion.addBerth(unassignedBerth);
-                pointRegionMap.put(unassignedBerth.pos, closestRegion);
-                rootToRegion.put(unionFind.find(unassignedBerth.pos), closestRegion);
+    private void processUnassignedBerths(Set<Berth> unassignedBerths, ArrayList<Berth> berthsList, UnionFind unionFind, Map<Point, Region> rootToRegion, List<Region> newRegions, Zone zone) {
+        Iterator<Berth> iterator = unassignedBerths.iterator();
+
+        while (iterator.hasNext()) {
+            Berth unassignedBerth = iterator.next();
+            Berth nearestBerth = findNearestBerth(unassignedBerth, berthsList, unionFind, rootToRegion);
+
+            if (nearestBerth != null && rootToRegion.containsKey(unionFind.find(nearestBerth.pos))) {
+                Region nearestRegion = rootToRegion.get(unionFind.find(nearestBerth.pos));
+                nearestRegion.addBerth(unassignedBerth);
+                pointRegionMap.put(unassignedBerth.pos, nearestRegion);
+                iterator.remove();
+            } else if (nearestBerth != null) {
+                int combinedPoints = unassignedBerth.points + nearestBerth.points;
+                if (combinedPoints >= minPointsPercent * pointRegionMap.size()) {
+                    Region newRegion = new Region(newRegions.size());
+                    newRegions.add(newRegion);
+                    zone.addRegion(newRegion);
+                    newRegion.addBerth(unassignedBerth);
+                    newRegion.addBerth(nearestBerth);
+                    pointRegionMap.put(unassignedBerth.pos, newRegion);
+                    pointRegionMap.put(nearestBerth.pos, newRegion);
+                    rootToRegion.put(unionFind.find(unassignedBerth.pos), newRegion);
+                    rootToRegion.put(unionFind.find(nearestBerth.pos), newRegion);
+                } else {
+                    Region closestRegion = findClosestRegion(unassignedBerth, newRegions);
+                    closestRegion.addBerth(unassignedBerth);
+                    pointRegionMap.put(unassignedBerth.pos, closestRegion);
+                    rootToRegion.put(unionFind.find(unassignedBerth.pos), closestRegion);
+                }
+                iterator.remove();
             }
         }
     }
@@ -384,7 +383,7 @@ public class RegionManager {
         int shortestDistance = unreachableFps;
         for (Region region : regions) {
             for (Berth otherBerth : region.getBerths()) {
-                int distance = otherBerth.mapPath.get(berth.pos).size();
+                int distance = berth.mapPath.get(otherBerth.pos) != null ? berth.mapPath.get(otherBerth.pos).size() : Integer.MAX_VALUE;
                 if (distance < shortestDistance) {
                     shortestDistance = distance;
                     closestRegion = region;
