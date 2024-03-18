@@ -23,6 +23,7 @@ public class Berth {
     public Deque<Good> existGoods = new LinkedList<>();     // 泊口存在的货物
     public int existValue=0;           // 泊口货物总价值
     public Map<Point,List<Point>> mapPath = new HashMap<>();   //  地图所有点到该泊位的路径信息
+    public int totalGoodNum;
 
     public Berth(int id) {
         pos = new Point();
@@ -113,7 +114,8 @@ public class Berth {
     public boolean canCarryGood(Good good) {
         // 计算能否去取该货物，默认机器人在泊口
         int fps = getPathFps(good.pos);
-        if (fps < good.leftFps() + 4 && good.isNotBook()){
+        // todo 到时候避让得根据所剩余时间计算
+        if (fps <= good.leftFps() - 3 && good.isNotBook()){
             // 加几帧弹性时间，怕绕路
             return true;
         }

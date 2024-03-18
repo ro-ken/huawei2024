@@ -1,6 +1,7 @@
 package com.huawei.codecraft.core;
 
 import com.huawei.codecraft.Const;
+import com.huawei.codecraft.Main;
 import com.huawei.codecraft.Util;
 import com.huawei.codecraft.util.Pair;
 import com.huawei.codecraft.util.Point;
@@ -24,6 +25,7 @@ public class Robot {
     public Berth bookBerth;  // 预定的产品
     public Route route; //
     public Point next;  // 当前帧需要移动的下一个点
+    public int totalGoodNum;
     public Region region;   // 机器人属于的区域，区域初始化赋值
     public boolean changeRegionMode;    // 是否是换区域模式，这个模式下可以不拿物品朝目标区域走
     public RobotRunMode runMode = new RobotRunMode(this);
@@ -100,6 +102,10 @@ public class Robot {
             }
         }else {
             if (arriveBerth()){
+                totalGoodNum += 1;
+                Main.totalGoodNum +=1;
+                bookBerth.totalGoodNum += 1;
+                bookBerth.region.totalGoodNum += 1;
                 // 2、如果到达了泊口，卸货，任务结束
                 unloadGood(); //卸货
                 turnOffTask();

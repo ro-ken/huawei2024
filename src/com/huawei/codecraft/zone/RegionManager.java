@@ -5,7 +5,7 @@ import com.huawei.codecraft.core.Berth;
 import com.huawei.codecraft.core.Good;
 import com.huawei.codecraft.core.Robot;
 import com.huawei.codecraft.util.Point;
-import com.huawei.codecraft.util.Twins;
+import com.huawei.codecraft.util.UnionFind;
 import com.huawei.codecraft.way.Path;
 
 import java.io.*;
@@ -41,21 +41,31 @@ public class RegionManager {
         createInitialRegions();
         splitRegions();
         assignRobotsToZone();
-
-
-//        for (Berth berth : berths) {
-//            Util.printDebug(berth+":"+berth.mapPath+"size:"+berth.mapPath.size());
-//        }
-
-
         assignRobotsToRegion(); // 给区域分配机器人
 
-        for (Zone zone : zones) {
-            printLog(zone);
+//        for (Zone zone : zones) {
+//            printLog(zone);
+//        }
+//        for (Region region : regions) {
+//            if (region.id == 0 || region.id == 8){
+//                Util.printDebug("查看价值："+region +":size："+region.accessiblePoints.size()+region.berths);
+//                Util.printLog("pathLenToNumMap"+region.pathLenToNumMap);
+//                Util.printLog(region.staticValue);
+//                Util.printLog("---");
+//            }
+//        }
+
+        for (Region region : regions) {
+            Util.printDebug("查看价值："+region +":size："+region.accessiblePoints.size()+region.berths+"机器人数："+region.assignedRobots.size());
+            Util.printLog(region.staticValue.get(1));
+            Util.printLog(region.staticValue.get(2));
+            Util.printLog(region.staticValue.get(3));
+            Util.printLog("---");
         }
 
-        Util.printLog("打印区域分配信息");
-        Util.printDebug(pointRegionMap);
+//
+//        Util.printLog("打印区域分配信息");
+//        Util.printDebug(pointRegionMap);
 //        for (Map.Entry<Point, Region> pointRegionEntry : pointRegionMap.entrySet()) {
 //            printLog(pointRegionEntry.getKey()+"->"+pointRegionEntry.getValue().getId());
 //        }
@@ -67,7 +77,7 @@ public class RegionManager {
 //        }
 
 
-        printRegion();
+//        printRegion();
     }
 
     void printRegion(){
@@ -155,45 +165,6 @@ public class RegionManager {
         printLog(region.regionGoodsByValue);
     }
 
-    /**
-     * ClassName: RegionManager
-     * Package: com.huawei.codecraft.way
-     * Description: 为berth进行聚类的时候，根据并查集，使集合唯一
-     */
-    public static class UnionFind {
-        private final Map<Point, Point> parent;
-
-        public UnionFind(Set<Point> points) {
-            parent = new HashMap<>();
-            for (Point point : points) {
-                parent.put(point, point);
-            }
-        }
-
-        public Point find(Point point) {
-            Point p = point;
-            while (!p.equals(parent.get(p))) {
-                p = parent.get(p);
-            }
-            // Path compression
-            Point root = p;
-            p = point;
-            while (!p.equals(root)) {
-                Point next = parent.get(p);
-                parent.put(p, root);
-                p = next;
-            }
-            return root;
-        }
-
-        public void union(Point point1, Point point2) {
-            Point root1 = find(point1);
-            Point root2 = find(point2);
-            if (!root1.equals(root2)) {
-                parent.put(root1, root2);
-            }
-        }
-    }
 
     /**
      * @function 对初始的region进一步划分，通过泊位之间的距离计算出阈值，作为聚类的条件
@@ -335,7 +306,7 @@ public class RegionManager {
         }
 
         // 根据bfs得到点到泊位的最短路进行划分点的所属区域
-        allocatePoints2region(newRegions);
+        allocatePoints2region(largeRegion, newRegions);
     }
 
     // 从泊位开始bfs进行扩散，保留最短的路径
@@ -376,8 +347,8 @@ public class RegionManager {
     }
 
     // 将点分配给其所属的区域，按照距离进行划分,同时记录该长度
-    private void allocatePoints2region(List<Region> newRegions) {
-        for (Point point : pointRegionMap.keySet()) {
+    private void allocatePoints2region(Region largeRegion, List<Region> newRegions) {
+        for (Point point : largeRegion.accessiblePoints) {
             // 初始化最近泊位和路径长度
             Berth closestBerth = null;
             List<Point> shortestPath = null;

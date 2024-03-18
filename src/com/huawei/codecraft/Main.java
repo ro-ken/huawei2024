@@ -8,6 +8,7 @@ import java.io.FileNotFoundException;
 import java.util.*;
 
 import com.huawei.codecraft.core.*;
+import com.huawei.codecraft.zone.Region;
 import com.huawei.codecraft.zone.RegionManager;
 import com.huawei.codecraft.util.Point;
 import com.huawei.codecraft.way.Mapinfo;
@@ -26,6 +27,7 @@ public class Main {
     public static int testRobot = 10;    // 测试机器人
 
     public static int totalValue = 0;
+    public static int totalGoodNum = 0;
 
     public static void main(String[] args) throws FileNotFoundException {
         initLog();
@@ -41,8 +43,17 @@ public class Main {
             printLog("-------------frameId:"+frameId+"--------------");
             frameInit();
             handleFrame();
+//            testRegionValue();
             printOk();
             input();
+        }
+    }
+
+    private static void testRegionValue() {
+        for (Region region : regionManager.regions) {
+            printLog("调试Region------"+region);
+            region.calcCurRegionValue(1);
+            region.calcCurRegionValue(2);
         }
     }
 
@@ -112,9 +123,23 @@ public class Main {
             }
         }
 
-        for (int i = 0; i < testRobot; i++) {
-            printLog(robots[i]);
+        Util.printLog("打印运输货物信息");
+        if (frameId > 14990){
+            Util.printLog("总货物："+totalGoodNum);
+            for (Region region : regionManager.regions) {
+                Util.printLog(region+":"+region.totalGoodNum);
+                for (Berth berth : region.berths) {
+                    Util.printLog(berth+":"+berth.totalGoodNum);
+                }
+            }
+            for (Robot robot : robots) {
+                Util.printLog(robot+":"+robot.totalGoodNum);
+            }
         }
+
+//        for (int i = 0; i < testRobot; i++) {
+//            printLog(robots[i]);
+//        }
     }
 
     private static void updateGoodInfo() {

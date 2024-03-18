@@ -4,6 +4,7 @@ import com.huawei.codecraft.Util;
 import com.huawei.codecraft.core.Berth;
 import com.huawei.codecraft.core.Robot;
 import com.huawei.codecraft.util.Point;
+import com.huawei.codecraft.util.RegionValue;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -45,20 +46,25 @@ public class Zone {
      * @return 重新分返回true，否则返回false
      */
     public boolean reAssignRobot(Robot robot) {
+        Region src = robot.region;
+        // 当区域只有一个机器人，区域还有高价值货，就不调度
+        if (src.assignedRobots.size() == 1){
+            if (src.haveHigherValueGoodThanExp(1)){
+                return false;
+            }
+        }
         // 全局考虑是否重新分配该机器人，
         // 机器人1个、2个；所有区域繁忙情况，繁忙区域是否应该调度本区域的机器人，还是调度临近区域
         // 只计算robot是否应该从该区域分出去
         // 比较分出去的收益 > 待在原地的收益，计算分到哪个区域下面最大收益
-        Region src = robot.region;
+        Util.printDebug(robot+"开始计算换区");
         double maxProf = 0;   // 计算最大收益
         Region tar = null;  // 如果要分出去的目标区域
-        for (Region region : this.regions) {
-            if (region != src){
-                double profit = calcChangeRobotProfit(src,region);
-                if (profit > maxProf){
-                    maxProf = profit;
-                    tar = region;
-                }
+        for (Region region : src.neighborRegions) {
+            double profit = calcChangeRobotProfit(src,region);
+            if (profit > maxProf){
+                maxProf = profit;
+                tar = region;
             }
         }
         if (tar != null){
@@ -79,7 +85,7 @@ public class Zone {
         // 计算去一个周期的代价与收益，加上路上的时间
         double dist = src.calcToRegionDis(tar);
         double profit = (destV - dist) * destV;
-        double loss = (destV + dist) + srcV;
+        double loss = (destV + dist) * srcV;
         Util.printDebug("profit:"+profit+"loss:"+loss);
         return profit - loss;
     }
@@ -106,9 +112,18 @@ public class Zone {
             // 区域数多，每次选出价值最大的
             while (robot_num > 0){
                 Region tar = regs.get(0);
+                RegionValue tarV = tar.staticValue.get(1);
                 for (Region reg : regs) {
-                    if (reg.expLen1 < tar.expLen1){
-                        tar = reg;  // 选择期望小的
+                    // 先判断区域是否都充足
+                    RegionValue regV = reg.staticValue.get(1);
+                    if (regV.isAreaRich() && regV.getStep() < tarV.getStep()){
+                        tar = reg;
+                        // 都充裕比谁距离小
+                    }else {
+                        // 都不充裕比谁面积大
+                        if (!tarV.isAreaRich() && reg.accessiblePoints.size() > tar.accessiblePoints.size()){
+                            tar = reg;
+                        }
                     }
                 }
                 tar.staticAssignNum = 1;
@@ -128,9 +143,19 @@ public class Zone {
                     if (robot_num == 0) break;  // 分完了
                     // 直到分完所有机器人
                     Region tar = regs.get(0);
+                    RegionValue tarV = tar.staticValue.get(2);
                     for (Region reg : regs) {
-                        if (reg.expLen2 < tar.expLen2){
-                            tar = reg;  // 选择期望小的
+                        // 先判断区域是否都充足
+                        RegionValue regV = reg.staticValue.get(2);
+                        if (regV.isAreaRich() && regV.getStep() < tarV.getStep()){
+                            tar = reg;
+                            tarV = regV;
+                            // 都充裕比谁距离小
+                        }else {
+                            // 都不充裕比谁面积大
+                            if (!tarV.isAreaRich() && reg.accessiblePoints.size() > tar.accessiblePoints.size()){
+                                tar = reg;
+                            }
                         }
                     }
                     tar.staticAssignNum += 1;
