@@ -22,7 +22,12 @@ public class Berth {
     public Deque<Good> existGoods = new LinkedList<>();     // 泊口存在的货物
     public int existValue=0;           // 泊口货物总价值
     public Map<Point,List<Point>> mapPath = new HashMap<>();   //  地图所有点到该泊位的路径信息
+    public int deadLine = Const.totalFrame;     // 有效时间，超过这个时间轮船不装了，也不用往这里运了
     public int totalGoodNum;
+
+    public void setDeadLine(int deadLine) {
+        this.deadLine = deadLine;
+    }
 
     public Berth(int id) {
         pos = new Point();
@@ -113,9 +118,9 @@ public class Berth {
 
     public boolean canCarryGood(Good good) {
         // 计算能否去取该货物，默认机器人在泊口
-        int fps = getPathFps(good.pos);
-        // todo 到时候避让得根据所剩余时间计算
-        if (fps <= good.leftFps() - 3 && good.isNotBook()){
+        int dis = getPathFps(good.pos);
+        // todo 到时候避让得根据所剩余时间计算  可调参
+        if (dis <= good.leftFps() - 3 && good.isNotBook()){
             // 加几帧弹性时间，怕绕路
             return true;
         }
@@ -144,6 +149,21 @@ public class Berth {
         domainGoodsByValue.remove(pair);
         region.regionGoodsByTime.remove(good);
         region.regionGoodsByValue.remove(pair);
+    }
+
+    public boolean canSendToMe(Point pos) {
+        // 是否可以将这个物品送到我这儿来，
+        int dis = getPathFps(pos);
+        if (deadLine == Const.totalFrame){
+            return true;
+        }
+        // 弹性参数可调 ，参数表示是否早点离开这个泊口
+        return deadLine > Const.frameId + dis + 5;
+    }
+
+    public boolean notFinalShip() {
+        // 不是轮船最后运输的泊口
+        return deadLine < Const.totalFrame;
     }
 }
 

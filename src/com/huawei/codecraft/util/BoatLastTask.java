@@ -27,6 +27,9 @@ public class BoatLastTask {
 
     private int latestT=0;  // 最迟进入周期时间
 
+    public static int lastSecondStayTime = 5;   // 预计在倒数第二个船停留的时间 ，todo 后面可以动态算期望
+
+
     public BoatLastTask(Boat boat) {
         this.boat = boat;
     }

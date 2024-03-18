@@ -54,6 +54,7 @@ public class Boat {
         }
         if (status == BoatStatus.LOAD){
             if (mustGotoVirtual()){
+                Util.printDebug("船最后一次调度：");
                 clacGoods();//结算货物
                 goToVirtual();
             }else {
@@ -121,6 +122,12 @@ public class Boat {
         task.changeLastPeriodMode();
         Berth berth = task.getNextBerth();
         changeBerthAndShip(berth);
+        setDeadLine(berth);
+    }
+
+    private void setDeadLine(Berth berth) {
+        // 给这个泊口设定deadLine
+        berth.setDeadLine(frameId + berth.transport_time + BoatLastTask.lastSecondStayTime);
     }
 
     private void resetBoat() {
@@ -227,6 +234,7 @@ public class Boat {
         int loadGoods = Math.min(countGoods(),bookBerth.existGoods.size()); // 容量无限下这段时间装载量
         int realLoad = Math.min(left,loadGoods);    // 实际装载量
 
+        Util.printLog("船的装载："+goodSize+"/"+capacity+"，单次装载量："+realLoad + "，泊口货物："+bookBerth.existGoods.size()+"，装载时间："+(Const.frameId - startFrame - 1));
         // 互相清算货物
         goodSize += realLoad;
         bookBerth.removeGoods(realLoad);

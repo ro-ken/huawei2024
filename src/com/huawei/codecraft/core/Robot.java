@@ -29,6 +29,7 @@ public class Robot {
     public Region region;   // 机器人属于的区域，区域初始化赋值
     public boolean changeRegionMode;    // 是否是换区域模式，这个模式下可以不拿物品朝目标区域走
     public RobotRunMode runMode = new RobotRunMode(this);
+    public boolean greedyMode = false;  // 最后阶段切换到贪心模式
 
     public Robot(int id, int x, int y) {
         this.id = id;
@@ -66,35 +67,82 @@ public class Robot {
         // 如果区域有物品，拿该区域的物品，切换正常模式，没有则走到底
         // 为了防止复杂计算，先设计到了区域再选择物品
         if (region.accessiblePoints.contains(this.pos)) {
-            Util.printDebug("changeRegionSched ： 到达本区域id:" + region.id + "" + this.pos);
+            Util.printDebug("changeRegionSched ： 到达本区域id:" + region.id + " " + this.pos);
             changeRegionMode = false;
         }
     }
 
     private void normalSched() {
-        if (noTask()) {
-            boolean picked = pickNewTask();
-            if (!picked) return;    // 没有可做的任务
-        }
-        doTask();            // 判断该怎么走
+        handleTask();            // 处理任务
         // 到达目的地，可能任务结束，重新分配
         if (noTask()) {
-            boolean success = region.zone.reAssignRobot(this);
-            if (!success) {
-                // 要换区域则，要先到区域
-                pickNewTask();
+            if (greedyMode){
+                Twins<Berth, Good> twins = pickGreedyTask();
+                setTask(twins);
+            }else {
+                boolean success = region.zone.reAssignRobot(this);
+                if (!success) {
+                    // 要换区域则，要先到区域
+                    Twins<Berth, Good> twins = pickNewTask();
+                    setTask(twins);
+                }
             }
-//            pickNewTask();
         }
     }
 
-    private void doTask() {
+    private Twins<Berth, Good> pickGreedyTask() {
+        // 贪心选择任务，选择单次价值最高的
+        double maxV = 0;
+        Berth tarBer = null;
+        Good tarGood=null;
+        Pair<Good> tarPair = null;
+        for (Berth berth : region.zone.berths) {
+            if (berth.notFinalShip()){
+                continue;
+            }
+            Good tmpGood = null;
+            Pair<Good> tmpPair = null;
+            int r2bFps= berth.getPathFps(pos);      //时间 = 泊口到物品  + 机器人到泊口
+            double totalFps = r2bFps;
+            for (Pair<Good> pair : berth.domainGoodsByValue) {
+                // 找出第一个满足robot的
+                Good good = pair.getKey();
+                int dis = r2bFps + berth.getPathFps(good.pos);
+                if (dis < good.leftFps()){
+                    tmpGood = good;     // 找到一个就行
+                    tmpPair = pair;
+                    totalFps += berth.getPathFps(good.pos);     // 实际时间来回
+                    break;
+                }
+            }
+            if (tmpGood != null){
+                double avgV = tmpGood.value / totalFps;
+                if (avgV > maxV){
+                    maxV = avgV;
+                    tarBer = berth;
+                    tarGood = tmpGood;
+                    tarPair = tmpPair;
+                }
+            }
+        }
+        if (tarGood != null){
+            tarBer.removeDomainGood(tarPair);
+            return new Twins<>(tarBer,tarGood);
+        }
+        return null;
+    }
+
+    private void handleTask() {
+        if (noTask()){
+            return;
+        }
+
         if (!isCarry()) {
             if (arriveGood()) {
                 // 1、如果到达了物品，捡起物品，换路线选择泊口
                 if (bookGood.isExist()) {
                     loadGood(); // 装货
-                    changeRoad(bookBerth.pos);
+                    carryGoodToBerth();
                 } else {
                     // 物品不存在，任务结束
                     turnOffTask();
@@ -111,6 +159,39 @@ public class Robot {
                 turnOffTask();
             }
         }
+    }
+
+    private void carryGoodToBerth() {
+        // 如果能回去，就回去，不能回去，找个最近的能回去的
+        if (!bookBerth.canSendToMe(bookGood.pos)){
+            // 表示进入了倒计时，切换贪婪模式
+            greedyMode = true;
+            Berth berth = pickClosestAndAvailBerth();
+            if (berth != null){
+                bookBerth = berth;
+                region = bookBerth.region;
+            }else {
+                Util.printErr("没有可用的Berth");
+            }
+        }
+        changeRoad(bookBerth.pos);
+    }
+
+    private Berth pickClosestAndAvailBerth() {
+        // 寻找离自己最近，且可用的泊口
+        int min = unreachableFps;
+        Berth tar = null;
+        for (Berth berth : region.zone.berths) {
+            if (berth.notFinalShip()){
+                continue;
+            }
+            int dis = berth.getPathFps(pos);
+            if (dis < min){
+                min = dis;
+                tar = berth;
+            }
+        }
+        return tar;
     }
 
     public void assignRegion(Region region) {
@@ -168,12 +249,7 @@ public class Robot {
 
     // 处理冲突的机器人移动信息
     private static void handleConflict(ArrayList<Robot> conflict) {
-//        Util.printLog("conflict:->"+conflict);
-//        if (conflict.size()<2){
-//            for (Robot robot : conflict) {
-//                robot.printMove();
-//            }
-//        }
+
         do {
             // 找出互相冲突的机器人
             Robot robot = conflict.remove(0);
@@ -477,23 +553,19 @@ public class Robot {
         return route.target.equals(pos);
     }
 
-    // 当前机器人没有任务，选择一个任务
-    private boolean pickNewTask() {
-        Twins<Berth, Good> twins = pickBerthAndGood();
+    private void setTask(Twins<Berth, Good> twins){
         if (twins != null) {
             boolean canArrive = changeRoad(twins.getObj2().pos);
             if (canArrive) {
                 setBook(twins.getObj2(), twins.getObj1());
                 turnOnTask();
                 Util.printLog("picked task robot:" + id + ",good" + bookGood + "berth:" + bookBerth);
-                return true;
             } else {
                 Util.printErr("pickNewTask:pick good can't arrive!" + this + twins.getObj2());
             }
         } else {
             Util.printWarn("pickNewTask:didn't find job" + this);
         }
-        return false;
     }
 
     @Override
@@ -507,48 +579,53 @@ public class Robot {
     }
 
     // 选择物品和泊口
-    private Twins<Berth, Good> pickBerthAndGood() {
+    private Twins<Berth, Good> pickNewTask() {
         // 这是经过全局调度之后的结果，
         // ① 先从本区域调货
         Twins<Berth, Good> twins = pickBestValueGood();
 
         if (twins == null) {
-            // 本区域无货，还不被调度，说明本区域是有价值的
-            // 选择临近区域最有价值的货物，要求不能太远，送回来，选择最近两个区域即可
-            // 要求价值超过100 ，且最近的
-            int size = Math.min(region.neighborRegions.size(), 2);
-            int count = 0;  // 记录寻找的货物，不要找太多，最多比较10个
-            Good tar = null; Pair<Good> tarPair = null;
-            int min = unreachableFps;
-            for (int i = 0; i < size; i++) {
-                Region neighbor = region.neighborRegions.get(i);
-                for (Pair<Good> pair : neighbor.regionGoodsByValue) {
-                    if (count >= 10) {
-                        break;
-                    }
-                    Good good = pair.getKey();
-                    int fps = bookBerth.getPathFps(good.pos);
-                    if (tar == null){
-                        tar = good; min = fps; tarPair=pair;
-                    }else {
-                        if (good.value > 100 && (tar.value<=100 || fps < min) ){
-                            // 高价值
-                            tar = good; min = fps; tarPair=pair;
-                        }else if (tar.value <= 100 && fps < min){
-                            tar = good; min = fps; tarPair=pair;
-                        }
-                    }
-                    count ++;
-                }
-            }
-            if (tar != null){
-                Berth berth = regionManager.globalPointToClosestBerth.get(tar.pos);
-                berth.removeDomainGood(tarPair);   // 能与不能都删掉
-                // 运到自己区域的泊口
-                return new Twins<>(bookBerth,tar);
-            }
+            return pickNeighborValueGood();
         }
         return twins;
+    }
+
+    private Twins<Berth, Good> pickNeighborValueGood() {
+        // 本区域无货，还不被调度，说明本区域是有价值的
+        // 选择临近区域最有价值的货物，要求不能太远，送回来，选择最近两个区域即可
+        // 要求价值超过100 ，且最近的
+        int size = Math.min(region.neighborRegions.size(), 2);
+        int count = 0;  // 记录寻找的货物，不要找太多，最多比较10个
+        Good tar = null; Pair<Good> tarPair = null;
+        int min = unreachableFps;
+        for (int i = 0; i < size; i++) {
+            Region neighbor = region.neighborRegions.get(i);
+            for (Pair<Good> pair : neighbor.regionGoodsByValue) {
+                if (count >= 10) {
+                    break;
+                }
+                Good good = pair.getKey();
+                int fps = bookBerth.getPathFps(good.pos);
+                if (tar == null){
+                    tar = good; min = fps; tarPair=pair;
+                }else {
+                    if (good.value > 100 && (tar.value<=100 || fps < min) ){
+                        // 高价值
+                        tar = good; min = fps; tarPair=pair;
+                    }else if (tar.value <= 100 && fps < min){
+                        tar = good; min = fps; tarPair=pair;
+                    }
+                }
+                count ++;
+            }
+        }
+        if (tar != null){
+            Berth berth = regionManager.globalPointToClosestBerth.get(tar.pos);
+            berth.removeDomainGood(tarPair);   // 能与不能都删掉
+            // 运到自己区域的泊口
+            return new Twins<>(bookBerth,tar);
+        }
+        return null;
     }
 
     private Twins<Berth, Good> pickBestValueGood() {
