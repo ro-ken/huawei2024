@@ -86,7 +86,16 @@ public class Region {
     public String toString() {
         return "Region{" +
                 "id=" + id +
+                "berthpos" + getPos()+
                 '}';
+    }
+
+    private String getPos() {
+        // 获取其中一个泊口的点
+        for (Berth berth : this.berths) {
+            return berth.pos.toString();
+        }
+        return null;
     }
 
     // 获取该区域内两个最近的泊口,次近的，...
@@ -249,7 +258,7 @@ public class Region {
     public double calcCurRegionValue(int num) {
         if (num == 0) return 0;
 //        // 计算该区域中机器人数量为num时单位时间产生的收益
-        double totalTime = Good.maxSurvive * num;
+        double totalTime = Good.maxSurvive;
 //        // 统计totalTime时长内的总价值，按价值高低排序
         double countDis = 0;// countNum 计算的事从0到frameID的物品，我们要计算0-totalTime的物品，所有物品数要倍除
 //        double factor = frameId / totalTime;

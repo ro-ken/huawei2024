@@ -2,6 +2,7 @@ package com.huawei.codecraft.zone;
 
 import com.huawei.codecraft.Util;
 import com.huawei.codecraft.core.Berth;
+import com.huawei.codecraft.core.Good;
 import com.huawei.codecraft.core.Robot;
 import com.huawei.codecraft.util.Point;
 import com.huawei.codecraft.util.RegionValue;
@@ -84,8 +85,8 @@ public class Zone {
         double destV = tar.addRobotProfit();
         // 计算去一个周期的代价与收益，加上路上的时间
         double dist = src.calcToRegionDis(tar);
-        double profit = (destV - dist) * destV;
-        double loss = (destV + dist) * srcV;
+        double profit = (Good.maxSurvive - 2*dist) * destV;
+        double loss = Good.maxSurvive * srcV;
         Util.printDebug("profit:"+profit+"loss:"+loss);
         return profit - loss;
     }

@@ -16,7 +16,6 @@ public class Berth {
     public int transport_time;
     public int loading_speed;
     public Region region;  // 该泊口属于的区域，在区域初始化赋值
-    public PriorityQueue<Pair<Good>> goodList = new PriorityQueue<>();
     public PriorityQueue<Pair<Good>> domainGoodsByValue = new PriorityQueue<>();  // 需要被运输的货物,按照单位价值排序
     public Deque<Good> domainGoodsByTime = new LinkedList<>();      // 需要被运输的货物,按照时间先后排序
     public Set<Boat> bookBoats = new HashSet<>();
@@ -53,6 +52,7 @@ public class Berth {
         if (mapPath.containsKey(pos)){
             return mapPath.get(pos).size();
         }else {
+            Util.printErr("getPathFps:"+this+pos);
             return Const.unreachableFps;
         }
     }

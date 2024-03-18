@@ -124,16 +124,20 @@ public class Main {
         }
 
         Util.printLog("打印运输货物信息");
-        if (frameId > 14990){
+        if (frameId == 14999){
             Util.printLog("总货物："+totalGoodNum);
             for (Region region : regionManager.regions) {
-                Util.printLog(region+":"+region.totalGoodNum);
+                Util.printLog(region+":"+region.totalGoodNum + "avg:" + region.totalGoodNum/15 + " ");
+                Util.printLog(":size："+region.accessiblePoints.size()+region.berths+"机器人数："+region.assignedRobots.size());
+                Util.printLog(region.staticValue.get(1));
+                Util.printLog(region.staticValue.get(2));
+                Util.printLog(region.staticValue.get(3));
                 for (Berth berth : region.berths) {
-                    Util.printLog(berth+":"+berth.totalGoodNum);
+                    Util.printLog(berth+":"+berth.totalGoodNum + "avg:"+ berth.totalGoodNum/15);
                 }
             }
             for (Robot robot : robots) {
-                Util.printLog(robot+":"+robot.totalGoodNum);
+                Util.printLog(robot+":"+robot.totalGoodNum+" avg:"+robot.totalGoodNum/15);
             }
         }
 
