@@ -25,7 +25,7 @@ import static com.huawei.codecraft.way.Mapinfo.map;
 public class RegionManager {
     public static final List<Region> regions = new ArrayList<>();    // 地图所有的region
     public static final Map<Point, Region> pointRegionMap = new HashMap<>();    // point 到 region 的映射，查找点属于的 region
-    public static final Map<Point, Berth> globalPointToClosestBerth = new HashMap<>();  // 获取离点最近的泊位
+    public static final Map<Point, Berth> pointBerthMap = new HashMap<>();  // 获取离点最近的泊位
     private final Path pathFinder;  // Path 接口的引用
 
     /**
@@ -51,7 +51,7 @@ public class RegionManager {
     }
 
     public Map<Point, Berth> getGlobalPointToClosestBerth() {
-        return globalPointToClosestBerth;
+        return pointBerthMap;
     }
 
     public List<Region> getRegions() {
@@ -193,7 +193,7 @@ public class RegionManager {
                 }
                 closestBerth.points += 1;
                 // 更新离点最近的泊位信息
-                globalPointToClosestBerth.put(point, closestBerth);
+                pointBerthMap.put(point, closestBerth);
             }
         }
     }
@@ -400,7 +400,7 @@ public class RegionManager {
     private void allocateRemainingPoints(Region largeRegion, List<Region> newRegions) {
         for (Point point : largeRegion.accessiblePoints) {
             // 从 globalPointToClosestBerth 映射中获取最近的泊位
-            Berth closestBerth = globalPointToClosestBerth.get(point);
+            Berth closestBerth = pointBerthMap.get(point);
             // 找到这个泊位所在的区域
             Region closestRegion = pointRegionMap.get(closestBerth.pos);
 

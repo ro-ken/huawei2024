@@ -189,7 +189,7 @@ public class Region {
     }
 
     public void addNewGood(Good newGood) {
-        Berth berth = regionManager.globalPointToClosestBerth.get(newGood.pos);
+        Berth berth = RegionManager.pointBerthMap.get(newGood.pos);
         if (berth == null){
             Util.printErr("addNewGood berth == null");
             return;
@@ -209,7 +209,7 @@ public class Region {
         // 获取最久的物品
         while (!regionGoodsByTime.isEmpty()){
             Good good = regionGoodsByTime.pop();
-            Berth berth = regionManager.globalPointToClosestBerth.get(good.pos);
+            Berth berth = RegionManager.pointBerthMap.get(good.pos);
             berth.removeDomainGood(good);   // 能与不能都删掉
             if (berth.canCarryGood(good)){
                 return new Twins<>(berth,good);
@@ -289,7 +289,7 @@ public class Region {
             if (pair.getValue() > expValue){
                 // 注意这两者价值计算是否统一
                 Good good = pair.getKey();  // 后续可将无用的good去掉
-                Berth berth = regionManager.globalPointToClosestBerth.get(good.pos);
+                Berth berth = RegionManager.pointBerthMap.get(good.pos);
                 if (berth.canCarryGood(good)){
                     realTime += berth.getPathFps(good.pos) * 2;
                     realValue += good.value;
@@ -327,7 +327,7 @@ public class Region {
         while (!regionGoodsByValue.isEmpty()){
             Pair<Good> pair = regionGoodsByValue.peek();
             Good good = pair.getKey();
-            Berth berth = regionManager.globalPointToClosestBerth.get(good.pos);
+            Berth berth = RegionManager.pointBerthMap.get(good.pos);
             if (berth.canCarryGood(good)){
                 if (pair.getValue() > regionExpFpsValue(robotNum)){
                     return true;

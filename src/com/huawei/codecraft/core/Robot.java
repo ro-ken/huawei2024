@@ -8,6 +8,7 @@ import com.huawei.codecraft.util.Point;
 import com.huawei.codecraft.util.RobotRunMode;
 import com.huawei.codecraft.util.Twins;
 import com.huawei.codecraft.zone.Region;
+import com.huawei.codecraft.zone.RegionManager;
 
 import java.util.*;
 
@@ -620,7 +621,7 @@ public class Robot {
             }
         }
         if (tar != null){
-            Berth berth = regionManager.globalPointToClosestBerth.get(tar.pos);
+            Berth berth = RegionManager.pointBerthMap.get(tar.pos);
             berth.removeDomainGood(tarPair);   // 能与不能都删掉
             // 运到自己区域的泊口
             return new Twins<>(bookBerth,tar);
@@ -632,7 +633,7 @@ public class Robot {
         while (!region.regionGoodsByValue.isEmpty()) {
             Pair<Good> pair = region.regionGoodsByValue.poll();
             Good good = pair.getKey();
-            Berth berth = regionManager.globalPointToClosestBerth.get(good.pos);
+            Berth berth = RegionManager.pointBerthMap.get(good.pos);
             berth.removeDomainGood(pair);   // 能与不能都删掉
             if (berth.canCarryGood(good)) {
                 return new Twins<>(berth, good);
