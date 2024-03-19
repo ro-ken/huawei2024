@@ -33,12 +33,12 @@ public class RegionManager {
      */
     public RegionManager(Path pathFinder) {
         this.pathFinder = pathFinder;  // 通过构造器注入 Path 实现
-//        createInitialRegions();
-//        getFullPathsFromPoints2Berths();
-//        initGlobalPoint2ClosestBerthMap();
-//        splitRegions();
-//        assignRobotsToZone();
-//        assignRobotsToRegion(); // 给区域分配机器人
+        createInitialRegions();
+        getFullPathsFromPoints2Berths();
+        initGlobalPoint2ClosestBerthMap();
+        splitRegions();
+        assignRobotsToZone();
+        assignRobotsToRegion(); // 给区域分配机器人
 //        printAll();
 
     }
