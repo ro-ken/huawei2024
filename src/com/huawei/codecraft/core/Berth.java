@@ -24,6 +24,7 @@ public class Berth {
     public Map<Point,List<Point>> mapPath = new HashMap<>();   //  地图所有点到该泊位的路径信息
     public int deadLine = Const.totalFrame;     // 有效时间，超过这个时间轮船不装了，也不用往这里运了
     public int totalGoodNum;
+    public final Map<Integer,Integer> pathLenToNumMap = new HashMap<>();      // 计算区域点到泊口长度对应个数的map
     public int points;      // berth拥有的最短路径点个数
 
     public void setDeadLine(int deadLine) {
