@@ -46,7 +46,7 @@ public class RegionManagerTest {
             "test\\map7.txt",  // map-3.12 6
             "test\\map8.txt"   // map-3.13 7
     };
-    private final int map = 4; // 测试地图,0对应map-3.6，测试不同地图修改这个
+    private final int map = 1; // 测试地图,0对应map-3.6，测试不同地图修改这个
     private RegionManager regionManager;
     private void initBerth() {
         for (int i = 0; i < 10; i++) {
@@ -75,9 +75,9 @@ public class RegionManagerTest {
         }
     }
     @Test
-    public void testCreateInitialRegions() {
+    public void testCreateInitialRegions() {    // 初始区域测试
         long startTime = System.nanoTime();  // Start timing
-
+        init();
         System.out.println("*************testCeateInitialRegions**************");
         printRegionDetails();
         System.out.println("*********************************************");
@@ -87,7 +87,7 @@ public class RegionManagerTest {
     }
 
     @Test
-    public void testGetFullPathsFromPoints2Berths() {
+    public void testGetFullPathsFromPoints2Berths() {   // 路径测试
         System.out.println("*************testGetFullPathsFromPoints2Berths**************");
         long startTime = System.nanoTime();  // Start timing
         init();
@@ -104,7 +104,7 @@ public class RegionManagerTest {
     }
 
     @Test
-    public void testGlobalPoint2ClosestBerthMap() {
+    public void testGlobalPoint2ClosestBerthMap() {  // 测试 点 到 最短泊位的hash表
         System.out.println("*************testGlobalPoint2ClosestBerthMap**************");
         long startTime = System.nanoTime();  // Start timing
         init();

@@ -24,6 +24,7 @@ import static com.huawei.codecraft.way.Mapinfo.map;
  */
 public class RegionManager {
     public static final List<Region> regions = new ArrayList<>();    // 地图所有的region
+    public static final Set<Point> pointSet= new HashSet<>();    // 点的set集合
     public static final Map<Point, Region> pointRegionMap = new HashMap<>();    // point 到 region 的映射，查找点属于的 region
     public static final Map<Point, Berth> pointBerthMap = new HashMap<>();  // 获取离点最近的泊位
     private final Path pathFinder;  // Path 接口的引用
@@ -33,12 +34,12 @@ public class RegionManager {
      */
     public RegionManager(Path pathFinder) {
         this.pathFinder = pathFinder;  // 通过构造器注入 Path 实现
-        createInitialRegions();
-        getFullPathsFromPoints2Berths();
-        initGlobalPoint2ClosestBerthMap();
-        splitRegions();
-        assignRobotsToZone();
-        assignRobotsToRegion(); // 给区域分配机器人
+//        createInitialRegions();
+//        getFullPathsFromPoints2Berths();
+//        initGlobalPoint2ClosestBerthMap();
+//        splitRegions();
+//        assignRobotsToZone();
+//        assignRobotsToRegion(); // 给区域分配机器人
 //        printAll();
 
     }
@@ -79,7 +80,7 @@ public class RegionManager {
     private void createInitialRegions() {
         for (Berth berth : berths) {
             Point berthPoint = berth.pos;
-            if (!pointRegionMap.containsKey(berthPoint)) {
+            if (!pointSet.contains(berthPoint)) {
                 Region region = new Region(regions.size());
                 exploreMap(berthPoint.x, berthPoint.y, region);
                 if (!region.getAccessiblePoints().isEmpty()) {
@@ -100,12 +101,12 @@ public class RegionManager {
             int y = current.y;
 
             // 跳过无效点或已经探索的点
-            if (!isValid(x, y) || map[x][y] != 0 || pointRegionMap.containsKey(current)) {
+            if (!isValid(x, y) || map[x][y] != 0 || pointSet.contains(current)) {
                 continue;
             }
 
             // 标记点为已探索，添加到区域中
-            pointRegionMap.put(current, region);
+            pointSet.add(current);
             region.addAccessiblePoint(current);
 
             // 如果该点是泊位，也添加到区域
@@ -154,7 +155,7 @@ public class RegionManager {
                 int newY = current.y + dir[1];
                 Point nextPoint = new Point(newX, newY);
 
-                if (pointRegionMap.containsKey(nextPoint) && !visited[newX][newY]) {
+                if (pointSet.contains(nextPoint) && !visited[newX][newY]) {
                     visited[newX][newY] = true;
 
                     List<Point> newPath = new ArrayList<>(currentPath);
@@ -186,10 +187,6 @@ public class RegionManager {
                         closestBerth = berth;
                         shortestPath = path;
                     }
-                }
-                if (closestBerth == null){
-//                    Util.printErr("initGlobalPoint2ClosestBerthMap");
-                    return;
                 }
                 closestBerth.points += 1;
                 // 更新离点最近的泊位信息
@@ -223,7 +220,7 @@ public class RegionManager {
             zones.add(zone);  // 将 Zone 添加到全局列表
 
             // 将大区域内剩余的点分配到最近的新区域
-            allocateRemainingPoints(largeRegion, newRegions);
+            allocateRemainingPoints(largeRegion);
 
             // 为新分割的 region 添加邻近的region
             addNeighborRegion(newRegions);
@@ -308,7 +305,7 @@ public class RegionManager {
     private void secondMergeByPointsCounts(ArrayList<Berth> berthsList, UnionFind unionFind, List<Region> newRegions, Zone zone, Map<Point, Integer> rootPointsSum, Map<Point, Region> rootToRegion, Set<Berth> unassignedBerths) {
         for (Point root : rootPointsSum.keySet()) {
             // 如果这个聚类的总点数足以形成一个区域
-            if (rootPointsSum.get(root) >= minPointsPercent * pointRegionMap.size()) {
+            if (rootPointsSum.get(root) >= minPointsPercent * pointSet.size()) {
                 Region region = new Region(newRegions.size());
                 newRegions.add(region);
                 zone.addRegion(region);
@@ -327,37 +324,32 @@ public class RegionManager {
     }
 
     private void processUnassignedBerths(Set<Berth> unassignedBerths, ArrayList<Berth> berthsList, UnionFind unionFind, Map<Point, Region> rootToRegion, List<Region> newRegions, Zone zone) {
-        Iterator<Berth> iterator = unassignedBerths.iterator();
+        Set<Berth> assignedBerths = new HashSet<>();
 
-        while (iterator.hasNext()) {
-            Berth unassignedBerth = iterator.next();
+        for (Berth unassignedBerth : unassignedBerths) {
+            // 寻找最近的berth
             Berth nearestBerth = findNearestBerth(unassignedBerth, berthsList, unionFind, rootToRegion);
 
-            if (nearestBerth != null && rootToRegion.containsKey(unionFind.find(nearestBerth.pos))) {
-                Region nearestRegion = rootToRegion.get(unionFind.find(nearestBerth.pos));
-                nearestRegion.addBerth(unassignedBerth);
-                pointRegionMap.put(unassignedBerth.pos, nearestRegion);
-                iterator.remove();
-            } else if (nearestBerth != null) {
-                int combinedPoints = unassignedBerth.points + nearestBerth.points;
-                if (combinedPoints >= minPointsPercent * pointRegionMap.size()) {
-                    Region newRegion = new Region(newRegions.size());
-                    newRegions.add(newRegion);
-                    zone.addRegion(newRegion);
-                    newRegion.addBerth(unassignedBerth);
-                    newRegion.addBerth(nearestBerth);
-                    pointRegionMap.put(unassignedBerth.pos, newRegion);
-                    pointRegionMap.put(nearestBerth.pos, newRegion);
-                    rootToRegion.put(unionFind.find(unassignedBerth.pos), newRegion);
-                    rootToRegion.put(unionFind.find(nearestBerth.pos), newRegion);
-                } else {
-                    Region closestRegion = findClosestRegion(unassignedBerth, newRegions);
-                    closestRegion.addBerth(unassignedBerth);
-                    pointRegionMap.put(unassignedBerth.pos, closestRegion);
-                    rootToRegion.put(unionFind.find(unassignedBerth.pos), closestRegion);
-                }
-                iterator.remove();
+            int combinedPoints = unassignedBerth.points + nearestBerth.points; // 将两个berth的points相加
+            // 如果最近距离的 berth 不存在region，且未处理，同时符合合并条件，那么创建新区域
+             if (!rootToRegion.containsKey(unionFind.find(nearestBerth.pos)) && !assignedBerths.contains(nearestBerth) && combinedPoints >= minPointsPercent * pointSet.size()) {
+                Region newRegion = new Region(newRegions.size());
+                newRegions.add(newRegion);
+                zone.addRegion(newRegion);
+                newRegion.addBerth(unassignedBerth);
+                newRegion.addBerth(nearestBerth);
+                pointRegionMap.put(unassignedBerth.pos, newRegion);
+                pointRegionMap.put(nearestBerth.pos, newRegion);
+                rootToRegion.put(unionFind.find(unassignedBerth.pos), newRegion);
+                rootToRegion.put(unionFind.find(nearestBerth.pos), newRegion);
+                assignedBerths.add(nearestBerth);
+            } else {
+                Region closestRegion = findClosestRegion(unassignedBerth, newRegions);
+                closestRegion.addBerth(unassignedBerth);
+                pointRegionMap.put(unassignedBerth.pos, closestRegion);
+                rootToRegion.put(unionFind.find(unassignedBerth.pos), closestRegion);
             }
+            assignedBerths.add(unassignedBerth);
         }
     }
 
@@ -366,7 +358,7 @@ public class RegionManager {
         Berth nearestBerth = null;
         int minDistance = unreachableFps;
         for (Berth berth : berthsList) {
-            if (!berth.equals(targetBerth) && !rootToRegion.containsKey(unionFind.find(berth.pos))) {
+            if (!berth.equals(targetBerth)) {
                 int distance = targetBerth.mapPath.get(berth.pos).size();
                 if (distance < minDistance) {
                     minDistance = distance;
@@ -396,7 +388,7 @@ public class RegionManager {
     /**
      * @function 将剩余点进行分配，根据点离得最近的泊位作为区域划分的条件
      */
-    private void allocateRemainingPoints(Region largeRegion, List<Region> newRegions) {
+    private void allocateRemainingPoints(Region largeRegion) {
         for (Point point : largeRegion.accessiblePoints) {
             // 从 globalPointToClosestBerth 映射中获取最近的泊位
             Berth closestBerth = pointBerthMap.get(point);
@@ -404,21 +396,20 @@ public class RegionManager {
             Region closestRegion = pointRegionMap.get(closestBerth.pos);
 
             // 确保找到了最近泊位和所属区域
-            if (closestRegion != null) {
-                // 将点加入到最近的区域
-                closestRegion.addAccessiblePoint(point);
+            // 将点加入到最近的区域
+            closestRegion.addAccessiblePoint(point);
 
-                // 更新点到区域的映射
-                pointRegionMap.put(point, closestRegion);
+            // 更新点到区域的映射
+            pointRegionMap.put(point, closestRegion);
 
-                // 获取点到最近泊位的路径长度
-                List<Point> shortestPath = closestBerth.mapPath.get(point);
-                // 更新路径长度的统计信息
-                if (shortestPath != null) {
-                    int pathLength = shortestPath.size() - 1; // 减1以排除起始点本身
-                    closestRegion.pathLenToNumMap.merge(pathLength, 1, Integer::sum);
-                }
+            // 获取点到最近泊位的路径长度
+            List<Point> shortestPath = closestBerth.mapPath.get(point);
+            // 更新路径长度的统计信息
+            if (shortestPath != null) {
+                int pathLength = shortestPath.size() - 1; // 减1以排除起始点本身
+                closestRegion.pathLenToNumMap.merge(pathLength, 1, Integer::sum);
             }
+
         }
     }
 
