@@ -12,6 +12,7 @@ import com.huawei.codecraft.zone.Region;
 import com.huawei.codecraft.zone.RegionManager;
 import com.huawei.codecraft.util.Point;
 import com.huawei.codecraft.way.Mapinfo;
+import com.huawei.codecraft.zone.Zone;
 
 import static com.huawei.codecraft.Util.*;
 import static com.huawei.codecraft.Const.*;
@@ -66,6 +67,13 @@ public class Main {
         }
         regionManager = new RegionManager(path);
         initBoat();
+
+        Util.printDebug("打印区域信息");
+        for (Region region : RegionManager.regions) {
+            Util.printLog(region+":"+region.zone);
+        }
+
+
     }
 
     private static void initBoat() {
@@ -122,6 +130,17 @@ public class Main {
                 }
             }
         }
+
+
+        Util.printDebug("打印区域信息");
+        printLog(zones);
+        for (Region region : RegionManager.regions) {
+            Util.printLog(region+":"+region.zone);
+        }
+        for (Robot workRobot : workRobots) {
+            Util.printLog(workRobot + ",region:"+workRobot.region + ",zone:"+workRobot.region.zone);
+        }
+
 
         Util.printLog("打印运输货物信息");
         if (frameId == 14999){

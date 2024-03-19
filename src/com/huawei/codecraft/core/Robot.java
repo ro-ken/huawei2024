@@ -97,6 +97,10 @@ public class Robot {
         Berth tarBer = null;
         Good tarGood=null;
         Pair<Good> tarPair = null;
+        Util.printLog(this);
+        Util.printLog("Region："+region);
+        Util.printLog("zone："+region.zone);
+        Util.printLog("berths："+region.zone.berths);
         for (Berth berth : region.zone.berths) {
             if (berth.notFinalShip()){
                 continue;
@@ -170,7 +174,7 @@ public class Robot {
             Berth berth = pickClosestAndAvailBerth();
             if (berth != null){
                 bookBerth = berth;
-                region = bookBerth.region;
+//                region = bookBerth.region;        todo 这里后面改回来
             }else {
                 Util.printErr("没有可用的Berth");
             }

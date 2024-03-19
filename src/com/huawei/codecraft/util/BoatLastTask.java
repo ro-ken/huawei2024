@@ -43,7 +43,7 @@ public class BoatLastTask {
     private void updateTime() {
         // 更新周期时间
         T0 = b2bFps + berths.get(0).transport_time + berths.get(1).transport_time;
-        // 里面应该传入T，暂时+10替代一下
+        // 里面应该传入T，todo 暂时+10替代一下
         T = T0 + berths.get(0).expectLoadTime(T0) + berths.get(1).expectLoadTime(T0) + 10;
 
         latestT = totalFrame - T - flexTime;
@@ -94,7 +94,7 @@ public class BoatLastTask {
     }
 
     // 判断是否可以去下一个泊口，而不耽误最后的周期
-    public boolean canBerthgotoBerth(Berth nextBerth) {
+    public boolean canBerthGotoBerth(Berth nextBerth) {
         // todo
         int costTime = nextBerth.transport_time + b2bFps + 5;// 装货预留时间
         if (frameId >= latestT - costTime){
