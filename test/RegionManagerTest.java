@@ -157,7 +157,7 @@ public class RegionManagerTest {
             System.out.println("Region ID: " + region.getId());
             System.out.println("  Berths in region: " + region.getBerths().size());
             for (Berth berth : region.getBerths()) {
-                System.out.println("    Berth at: " + berth.pos);
+                System.out.println("    Berth at: " + berth.pos + "total points:" + berth.points);
             }
             System.out.println("  Accessible points in region: " + region.getAccessiblePoints().size());
             System.out.println(" neighborRegion: ");
@@ -175,7 +175,7 @@ public class RegionManagerTest {
     public void printGlobalPoint2ClosestBerthToFile() {
         String fileName = "points.txt";
         int total = 0;
-        try (BufferedWriter writer = new BufferedWriter(new FileWriter(fileName))) {
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(fileName, false))) {
             for (Berth berth : berths) {
                 total += berth.points;
                 writer.write("Berth ID: " + berth.id + " points:" + berth.points + "\n");
@@ -192,7 +192,7 @@ public class RegionManagerTest {
     }
     public void printPathsDetailsToFile() {
         String fileName = "berth2point.txt";
-        try (BufferedWriter writer = new BufferedWriter(new FileWriter(fileName))) {
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(fileName, false))) {
             writer.write("Paths from Berths to Points:\n");
             for (Berth berth : berths) {
                 Map<Point, List<Point>> paths = berth.mapPath;
@@ -243,28 +243,29 @@ public class RegionManagerTest {
 
     // 打印点所属于的区域
     public void printPointDetailsToFile() {
-        try (PrintWriter writer = new PrintWriter(new File("point2Region.txt"))) {
-            writer.println("Total regions: " + regions.size());
+        String fileName = "point2Region.txt";
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(fileName, false))) { // false to overwrite
+            writer.write("Total regions: " + regions.size() + "\n");
             for (Region region : regions) {
-                writer.println("Region ID: " + region.getId());
-                writer.println("  Berths in region: " + region.getBerths().size());
+                writer.write("Region ID: " + region.getId() + "\n");
+                writer.write("  Berths in region: " + region.getBerths().size() + "\n");
                 for (Berth berth : region.getBerths()) {
-                    writer.println("    Berth at: " + berth.pos);
+                    writer.write("    Berth at: " + berth.pos + "\n");
                 }
-                writer.println("  Accessible points in region: " + region.getAccessiblePoints().size());
+                writer.write("  Accessible points in region: " + region.getAccessiblePoints().size() + "\n");
                 if (!region.getAccessiblePoints().isEmpty()) {
-                    writer.print("    Accessible Points: ");
+                    writer.write("    Accessible Points: ");
                     for (Point point : region.getAccessiblePoints()) {
-                        writer.print(point + " ");
+                        writer.write(point + " ");
                     }
-                    writer.println();  // Move to the next line after printing all points of the region.
+                    writer.write("\n");  // Move to the next line after printing all points of the region.
                 }
-//                writer.println("  Assigned robots in region: " + region.assignedRobots.size());
             }
-        } catch (Exception e) {
+        } catch (IOException e) {
             e.printStackTrace();
         }
     }
+
 
     public void printZoneDetails() {
         System.out.println("Zone details:");
@@ -280,7 +281,7 @@ public class RegionManagerTest {
 
     public void printHashMapDetailsToFile() {
         String fileName = "mapDetails.txt";
-        try (BufferedWriter writer = new BufferedWriter(new FileWriter(fileName))) {
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(fileName, false))) {
             // 打印每个区域的邻居区域信息
             writer.write("neighborRegions:\n");
             for (Region region : regions) {
@@ -298,6 +299,17 @@ public class RegionManagerTest {
                 for (Map.Entry<Integer, Integer> pathEntry : region.getPathLenToNumMap().entrySet()) {
                     writer.write("  Path Length: " + pathEntry.getKey() + ", Number of Points: " + pathEntry.getValue() + "\n");
                 }
+            }
+
+            writer.write("\nPath Length to Number of Points Mapping for each Berth:\n");
+            for (Berth berth : berths) {
+                int total = 0;
+                writer.write("Berth ID: " + berth.id + "  " + berth.pos + "\n");
+                for (Map.Entry<Integer, Integer> pathEntry : berth.pathLenToNumMap.entrySet()) {
+                    writer.write("  Path Length: " + pathEntry.getKey() + ", Number of Points: " + pathEntry.getValue() + "\n");
+                    total += pathEntry.getValue();
+                }
+                writer.write("Total points: " + total);
             }
 
             // 打印 globalPointToClosestBerth

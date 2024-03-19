@@ -408,6 +408,7 @@ public class RegionManager {
             if (shortestPath != null) {
                 int pathLength = shortestPath.size() - 1; // 减1以排除起始点本身
                 closestRegion.pathLenToNumMap.merge(pathLength, 1, Integer::sum);
+                closestBerth.pathLenToNumMap.merge(pathLength, 1, Integer::sum);
             }
 
         }
