@@ -28,5 +28,4 @@ bin/
 ### Mac OS ###
 .DS_Store
 debug.txt
-test/
 debug.txt

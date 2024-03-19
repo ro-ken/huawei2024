@@ -86,7 +86,8 @@ public class Region {
     public String toString() {
         return "Region{" +
                 "id=" + id +
-                "berthpos" + getPos()+
+                "hashcode" + hashCode()+
+//                "zone"+zone.hashCode()+
                 '}';
     }
 

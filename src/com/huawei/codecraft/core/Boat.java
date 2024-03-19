@@ -6,6 +6,7 @@ import com.huawei.codecraft.util.BoatLastTask;
 import com.huawei.codecraft.util.BoatStatus;
 import com.huawei.codecraft.util.Twins;
 import com.huawei.codecraft.zone.Region;
+import com.huawei.codecraft.zone.RegionManager;
 
 import java.util.*;
 
@@ -141,7 +142,7 @@ public class Boat {
         int nextGood = next.getPredictGoodNum(b2bFps);
         if (capacity >= goodSize + nextGood){
             // 容量够
-            if (task.canBerthgotoBerth(next)){
+            if (task.canBerthGotoBerth(next)){
                 changeBerthAndShip(next);
                 return;
             }
@@ -169,7 +170,7 @@ public class Boat {
         List<Berth> berthList =  new ArrayList<>(Arrays.asList(berths));// 剩余未分配泊口
         ArrayList<Berth> tmp;
         int boatId = 0;
-        for (Region region : regionManager.regions) {
+        for (Region region : RegionManager.regions) {
             tmp = region.getCloestTwinsBerth(); // 找出区域内的成对泊口为一组，分配给一艘船
             while (tmp.size() > 1){
                 // 将泊位
