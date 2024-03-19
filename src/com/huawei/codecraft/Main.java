@@ -51,7 +51,7 @@ public class Main {
     }
 
     private static void testRegionValue() {
-        for (Region region : regionManager.regions) {
+        for (Region region : RegionManager.regions) {
             printLog("调试Region------"+region);
             region.calcCurRegionValue(1);
             region.calcCurRegionValue(2);

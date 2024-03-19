@@ -1,7 +1,6 @@
 package com.huawei.codecraft.core;
 
 import com.huawei.codecraft.Const;
-import com.huawei.codecraft.Main;
 import com.huawei.codecraft.Util;
 import com.huawei.codecraft.util.Pair;
 import com.huawei.codecraft.util.Point;
@@ -146,8 +145,8 @@ public class Robot {
             if (arriveGood()) {
                 // 1、如果到达了物品，捡起物品，换路线选择泊口
                 if (bookGood.isExist()) {
-                    loadGood(); // 装货
                     carryGoodToBerth();
+                    loadGood(); // 装货
                 } else {
                     // 物品不存在，任务结束
                     turnOffTask();
@@ -155,10 +154,10 @@ public class Robot {
             }
         } else {
             if (arriveBerth()) {
-                totalGoodNum += 1;
-                Main.totalGoodNum += 1;
-                bookBerth.totalGoodNum += 1;
-                bookBerth.region.totalGoodNum += 1;
+//                totalGoodNum += 1;
+//                Main.totalGoodNum += 1;
+//                bookBerth.totalGoodNum += 1;
+//                bookBerth.region.totalGoodNum += 1;
                 // 2、如果到达了泊口，卸货，任务结束
                 unloadGood(); //卸货
                 turnOffTask();
@@ -174,7 +173,7 @@ public class Robot {
             Berth berth = pickClosestAndAvailBerth();
             if (berth != null){
                 bookBerth = berth;
-//                region = bookBerth.region;        todo 这里后面改回来
+                region = bookBerth.region;      //  todo 这里后面改回来
             }else {
                 Util.printErr("没有可用的Berth");
             }
@@ -187,7 +186,7 @@ public class Robot {
         int min = unreachableFps;
         Berth tar = null;
         for (Berth berth : region.zone.berths) {
-            if (berth.notFinalShip()){
+            if (berth.notFinalShip() || berth.sizeNotEnough()){
                 continue;
             }
             int dis = berth.getPathFps(pos);
@@ -211,11 +210,13 @@ public class Robot {
         Util.printPull(id);
         carry = 0;
         bookBerth.addBerthGood(bookGood);
+        bookBerth.bookGoodSize--;
     }
 
     private void loadGood() {
         Util.printGet(id);
         carry = 1;
+        bookBerth.bookGoodSize++;
     }
 
     // 统一处理机器人移动信息

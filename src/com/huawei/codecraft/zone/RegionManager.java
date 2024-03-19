@@ -5,6 +5,7 @@ import com.huawei.codecraft.core.Berth;
 import com.huawei.codecraft.core.Good;
 import com.huawei.codecraft.core.Robot;
 import com.huawei.codecraft.util.Point;
+import com.huawei.codecraft.util.RegionValue;
 import com.huawei.codecraft.util.UnionFind;
 import com.huawei.codecraft.way.Path;
 
@@ -34,12 +35,12 @@ public class RegionManager {
      */
     public RegionManager(Path pathFinder) {
         this.pathFinder = pathFinder;  // 通过构造器注入 Path 实现
-//        createInitialRegions();
-//        getFullPathsFromPoints2Berths();
-//        initGlobalPoint2ClosestBerthMap();
-//        splitRegions();
-//        assignRobotsToZone();
-//        assignRobotsToRegion(); // 给区域分配机器人
+        createInitialRegions();
+        getFullPathsFromPoints2Berths();
+        initGlobalPoint2ClosestBerthMap();
+        splitRegions();
+        assignRobotsToZone();
+        assignRobotsToRegion(); // 给区域分配机器人
 //        printAll();
 
     }
@@ -477,9 +478,12 @@ public class RegionManager {
      * 给每个区域静态划分机器人，保证每个区域至少一个机器人，机器人少于区域数另说
      */
     private void assignRobotsToRegion() {
-        // 不行的话按照距离前80个点为准
+        for (Berth berth : berths) {
+            berth.staticValue = calcStaticValue(berth.pathLenToNumMap,berth.points);
+        }
+
         for (Region region : regions) {
-            region.calcStaticValue();
+            region.staticValue = calcStaticValue(region.pathLenToNumMap,region.accessiblePoints.size());
         }
         //计算每个区域应该分多少机器人
         for (Zone zone : zones) {
@@ -490,6 +494,55 @@ public class RegionManager {
         for (Zone zone : zones) {
             zone.assignSpecificRegionRobot();
         }
+    }
+
+    public static Map<Integer, RegionValue> calcStaticValue(Map<Integer,Integer> pathLenToNumMap, int area) {
+
+        // 计算机器人的静态价值
+        // 第一优先级：面积够的 > 面积不够的；第二优先级，平均距离少的 > 平均距离远的
+        Map<Integer, RegionValue> staticValue = new HashMap<>();
+        double dis = 0;   // t为理想机器人搬运货物走的总fps
+        double p = getPointProb()/totalFrame * Good.maxSurvive;     // Good.maxSurvive 周期内每个点产生的概率  ，计算出概率p = 0.0052;
+        int total = Good.maxSurvive;   //往返fps，只有一半的时间是在去的路上
+        Util.printLog("管理区域大小："+area);
+        Util.printLog("单位周期内每点概率："+p);
+        int robotNum = 1;
+        double totalNum = 0;
+        for (int i = 1; i < 300; i++) {
+            if (pathLenToNumMap.containsKey(i)){
+                int num = pathLenToNumMap.get(i);
+                double realNum= num * p;
+                dis += i * realNum * 2;     //往返fps，只有一半的时间是在去的路上
+                totalNum += realNum;
+                if (dis > total){ // 时间到了，不能在运
+                    totalNum -= (dis - total)/2/i;  //加多了，减回去几个
+                    staticValue.put(robotNum,new RegionValue(robotNum,true,i,totalNum));
+                    if (robotNum == 3){
+                        break;  // 一个区域三个机器人最多了
+                    }
+                    robotNum ++;
+                    total += total; // 2个机器人搬运距离翻倍
+                }
+            }else {
+                while (robotNum <=3){
+                    staticValue.put(robotNum,new RegionValue(robotNum,false,unreachableFps, area * p));
+                    robotNum ++;
+                }
+                break;
+            }
+        }
+        return staticValue;
+    }
+
+    public static double getPointProb() {
+        // 计算每个点生成的概率
+        // 计算所有空地面积
+        int area = 1;
+        for (Zone zone : zones) {
+            area +=zone.accessPoints.size();
+        }
+        // 每个点的期望 = 所有物品 / 总点数
+        return expGoodNum / area;
     }
 
     /**

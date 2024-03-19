@@ -111,4 +111,15 @@ public class BoatLastTask {
     public boolean isLastBerth() {
         return endIndex == 2;
     }
+
+    public void sortBerth() {
+        // 将 berths 按照排序，调度顺序为 0号,1号,价值大的排后面
+        if (this.berths.size() != 2){
+            return;
+        }
+        if (this.berths.get(0).staticValue.get(1).getPeriodValue() > this.berths.get(1).staticValue.get(1).getPeriodValue()){
+            Berth b0 = berths.remove(0);
+            berths.add(b0);
+        }
+    }
 }

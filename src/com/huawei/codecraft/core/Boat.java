@@ -57,16 +57,18 @@ public class Boat {
             if (mustGotoVirtual()){
                 Util.printDebug("船最后一次调度：");
                 clacGoods();//结算货物
+                bookBerth.capacity = 0; // 没有船会去装了
                 goToVirtual();
             }else {
+                if (task.isLastBerth()){
+                    return;     // 最后一个泊口，等最后一帧在走
+                }
                 if (isLoadFinish()){
-                    if (task.isLastBerth()){
-                        return;     // 最后一个泊口，等最后一帧在走
-                    }
                     // todo 判断是否等一会或直接走
                     clacGoods();//结算货物
                     Berth berth = task.getNextBerth();  // 换下一个泊口
                     changeBerthAndShip(berth);
+                    berth.capacity = capacity - goodSize;
                 }
             }
         }
@@ -170,6 +172,7 @@ public class Boat {
         List<Berth> berthList =  new ArrayList<>(Arrays.asList(berths));// 剩余未分配泊口
         ArrayList<Berth> tmp;
         int boatId = 0;
+        // ① 同区域的为一组
         for (Region region : RegionManager.regions) {
             tmp = region.getCloestTwinsBerth(); // 找出区域内的成对泊口为一组，分配给一艘船
             while (tmp.size() > 1){
@@ -180,18 +183,78 @@ public class Boat {
                 berthList.removeAll(addlist);
             }
         }
-        // 剩余的泊口按照价值排序，todo 这里先不算，直接分配以后在算
-        while (boatId<boat_num){
-            boats[boatId++].task.addBoath(berthList.subList(0,2));  // 如果不是1v2，这里要修改
-            berthList.remove(0);
-            berthList.remove(0);
+        // ② 距离近的为一组
+        while (!berthList.isEmpty()){
+            tmp = getClosestTwinsBerth(berthList);
+            if (tmp.size()>1){
+                boats[boatId++].task.addBoath(tmp); // 每艘船分配2个泊口
+            }else {
+                break;
+            }
         }
-//        Util.printDebug("打印boats 分配信息");
-//        for (Boat boat : boats) {
-//            Util.printDebug(boat.id + ":"+boat.task.berths);
-//        }
+
+        // ③ 还没分完的是不同区域了，按价值高低，高 -> 低
+        // 剩余的泊口按照价值排序，
+        while (boatId<boat_num){
+            tmp = getHighestLowestBerths(berthList);
+            boats[boatId++].task.addBoath(tmp);  // 如果不是1v2，这里要修改
+        }
+
+        for (Boat boat : boats) {
+            boat.task.sortBerth();
+        }
+
+        Util.printDebug("打印boats 分配信息");
+        for (Boat boat : boats) {
+            Util.printDebug(boat.id + ":"+boat.task.berths);
+        }
     }
 
+    private static ArrayList<Berth> getHighestLowestBerths(List<Berth> berthList) {
+        // 得到berthList 价值最高和最低的berth；
+        ArrayList<Berth> res = new ArrayList<>();
+        if (berthList.isEmpty()) return res;
+        Berth high = berthList.get(0);
+        Berth low = berthList.get(1);
+        for (Berth berth : berthList) {
+            if (berth.staticValue.get(1).getPeriodValue() > high.staticValue.get(1).getPeriodValue()){
+                high = berth;
+            }
+            if (berth.staticValue.get(1).getPeriodValue() < low.staticValue.get(1).getPeriodValue()){
+                low = berth;
+            }
+        }
+        berthList.remove(high);
+        berthList.remove(low);
+        res.add(high);
+        res.add(low);
+        return res;
+    }
+
+    private static ArrayList<Berth> getClosestTwinsBerth(List<Berth> berthList) {
+        // 获取berthList中两个最近的泊口
+        ArrayList<Berth> res = new ArrayList<>();
+        int min = unreachableFps;
+        Berth tar1 = null;
+        Berth tar2 = null;
+        for (int i = 0; i < berthList.size()-1; i++) {
+            for (int j = i+1; j < berthList.size(); j++) {
+                int dis = berthList.get(i).getPathFps(berthList.get(j).pos);
+                if (dis < min){
+                    min = dis;
+                    tar1 = berthList.get(i);
+                    tar2 = berthList.get(j);
+                }
+            }
+        }
+        if (min < unreachableFps){
+            berthList.remove(tar1);
+            berthList.remove(tar2);
+            res.add(tar1);
+            res.add(tar2);
+        }
+        return res;
+    }
 
 
     private boolean isArrive() {

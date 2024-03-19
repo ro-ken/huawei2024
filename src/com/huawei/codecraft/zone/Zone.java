@@ -87,7 +87,7 @@ public class Zone {
         double dist = src.calcToRegionDis(tar);
         double profit = (Good.maxSurvive - 2*dist) * destV;
         double loss = Good.maxSurvive * srcV;
-        Util.printDebug("profit:"+profit+"loss:"+loss);
+//        Util.printDebug("profit:"+profit+"loss:"+loss);
         return profit - loss;
     }
 

@@ -5,9 +5,12 @@ import com.huawei.codecraft.Main;
 import com.huawei.codecraft.Util;
 import com.huawei.codecraft.util.Pair;
 import com.huawei.codecraft.util.Point;
+import com.huawei.codecraft.util.RegionValue;
 import com.huawei.codecraft.zone.Region;
 
 import java.util.*;
+
+import static com.huawei.codecraft.Const.noLimitedSize;
 
 // 泊位
 public class Berth {
@@ -25,7 +28,10 @@ public class Berth {
     public int deadLine = Const.totalFrame;     // 有效时间，超过这个时间轮船不装了，也不用往这里运了
     public int totalGoodNum;
     public final Map<Integer,Integer> pathLenToNumMap = new HashMap<>();      // 计算区域点到泊口长度对应个数的map
+    public Map<Integer, RegionValue> staticValue = new HashMap<>();     // 区域静态价值
     public int points;      // berth拥有的最短路径点个数
+    public int capacity = noLimitedSize;
+    public int bookGoodSize;
 
     public void setDeadLine(int deadLine) {
         this.deadLine = deadLine;
@@ -154,9 +160,12 @@ public class Berth {
     }
 
     public boolean canSendToMe(Point pos) {
+        if (sizeNotEnough()){
+            return false;
+        }
         // 是否可以将这个物品送到我这儿来，
         int dis = getPathFps(pos);
-        if (deadLine == Const.totalFrame){
+        if (deadLine == Const.totalFrame ){
             return true;
         }
         // 弹性参数可调 ，参数表示是否早点离开这个泊口
@@ -166,6 +175,11 @@ public class Berth {
     public boolean notFinalShip() {
         // 不是轮船最后运输的泊口
         return deadLine < Const.totalFrame;
+    }
+
+    public boolean sizeNotEnough() {
+        // 空间够
+        return existGoods.size() + bookGoodSize >= this.capacity;
     }
 }
 

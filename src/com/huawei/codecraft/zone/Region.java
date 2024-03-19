@@ -87,7 +87,7 @@ public class Region {
         return "Region{" +
                 "id=" + id +
                 "hashcode" + hashCode()+
-//                "zone"+zone.hashCode()+
+                "zone"+zone.hashCode()+
                 '}';
     }
 
@@ -129,52 +129,9 @@ public class Region {
         return res;
     }
 
-    public void calcStaticValue() {
-        // 计算机器人的静态价值
-        // 第一优先级：面积够的 > 面积不够的；第二优先级，平均距离少的 > 平均距离远的
-        double dis = 0;   // t为理想机器人搬运货物走的总fps
-        double p = getPointProb()/totalFrame * Good.maxSurvive;     // Good.maxSurvive 周期内每个点产生的概率  ，计算出概率p = 0.0052;
-        int total = Good.maxSurvive;   //往返fps，只有一半的时间是在去的路上
-        Util.printLog(this+"管理区域大小："+accessiblePoints.size());
-        Util.printLog("单位周期内每点概率："+p);
-        Util.printLog(this.berths);
-        int robotNum = 1;
-        double totalNum = 0;
-        for (int i = 1; i < 300; i++) {
-            if (pathLenToNumMap.containsKey(i)){
-                int num = pathLenToNumMap.get(i);
-                double realNum= num * p;
-                dis += i * realNum * 2;     //往返fps，只有一半的时间是在去的路上
-                totalNum += realNum;
-                if (dis > total){ // 时间到了，不能在运
-                    totalNum -= (dis - total)/2/i;  //加多了，减回去几个
-                    staticValue.put(robotNum,new RegionValue(robotNum,true,i,totalNum));
-                    if (robotNum == 3){
-                        break;  // 一个区域三个机器人最多了
-                    }
-                    robotNum ++;
-                    total += total; // 2个机器人搬运距离翻倍
-                }
-            }else {
-                while (robotNum <=3){
-                    staticValue.put(robotNum,new RegionValue(robotNum,false,unreachableFps, accessiblePoints.size() * p));
-                    robotNum ++;
-                }
-                break;
-            }
-        }
-    }
 
-    public static double getPointProb() {
-        // 计算每个点生成的概率
-        // 计算所有空地面积
-        int area = 1;
-        for (Zone zone : zones) {
-            area +=zone.accessPoints.size();
-        }
-        // 每个点的期望 = 所有物品 / 总点数
-        return expGoodNum / area;
-    }
+
+
 
     public int getClosestBerthPathFps(Point pos) {
         int min = unreachableFps;
@@ -242,7 +199,7 @@ public class Region {
         int num = assignedRobots.size();
         double v1 = calcCurRegionValue(num);
         double v2 = calcCurRegionValue(num-1);
-        Util.printDebug(this+"loss R num:"+num+"v1:"+v1+"v2:"+v2);
+//        Util.printDebug(this+"loss R num:"+num+"v1:"+v1+"v2:"+v2);
         return v1-v2;
     }
 
