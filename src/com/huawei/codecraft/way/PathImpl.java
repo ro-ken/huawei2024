@@ -105,27 +105,44 @@ public class PathImpl implements Path{
             barriers.add(leftPath.get(1));
         }
 
+        // 创建 leftPath 的hashSet
+        HashSet<Point> pointHashSet = new HashSet<>(leftPath);
         // 创建一个空的HashSet<Point>
-        HashSet<Point> pointHashSet = new HashSet<>(barriers);
+        HashSet<Point> visited = new HashSet<>();
+        visited.add(leftPath.get(0));
+        visited.add(leftPath.get(1));
 
-        // 在地图上临时标记对方机器人下一帧的位置为障碍物
+        // bfs 队列
+        Queue<Point> queue = new LinkedList<>();
+        queue.add(pos);
+
+        // 遍历之前将地图临时修改为障碍物，防止对位遍历
         changeMapinfo(barriers);
         ArrayList<Point> path = null;
         // 遍历可能的避让方向
-        for (int[] direction : directions) {
-            int newX = pos.x + direction[0];
-            int newY = pos.y + direction[1];
-            Point newTarget = new Point(newX, newY);
-
-            // 检查新目标点是否可达且不是leftPath的一部分
-            if (isAccessible(newX, newY) && !pointHashSet.contains(newTarget)) {
-                path = getPath(pos, newTarget);  // 尝试找到一条避让路径
-                // 如果找到有效路径且路径终点不在leftPath中，则返回该路径
-                if (path != null && !path.isEmpty()) {
-                    break;
-                } else {
-                    path = null;  // 没有找到有效路径，继续尝试
+        while (!queue.isEmpty()) {
+            Point current = queue.poll();
+            int newX = current.x;
+            int newY = current.y;
+            // 点是可达点且未被访问过
+            if (isAccessible(newX, newY) && !visited.contains(current)) {
+                if (!pointHashSet.contains(current)) {
+                    path = getPath(pos, current);  // 尝试找到一条避让路径
+                    // 如果找到有效路径且路径终点不在leftPath中，则返回该路径
+                    if (path != null && !path.isEmpty()) {
+                        break;
+                    } else {
+                        path = null;  // 没有找到有效路径，继续尝试
+                    }
                 }
+                // 添加点为已探索
+                visited.add(current);
+
+                // 将相邻的点加入队列
+                queue.add(new Point(newX + 1, newY));
+                queue.add(new Point(newX - 1, newY));
+                queue.add(new Point(newX, newY + 1));
+                queue.add(new Point(newX, newY - 1));
             }
         }
 
