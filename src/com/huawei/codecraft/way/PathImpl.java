@@ -100,17 +100,19 @@ public class PathImpl implements Path{
             return null;
         }
         ArrayList<Point> barriers = new ArrayList<Point>();
+        // 创建一个空的HashSet<Point>
+        HashSet<Point> visited = new HashSet<>();
+        visited.add(leftPath.get(0));
+
         barriers.add(leftPath.get(0));
         if (!pos.equals(leftPath.get(1))) {
             barriers.add(leftPath.get(1));
+            visited.add(leftPath.get(1));
         }
 
         // 创建 leftPath 的hashSet
         HashSet<Point> pointHashSet = new HashSet<>(leftPath);
-        // 创建一个空的HashSet<Point>
-        HashSet<Point> visited = new HashSet<>();
-        visited.add(leftPath.get(0));
-        visited.add(leftPath.get(1));
+
 
         // bfs 队列
         Queue<Point> queue = new LinkedList<>();
