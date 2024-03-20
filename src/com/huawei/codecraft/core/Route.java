@@ -45,7 +45,7 @@ public class Route {
             // 该点是泊位的距离
             Berth berth = Const.pointToBerth.get(pos);
             List<Point> path = berth.mapPath.get(robot.pos);
-            Util.printDebug("setNewWay1:berth"+berth.pos+"pos"+robot.pos+"path"+path);
+            Util.printLog("setNewWay1:berth"+berth.pos+"pos"+robot.pos+"path"+path);
             if (path != null){
                 List<Point> path1 = new ArrayList<>(path);
                 Collections.reverse(path1);  // 保存的是泊位到点的路径，需要翻转

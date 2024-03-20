@@ -86,8 +86,7 @@ public class Region {
     public String toString() {
         return "Region{" +
                 "id=" + id +
-                "hashcode" + hashCode()+
-                "zone"+zone.hashCode()+
+                "机器人数"+ staticAssignNum +
                 '}';
     }
 
@@ -290,5 +289,31 @@ public class Region {
     private double regionExpFpsValue(int robotNum) {
         // 返回本区域机器人数量为robotNum的单位期望价值
         return staticValue.get(robotNum).getFpsValue();
+    }
+
+    public Twins<Integer,Integer> getFirstHighValueLeftFps() {
+        if (regionGoodsByTime.isEmpty()){
+            return new Twins<>(unreachableFps,0);
+        }
+        // 获取第一个超过平均物品价值的时间
+        // 如果区域太小，不知道exp Step，那所有都认为是高价值的，取第一个即可
+        if (staticValue.get(1).getExpStep() == unreachableFps){
+            return new Twins<>(regionGoodsByTime.peek().leftFps(),regionGoodsByTime.size());
+        }else {
+            double expValue = staticValue.get(1).getFpsValue() * 0.8;   // 本区域的价值应该是要高于机器人待的区域的，所以回去条件放宽一些
+            int minFps = unreachableFps;
+            int goodNum = 0;
+            for (Pair<Good> pair : regionGoodsByValue) {
+                if (pair.getValue() < expValue){
+                    break;  // 获取所有有价值的货物
+                }
+                int t = pair.getKey().leftFps();
+                goodNum += 1;
+                if (t < minFps){
+                    minFps = t;
+                }
+            }
+            return new Twins<>(minFps,goodNum);
+        }
     }
 }

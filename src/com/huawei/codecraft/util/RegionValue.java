@@ -11,15 +11,11 @@ public class RegionValue {
     double expGoodNum;  // 总共经过有多少物品
     public static double totalFps = Good.maxSurvive;    // 总共的要走完的FPS
 
-    public int getRobotNum() {
-        return num;
-    }
-
     public boolean isAreaRich() {
         return areaRich;
     }
 
-    public double getStep() {
+    public double getExpStep() {
         return expStep;
     }
 

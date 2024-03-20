@@ -504,8 +504,8 @@ public class RegionManager {
         double dis = 0;   // t为理想机器人搬运货物走的总fps
         double p = getPointProb()/totalFrame * Good.maxSurvive;     // Good.maxSurvive 周期内每个点产生的概率  ，计算出概率p = 0.0052;
         int total = Good.maxSurvive;   //往返fps，只有一半的时间是在去的路上
-        Util.printLog("管理区域大小："+area);
-        Util.printLog("单位周期内每点概率："+p);
+//        Util.printLog("管理区域大小："+area);
+//        Util.printLog("单位周期内每点概率："+p);
         int robotNum = 1;
         double totalNum = 0;
         for (int i = 1; i < 300; i++) {

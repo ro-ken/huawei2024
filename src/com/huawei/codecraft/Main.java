@@ -44,7 +44,6 @@ public class Main {
             printLog("-------------frameId:"+frameId+"--------------");
             frameInit();
             handleFrame();
-//            testRegionValue();
             printOk();
             input();
         }
@@ -52,9 +51,14 @@ public class Main {
 
     private static void testRegionValue() {
         for (Region region : RegionManager.regions) {
-            printLog("调试Region------"+region);
-            region.calcCurRegionValue(1);
-            region.calcCurRegionValue(2);
+            printLog("测试Region------"+region+region.berths);
+            Util.printLog(region.staticValue.get(1));
+            Util.printLog(region.staticValue.get(2));
+            Util.printLog(region.staticValue.get(3));
+            for (Berth berth : region.berths) {
+                Util.printLog(berth+":"+berth.staticValue);
+            }
+            Util.printLog(" ");
         }
     }
 
@@ -70,10 +74,9 @@ public class Main {
 
         Util.printDebug("打印区域信息");
         for (Region region : RegionManager.regions) {
-            Util.printLog(region+":"+region.zone);
+            Util.printLog(region+":"+region.berths);
         }
-
-
+        testRegionValue();
     }
 
     private static void initBoat() {
@@ -134,7 +137,7 @@ public class Main {
         if (frameId == 14999){
             Util.printLog("打印运输货物信息");
             Util.printLog("总货物："+totalGoodNum);
-            for (Region region : regionManager.regions) {
+            for (Region region : RegionManager.regions) {
                 Util.printLog(region+":"+region.totalGoodNum + "avg:" + region.totalGoodNum/15 + " ");
                 Util.printLog(":size："+region.accessiblePoints.size()+region.berths+"机器人数："+region.assignedRobots.size());
                 Util.printLog(region.staticValue.get(1));

@@ -50,9 +50,10 @@ public class Zone {
         Region src = robot.region;
         // 当区域只有一个机器人，区域还有高价值货，就不调度
         if (src.assignedRobots.size() == 1){
-            if (src.haveHigherValueGoodThanExp(1)){
-                return false;
-            }
+//            if (src.haveHigherValueGoodThanExp(1)){
+//                return false;
+//            }
+            return false;       // 只有一个机器人默认不调度到其他区域
         }
         // 全局考虑是否重新分配该机器人，
         // 机器人1个、2个；所有区域繁忙情况，繁忙区域是否应该调度本区域的机器人，还是调度临近区域
@@ -117,7 +118,7 @@ public class Zone {
                 for (Region reg : regs) {
                     // 先判断区域是否都充足
                     RegionValue regV = reg.staticValue.get(1);
-                    if (regV.isAreaRich() && regV.getStep() < tarV.getStep()){
+                    if (regV.isAreaRich() && regV.getExpStep() < tarV.getExpStep()){
                         tar = reg;
                         // 都充裕比谁距离小
                     }else {
@@ -148,7 +149,7 @@ public class Zone {
                     for (Region reg : regs) {
                         // 先判断区域是否都充足
                         RegionValue regV = reg.staticValue.get(2);
-                        if (regV.isAreaRich() && regV.getStep() < tarV.getStep()){
+                        if (regV.isAreaRich() && regV.getExpStep() < tarV.getExpStep()){
                             tar = reg;
                             tarV = regV;
                             // 都充裕比谁距离小

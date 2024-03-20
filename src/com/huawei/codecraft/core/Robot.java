@@ -2,10 +2,7 @@ package com.huawei.codecraft.core;
 
 import com.huawei.codecraft.Const;
 import com.huawei.codecraft.Util;
-import com.huawei.codecraft.util.Pair;
-import com.huawei.codecraft.util.Point;
-import com.huawei.codecraft.util.RobotRunMode;
-import com.huawei.codecraft.util.Twins;
+import com.huawei.codecraft.util.*;
 import com.huawei.codecraft.zone.Region;
 import com.huawei.codecraft.zone.RegionManager;
 
@@ -76,52 +73,51 @@ public class Robot {
         handleTask();            // 处理任务
         // 到达目的地，可能任务结束，重新分配
         if (noTask()) {
-            if (greedyMode){
-                Twins<Berth, Good> twins = pickGreedyTask();
+            if (greedyMode) {
+                Twins<Berth, Good> twins = pickLastGreedyTask();
                 setTask(twins);
-            }else {
-                boolean success = region.zone.reAssignRobot(this);
-                if (!success) {
-                    // 要换区域则，要先到区域
-                    Twins<Berth, Good> twins = pickNewTask();
-                    setTask(twins);
-                }
+            } else {
+//                boolean success = region.zone.reAssignRobot(this);
+//                if (!success) {
+//                    // 要换区域则，要先到区域
+//                    Twins<Berth, Good> twins = pickNewTask();
+//                    setTask(twins);
+//                }
+                Twins<Berth, Good> twins = pickNewTask();
+                setTask(twins);
             }
         }
     }
 
-    private Twins<Berth, Good> pickGreedyTask() {
+    private Twins<Berth, Good> pickLastGreedyTask() {
         // 贪心选择任务，选择单次价值最高的
         double maxV = 0;
         Berth tarBer = null;
-        Good tarGood=null;
+        Good tarGood = null;
         Pair<Good> tarPair = null;
         Util.printLog(this);
-        Util.printLog("Region："+region);
-        Util.printLog("zone："+region.zone);
-        Util.printLog("berths："+region.zone.berths);
         for (Berth berth : region.zone.berths) {
-            if (berth.notFinalShip()){
+            if (berth.notFinalShip()) {
                 continue;
             }
             Good tmpGood = null;
             Pair<Good> tmpPair = null;
-            int r2bFps= berth.getPathFps(pos);      //时间 = 泊口到物品  + 机器人到泊口
+            int r2bFps = berth.getPathFps(pos);      //时间 = 泊口到物品  + 机器人到泊口
             double totalFps = r2bFps;
             for (Pair<Good> pair : berth.domainGoodsByValue) {
                 // 找出第一个满足robot的
                 Good good = pair.getKey();
                 int dis = r2bFps + berth.getPathFps(good.pos);
-                if (dis < good.leftFps()){
+                if (dis < good.leftFps()) {
                     tmpGood = good;     // 找到一个就行
                     tmpPair = pair;
                     totalFps += berth.getPathFps(good.pos);     // 实际时间来回
                     break;
                 }
             }
-            if (tmpGood != null){
+            if (tmpGood != null) {
                 double avgV = tmpGood.value / totalFps;
-                if (avgV > maxV){
+                if (avgV > maxV) {
                     maxV = avgV;
                     tarBer = berth;
                     tarGood = tmpGood;
@@ -129,15 +125,15 @@ public class Robot {
                 }
             }
         }
-        if (tarGood != null){
+        if (tarGood != null) {
             tarBer.removeDomainGood(tarPair);
-            return new Twins<>(tarBer,tarGood);
+            return new Twins<>(tarBer, tarGood);
         }
         return null;
     }
 
     private void handleTask() {
-        if (noTask()){
+        if (noTask()) {
             return;
         }
 
@@ -154,10 +150,6 @@ public class Robot {
             }
         } else {
             if (arriveBerth()) {
-//                totalGoodNum += 1;
-//                Main.totalGoodNum += 1;
-//                bookBerth.totalGoodNum += 1;
-//                bookBerth.region.totalGoodNum += 1;
                 // 2、如果到达了泊口，卸货，任务结束
                 unloadGood(); //卸货
                 turnOffTask();
@@ -166,15 +158,21 @@ public class Robot {
     }
 
     private void carryGoodToBerth() {
+        if (!region.berths.contains(bookBerth)){
+            if (needBackToRegion()) {
+                bookBerth = region.getClosestBerthByPos(pos);
+            }
+        }
+
         // 如果能回去，就回去，不能回去，找个最近的能回去的
-        if (!bookBerth.canSendToMe(bookGood.pos)){
+        if (!bookBerth.canSendToMe(bookGood.pos)) {
             // 表示进入了倒计时，切换贪婪模式
             greedyMode = true;
             Berth berth = pickClosestAndAvailBerth();
-            if (berth != null){
+            if (berth != null) {
                 bookBerth = berth;
-                region = bookBerth.region;      //  todo 这里后面改回来
-            }else {
+                region = bookBerth.region;
+            } else {
                 Util.printErr("没有可用的Berth");
             }
         }
@@ -186,11 +184,11 @@ public class Robot {
         int min = unreachableFps;
         Berth tar = null;
         for (Berth berth : region.zone.berths) {
-            if (berth.notFinalShip() || berth.sizeNotEnough()){
+            if (berth.notFinalShip() || berth.sizeNotEnough()) {
                 continue;
             }
             int dis = berth.getPathFps(pos);
-            if (dis < min){
+            if (dis < min) {
                 min = dis;
                 tar = berth;
             }
@@ -222,13 +220,14 @@ public class Robot {
     // 统一处理机器人移动信息
     public static void printRobotMove() {
         // 找出不能动的节点，其他节点要绕行
+        // todo 未防止卡死后期增加，每个节点计算自己能不能动，能动的撤离，
 
         // 找出有冲突的机器人
         Map<Point, Integer> pointMap = new HashMap<>();  // 所有机器人该帧经过的点,位置及个数
         for (Robot robot : robots) {
             if (robot.next.equals(robot.pos)) {
                 workRobots.remove(robot);
-                Util.printLog("stay"+robot);
+                Util.printLog("stay" + robot);
                 invalidPoints.add(robot.pos);   // 不能动，无效机器人
             }
             pointMap.merge(robot.pos, 1, Integer::sum);
@@ -292,7 +291,7 @@ public class Robot {
         Twins<Robot, Robot> cores = null; // 碰撞的两个核心点
         ArrayList<Robot> others = null; // 外围点
         cores = getCoreRobots(team);
-        Util.printLog("cores:"+cores);
+        Util.printLog("cores:" + cores);
         HashSet<Point> nexts = new HashSet<>();
         for (Robot robot : team) {
             nexts.add(robot.next);
@@ -305,7 +304,7 @@ public class Robot {
                 handleOtherConflict(cores, robot);
             }
         }
-        if (handleConflictJudge(team)){
+        if (handleConflictJudge(team)) {
             for (Robot robot : team) {
                 robot.printMove();
             }
@@ -316,8 +315,8 @@ public class Robot {
         boolean canGo = true;
         // 判断是否能走
         for (Robot robot : team) {
-            if (invalidPoints.contains(robot.next)){
-               canGo = false;
+            if (invalidPoints.contains(robot.next)) {
+                canGo = false;
             }
             invalidPoints.add(robot.next);
         }
@@ -383,11 +382,11 @@ public class Robot {
             handleMasterSlave(master, slave);
         } else {
             // ① 先判断是否是窄路多对一的情况，那么一要让多
-            if (rob1.myOnlyWay()){
+            if (rob1.myOnlyWay()) {
                 handleMasterSlave(rob1, rob2);
-            }else if (rob2.myOnlyWay()){
+            } else if (rob2.myOnlyWay()) {
                 handleMasterSlave(rob2, rob1);
-            }else if (nexts.contains(rob1.pos) && !nexts.contains(rob2.pos)) {
+            } else if (nexts.contains(rob1.pos) && !nexts.contains(rob2.pos)) {
                 handleMasterSlave(rob1, rob2);
             } else if (!nexts.contains(rob1.pos) && nexts.contains(rob2.pos)) {
                 handleMasterSlave(rob2, rob1);
@@ -424,13 +423,13 @@ public class Robot {
 
     private boolean myOnlyWay() {
         // next是我唯一能走的点，周围有不能走的点
-        if (invalidPoints.contains(new Point(pos.x-1,pos.y))){
+        if (invalidPoints.contains(new Point(pos.x - 1, pos.y))) {
             return true;
-        }else if (invalidPoints.contains(new Point(pos.x+1,pos.y))){
+        } else if (invalidPoints.contains(new Point(pos.x + 1, pos.y))) {
             return true;
-        }else if (invalidPoints.contains(new Point(pos.x,pos.y-1))){
+        } else if (invalidPoints.contains(new Point(pos.x, pos.y - 1))) {
             return true;
-        }else if (invalidPoints.contains(new Point(pos.x,pos.y+1))){
+        } else if (invalidPoints.contains(new Point(pos.x, pos.y + 1))) {
             return true;
         }
         return false;
@@ -468,7 +467,7 @@ public class Robot {
     private static Twins<ArrayList<Point>, Integer> findTmpPoint(Robot slave, Robot master) {
         // slave 给master让路，slave去找临时点
         List<Point> leftPath = master.route.getLeftPath();
-        if (master.runMode.isHideMode()){
+        if (master.runMode.isHideMode()) {
             // 如果自身本身为躲避模式，那么slave还要避开master的master点
             leftPath.addAll(master.runMode.masterPath);
         }
@@ -504,8 +503,8 @@ public class Robot {
 
     // 得到team有核心冲突的机器人
     private static Twins<Robot, Robot> getCoreRobots(ArrayList<Robot> team) {
-        if (team.size() == 2){
-            return new Twins<>(team.get(0),team.get(1));
+        if (team.size() == 2) {
+            return new Twins<>(team.get(0), team.get(1));
         }
 
         Set<Point> nexts = new HashSet<>();
@@ -532,7 +531,7 @@ public class Robot {
                 }
             }
         }
-        return new Twins<>(team.get(0),team.get(1));    // 没有核心冲突，说明被挡住路了，随便找一个
+        return new Twins<>(team.get(0), team.get(1));    // 没有核心冲突，说明被挡住路了，随便找一个
     }
 
     private static boolean checkConflict(Robot rob1, Robot rob2) {
@@ -569,7 +568,7 @@ public class Robot {
         if (next == null) {
             return;
         }
-        if (invalidPoints.contains(next)){
+        if (invalidPoints.contains(next)) {
             Util.printErr("printMove:next位置冲突！");
             return;
         }
@@ -604,7 +603,7 @@ public class Robot {
         return route.target.equals(pos);
     }
 
-    private void setTask(Twins<Berth, Good> twins){
+    private void setTask(Twins<Berth, Good> twins) {
         if (twins != null) {
             boolean canArrive = changeRoad(twins.getObj2().pos);
             if (canArrive) {
@@ -633,21 +632,70 @@ public class Robot {
     private Twins<Berth, Good> pickNewTask() {
         // 这是经过全局调度之后的结果，
         // ① 先从本区域调货
-        Twins<Berth, Good> twins = pickBestValueGood();
-
-        if (twins == null) {
-            return pickNeighborValueGood();
+        Twins<Berth, Good> twins;
+        if (region.berths.contains(bookBerth)) {
+            // 当前在本区域内，选择价值高的调度
+            twins = pickBestValueGood();
+            if (twins == null) {
+                twins = pickLastGreedyTask();
+            }
+        } else {
+            // 判断原区域的货物是否足够多，才回去，
+            // 否则，在本区域贪婪调度，
+            if (needBackToRegion()) {
+                // 需要返回region
+                twins = pickBestValueGood();
+                if (twins == null) {
+                    twins = pickLastGreedyTask();
+                }
+            }else {
+                // 不需要回去，贪心选择
+                twins = pickLastGreedyTask();
+            }
         }
         return twins;
     }
 
+    private boolean needBackToRegion() {
+        if (region.regionGoodsByTime.isEmpty()) {
+            return false;
+        }
+        // 当原区域价值足够，需要返回区域运货（来得及运完）
+        // 超过首个高价值物品存在时间超过T/3，或生成有价值物品总数超过exp_num/3
+        int leftFps = unreachableFps;
+        // 计算在fps内能否运完所有物品
+        int needFps = region.getClosestBerthPathFps(pos);
+
+        // 获取第一个超过平均物品价值的时间
+        // 如果区域太小，不知道exp Step，那所有都认为是高价值的，取第一个即可
+        if (!region.staticValue.get(region.assignedRobots.size()).isAreaRich()) {
+            leftFps = region.regionGoodsByTime.peek().leftFps();
+            for (Good good : region.regionGoodsByTime) {
+                needFps += region.getClosestBerthPathFps(good.pos) * 2;
+            }
+        } else {
+            double expValue = region.staticValue.get(region.assignedRobots.size()).getFpsValue()/region.assignedRobots.size() * 0.8;   // 本区域的价值应该是要高于机器人待的区域的，所以回去条件放宽一些
+            for (Pair<Good> pair : region.regionGoodsByValue) {
+                if (pair.getValue() < expValue) {
+                    break;  // 获取所有有价值的货物
+                }
+                int t = pair.getKey().leftFps();
+                needFps += region.getClosestBerthPathFps(pair.getKey().pos) * 2;
+                if (t < leftFps) {
+                    leftFps = t;
+                }
+            }
+        }
+        return needFps > leftFps;
+    }
+
     private Twins<Berth, Good> pickNeighborValueGood() {
-        // 本区域无货，还不被调度，说明本区域是有价值的
-        // 选择临近区域最有价值的货物，要求不能太远，送回来，选择最近两个区域即可
+        // 选择临近区域最有价值的货物，要求不能太远，送回来，选择最近两个区域即可,（包括本区域）
         // 要求价值超过100 ，且最近的
         int size = Math.min(region.neighborRegions.size(), 2);
         int count = 0;  // 记录寻找的货物，不要找太多，最多比较10个
-        Good tar = null; Pair<Good> tarPair = null;
+        Good tar = null;
+        Pair<Good> tarPair = null;
         int min = unreachableFps;
         for (int i = 0; i < size; i++) {
             Region neighbor = region.neighborRegions.get(i);
@@ -657,33 +705,49 @@ public class Robot {
                 }
                 Good good = pair.getKey();
                 int fps = bookBerth.getPathFps(good.pos);
-                if (tar == null){
-                    tar = good; min = fps; tarPair=pair;
-                }else {
-                    if (good.value > 100 && (tar.value<=100 || fps < min) ){
+                if (tar == null) {
+                    tar = good;
+                    min = fps;
+                    tarPair = pair;
+                } else {
+                    if (good.value > 100 && (tar.value <= 100 || fps < min)) {
                         // 高价值
-                        tar = good; min = fps; tarPair=pair;
-                    }else if (tar.value <= 100 && fps < min){
-                        tar = good; min = fps; tarPair=pair;
+                        tar = good;
+                        min = fps;
+                        tarPair = pair;
+                    } else if (tar.value <= 100 && fps < min) {
+                        tar = good;
+                        min = fps;
+                        tarPair = pair;
                     }
                 }
-                count ++;
+                count++;
             }
         }
-        if (tar != null){
+        if (tar != null) {
             Berth berth = RegionManager.pointBerthMap.get(tar.pos);
             berth.removeDomainGood(tarPair);   // 能与不能都删掉
             // 运到自己区域的泊口
-            return new Twins<>(bookBerth,tar);
+            return new Twins<>(bookBerth, tar);
         }
         return null;
     }
 
     private Twins<Berth, Good> pickBestValueGood() {
+        // 如果选本区域最高价值的
+        // 没有就返回null;
+
         while (!region.regionGoodsByValue.isEmpty()) {
-            Pair<Good> pair = region.regionGoodsByValue.poll();
+            Pair<Good> pair = region.regionGoodsByValue.peek();
             Good good = pair.getKey();
             Berth berth = RegionManager.pointBerthMap.get(good.pos);
+            // 判断该货物的价值
+            RegionValue regionValue = region.staticValue.get(region.assignedRobots.size());
+            if (regionValue.isAreaRich()){
+                if (pair.getValue() < regionValue.getFpsValue() * 0.8){
+                    return null;    // 价值太低
+                }
+            }
             berth.removeDomainGood(pair);   // 能与不能都删掉
             if (berth.canCarryGood(good)) {
                 return new Twins<>(berth, good);
