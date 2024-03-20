@@ -131,19 +131,8 @@ public class Main {
             }
         }
 
-
-        Util.printDebug("打印区域信息");
-        printLog(zones);
-        for (Region region : RegionManager.regions) {
-            Util.printLog(region+":"+region.zone);
-        }
-        for (Robot workRobot : workRobots) {
-            Util.printLog(workRobot + ",region:"+workRobot.region + ",zone:"+workRobot.region.zone);
-        }
-
-
-        Util.printLog("打印运输货物信息");
         if (frameId == 14999){
+            Util.printLog("打印运输货物信息");
             Util.printLog("总货物："+totalGoodNum);
             for (Region region : regionManager.regions) {
                 Util.printLog(region+":"+region.totalGoodNum + "avg:" + region.totalGoodNum/15 + " ");
@@ -159,10 +148,6 @@ public class Main {
                 Util.printLog(robot+":"+robot.totalGoodNum+" avg:"+robot.totalGoodNum/15);
             }
         }
-
-//        for (int i = 0; i < testRobot; i++) {
-//            printLog(robots[i]);
-//        }
     }
 
     private static void updateGoodInfo() {

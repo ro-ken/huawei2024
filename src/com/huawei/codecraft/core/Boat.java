@@ -61,6 +61,9 @@ public class Boat {
                 goToVirtual();
             }else {
                 if (task.isLastBerth()){
+//                    if (boatIsFull()){
+//                        finalGo();
+//                    }
                     return;     // 最后一个泊口，等最后一帧在走
                 }
                 if (isLoadFinish()){

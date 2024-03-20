@@ -4,6 +4,8 @@ import com.huawei.codecraft.Const;
 import com.huawei.codecraft.Util;
 import com.huawei.codecraft.core.Robot;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashSet;
 
 public class RobotRunMode {
@@ -17,7 +19,10 @@ public class RobotRunMode {
     private int startFrame;
     public int waitFrame;
     private Point oriTarget;    // 原始目标
-    public static int hideWaitTime = 2;   // 到临时点要等待的时间
+    public ArrayList<Point> masterPath = new ArrayList<>();
+
+    public final int constWaitTime = 2;
+    public int hideWaitTime;   // 到临时点要等待的时间
 
     public RobotRunMode(Robot robot) {
         this.robot = robot;
@@ -53,7 +58,10 @@ public class RobotRunMode {
         }
         priority = 1;
         master = myMaster;
+        masterPath.addAll(myMaster.route.getLeftPath());
+        masterPath.addAll(myMaster.runMode.masterPath);
         startFrame = Const.frameId;
+        hideWaitTime = myMaster.runMode.hideWaitTime + constWaitTime;   // 避让点越多，等待时间越久
         waitFrame = 0;
     }
 
@@ -65,6 +73,8 @@ public class RobotRunMode {
         waitFrame = 0;
         startFrame = 0;
         master = null;
+        hideWaitTime = 0;
+        masterPath.clear();
         if (slaveSet.isEmpty()){
             priority = 0;
         }else {
@@ -98,7 +108,7 @@ public class RobotRunMode {
 
     public boolean tooLong() {
         // 在这个模式待的时间太长
-        return Const.frameId - startFrame >= 15;
+        return Const.frameId - startFrame >= robot.route.way.size() + hideWaitTime * 2;
     }
 
     public Point beNormal() {

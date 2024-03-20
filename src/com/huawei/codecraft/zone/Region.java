@@ -219,18 +219,6 @@ public class Region {
         double totalTime = Good.maxSurvive;
 //        // 统计totalTime时长内的总价值，按价值高低排序
         double countDis = 0;// countNum 计算的事从0到frameID的物品，我们要计算0-totalTime的物品，所有物品数要倍除
-//        double factor = frameId / totalTime;
-//        double countNum = 0;
-//        for (Map.Entry<Integer, Integer> entry : disToNum.entrySet()) {
-//            double realNum = entry.getValue() / factor;
-//            countDis = entry.getKey() * realNum * 2;   // 来回时间 * 2
-//            countNum += realNum;
-//            if (countDis > totalTime){
-//                double t = (countDis - totalTime)/2;
-//                countNum -= t / entry.getKey(); // 多加了，减回去
-//                break;  // 时间到了
-//            }
-//        }
         RegionValue exp = staticValue.get(num);
         if (exp ==null){
             return 0;

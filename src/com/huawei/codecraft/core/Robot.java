@@ -56,7 +56,7 @@ public class Robot {
             // 到达目的地
             runMode.waitFrame++;
         }// 否则继续
-        if (runMode.tooLong() || runMode.waitFrame >= 2) {
+        if (runMode.tooLong() || runMode.waitFrame >= runMode.hideWaitTime) {
             Point tar = runMode.beNormal();
             changeRoad(tar);
         }
@@ -228,6 +228,7 @@ public class Robot {
         for (Robot robot : robots) {
             if (robot.next.equals(robot.pos)) {
                 workRobots.remove(robot);
+                Util.printLog("stay"+robot);
                 invalidPoints.add(robot.pos);   // 不能动，无效机器人
             }
             pointMap.merge(robot.pos, 1, Integer::sum);
@@ -282,7 +283,7 @@ public class Robot {
         // 处理team团体移动冲突
         // 找到冲突的主要矛盾，2个点，其他点避让
         if (team.size() < 2) {
-            // 错误
+            // 有障碍点，绕过障碍点，todo 障碍能不能让个路
             for (Robot robot : team) {
                 robot.changeRoadWithBarrier(robot.route.target, invalidPoints);
             }
@@ -291,23 +292,36 @@ public class Robot {
         Twins<Robot, Robot> cores = null; // 碰撞的两个核心点
         ArrayList<Robot> others = null; // 外围点
         cores = getCoreRobots(team);
-        if (cores == null) {
-            // 错误
-            Util.printErr("handleTeamConflict2");
-            return;
-        }
+        Util.printLog("cores:"+cores);
         HashSet<Point> nexts = new HashSet<>();
         for (Robot robot : team) {
             nexts.add(robot.next);
         }
 
         handleCoreConflict(cores, nexts);
+
         for (Robot robot : team) {
             if (!cores.contains(robot)) {
                 handleOtherConflict(cores, robot);
             }
-            robot.printMove();
         }
+        if (handleConflictJudge(team)){
+            for (Robot robot : team) {
+                robot.printMove();
+            }
+        }
+    }
+
+    private static boolean handleConflictJudge(ArrayList<Robot> team) {
+        boolean canGo = true;
+        // 判断是否能走
+        for (Robot robot : team) {
+            if (invalidPoints.contains(robot.next)){
+               canGo = false;
+            }
+            invalidPoints.add(robot.next);
+        }
+        return canGo;
     }
 
     private static void handleOtherConflict(Twins<Robot, Robot> cores, Robot robot) {
@@ -369,7 +383,11 @@ public class Robot {
             handleMasterSlave(master, slave);
         } else {
             // ① 先判断是否是窄路多对一的情况，那么一要让多
-            if (nexts.contains(rob1.pos) && !nexts.contains(rob2.pos)) {
+            if (rob1.myOnlyWay()){
+                handleMasterSlave(rob1, rob2);
+            }else if (rob2.myOnlyWay()){
+                handleMasterSlave(rob2, rob1);
+            }else if (nexts.contains(rob1.pos) && !nexts.contains(rob2.pos)) {
                 handleMasterSlave(rob1, rob2);
             } else if (!nexts.contains(rob1.pos) && nexts.contains(rob2.pos)) {
                 handleMasterSlave(rob2, rob1);
@@ -404,6 +422,20 @@ public class Robot {
         }
     }
 
+    private boolean myOnlyWay() {
+        // next是我唯一能走的点，周围有不能走的点
+        if (invalidPoints.contains(new Point(pos.x-1,pos.y))){
+            return true;
+        }else if (invalidPoints.contains(new Point(pos.x+1,pos.y))){
+            return true;
+        }else if (invalidPoints.contains(new Point(pos.x,pos.y-1))){
+            return true;
+        }else if (invalidPoints.contains(new Point(pos.x,pos.y+1))){
+            return true;
+        }
+        return false;
+    }
+
     // 处理有优先级的冲突
     private static void handleMasterSlave(Robot master, Robot slave) {
         Twins<ArrayList<Point>, Integer> newPath = changeRoadPath(slave, master);
@@ -433,10 +465,15 @@ public class Robot {
         }
     }
 
-    private static Twins<ArrayList<Point>, Integer> findTmpPoint(Robot rob1, Robot rob2) {
-        // rob1 给rob2让路，rob1去找临时点
-        ArrayList<Point> path = Const.path.getHidePointPath(rob1.pos, rob2.route.getLeftPath());
-        Util.printDebug("gotoTmpPoint::pos:" + rob1.pos + "getLeftPath:" + rob2.route.getLeftPath() + " path:" + path);
+    private static Twins<ArrayList<Point>, Integer> findTmpPoint(Robot slave, Robot master) {
+        // slave 给master让路，slave去找临时点
+        List<Point> leftPath = master.route.getLeftPath();
+        if (master.runMode.isHideMode()){
+            // 如果自身本身为躲避模式，那么slave还要避开master的master点
+            leftPath.addAll(master.runMode.masterPath);
+        }
+        ArrayList<Point> path = Const.path.getHidePointPath(slave.pos, leftPath);
+        Util.printDebug("gotoTmpPoint::pos:" + slave.pos + "getLeftPath:" + master.route.getLeftPath() + " path:" + path);
         if (path == null) {
             return new Twins<>(null, Const.unreachableFps);
         }
@@ -467,6 +504,10 @@ public class Robot {
 
     // 得到team有核心冲突的机器人
     private static Twins<Robot, Robot> getCoreRobots(ArrayList<Robot> team) {
+        if (team.size() == 2){
+            return new Twins<>(team.get(0),team.get(1));
+        }
+
         Set<Point> nexts = new HashSet<>();
         for (Robot robot : team) {
             nexts.add(robot.next);
@@ -483,7 +524,6 @@ public class Robot {
             }
         }
 
-
         // 返回两个核心冲突的机器人,team.size()>=2
         for (int i = 0; i < team.size() - 1; i++) {
             for (int j = i + 1; j < team.size(); j++) {
@@ -492,7 +532,7 @@ public class Robot {
                 }
             }
         }
-        return null;
+        return new Twins<>(team.get(0),team.get(1));    // 没有核心冲突，说明被挡住路了，随便找一个
     }
 
     private static boolean checkConflict(Robot rob1, Robot rob2) {
@@ -529,6 +569,11 @@ public class Robot {
         if (next == null) {
             return;
         }
+        if (invalidPoints.contains(next)){
+            Util.printErr("printMove:next位置冲突！");
+            return;
+        }
+        invalidPoints.add(next);
         if (next.x > pos.x) {
             Util.printDown(id);
         } else if (next.x < pos.x) {
