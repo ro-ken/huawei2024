@@ -18,17 +18,13 @@ public class BoatLastTask {
 
     private int endIndex = 0;  // 最后模式的下表
     // 暂定为1v2，若要改，很多都要改
+    private int normalIndex = 0;  // 正常模式的下标
 
     public ArrayList<Berth> berths = new ArrayList<>();    // 最后周期的负责的泊口，最后周期按照顺序调度，berth[0],berth[1],...
 
-    private int T0 = 0; // 静态周期
-    private int T = 0; // 完整周期
-    private int flexTime = 20; // 弹性时间
-
-    private int latestT=0;  // 最迟进入周期时间
-
-    public static int lastSecondStayTime = 5;   // 预计在倒数第二个船停留的时间 ，todo 后面可以动态算期望
-
+    private int minT; // 最小完整周期，最后一个阶段的调度周期
+    private int normalT;    // 前面正常周期  total = normalT * n + minT ;
+    private int lastTFPS=0;  // 最迟进入周期时间
 
     public BoatLastTask(Boat boat) {
         this.boat = boat;
@@ -40,13 +36,28 @@ public class BoatLastTask {
         updateTime();
     }
 
+    public int getMinT() {
+        return minT;
+    }
+
     private void updateTime() {
         // 更新周期时间
-        T0 = b2bFps + berths.get(0).transport_time + berths.get(1).transport_time;
-        // 里面应该传入T，todo 暂时+10替代一下
-        T = T0 + berths.get(0).expectLoadTime(T0) + berths.get(1).expectLoadTime(T0) + 10;
+        int t = b2bFps + berths.get(0).transport_time + berths.get(1).transport_time;
+        minT = t + Math.min(Boat.capacity,80);    // 确定最后一个周期时间，
+        lastTFPS = totalFrame - minT;
+        // 确定前面周期时间 Total = n*T1 + minT;
+         clacNormalT(lastTFPS);
+    }
 
-        latestT = totalFrame - T - flexTime;
+    private void clacNormalT(int left) {
+        for (int i = 1; i <= 10; i++) {
+            int t = left / i;
+            if (t >= minT){
+                normalT = t;
+            }else {
+                break;
+            }
+        }
     }
 
 
@@ -56,10 +67,10 @@ public class BoatLastTask {
 
     public boolean isBerthNeedBack() {
         // 在泊口装货的的时候，需要返回
-        if (latestT == 0){
+        if (lastTFPS == 0){
             return false;
         }
-        if (frameId>=latestT-boat.bookBerth.transport_time){
+        if (frameId>=lastTFPS-boat.bookBerth.transport_time){
             return true;
         }
         return false;
@@ -68,7 +79,15 @@ public class BoatLastTask {
     public boolean canIntoLastPeriod() {
         // 去一个泊口装货时间不够往返，进入，否则不进
         int b2x = Math.max(berths.get(0).transport_time,berths.get(1).transport_time);
-        if (frameId >= latestT - b2x * 2 - 5){
+        if (frameId >= lastTFPS - b2x * 2 - 5){
+            return true;
+        }
+        return false;
+    }
+    public boolean canIntoLastPeriod1() {
+        // 去一个泊口装货时间不够往返，进入，否则不进
+        int b2x = Math.min(berths.get(0).transport_time,berths.get(1).transport_time);
+        if (frameId >= lastTFPS - b2x * 2 - 5){
             return true;
         }
         return false;
@@ -97,7 +116,7 @@ public class BoatLastTask {
     public boolean canBerthGotoBerth(Berth nextBerth) {
         // todo
         int costTime = nextBerth.transport_time + b2bFps + 5;// 装货预留时间
-        if (frameId >= latestT - costTime){
+        if (frameId >= lastTFPS - costTime){
             return false;
         }
         return true;
@@ -122,5 +141,26 @@ public class BoatLastTask {
             Berth b0 = berths.remove(0);
             berths.add(b0);
         }
+    }
+
+    public Berth getFirstBerth() {
+        return berths.get(0);
+    }
+
+    public int getClosestNormalEndT() {
+        // 得到下一个最近普通周期的末尾FPS
+        int res = lastTFPS;
+        while (true){
+            if (res - normalT > frameId){
+                res -= normalT;
+            }else {
+                break;
+            }
+        }
+        return res;
+    }
+
+    public Berth getSecondBerth() {
+        return berths.get(1);
     }
 }

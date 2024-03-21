@@ -64,6 +64,14 @@ public class Main {
             }
             Util.printLog(" ");
         }
+
+        printLog("berth 静态价值！");
+        for (Berth berth : berths) {
+            Util.printLog(berth+":size,"+berth.points+berth.staticValue.get(1));
+            Util.printLog(berth+":size,"+berth.points+berth.staticValue.get(2));
+            Util.printLog(berth+":size,"+berth.points+berth.staticValue.get(3));
+            Util.printLog(" ");
+        }
     }
 
     // 追加初始化工作
