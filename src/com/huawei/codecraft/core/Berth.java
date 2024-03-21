@@ -61,11 +61,10 @@ public class Berth {
     }
 
     public int getPathFps(Point pos) {
-//        Util.printDebug(mapPath);
         if (mapPath.containsKey(pos)){
             return mapPath.get(pos).size();
         }else {
-            Util.printErr("getPathFps:"+this+pos);
+            Util.printWarn("getPathFps:"+this+pos);
             return Const.unreachableFps;
         }
     }

@@ -55,15 +55,12 @@ public class Boat {
         }
         if (status == BoatStatus.LOAD){
             if (mustGotoVirtual()){
-                Util.printDebug("船最后一次调度：");
-                clacGoods();//结算货物
-                bookBerth.capacity = 0; // 没有船会去装了
-                goToVirtual();
+                finalGotoVirtual();
             }else {
                 if (task.isLastBerth()){
-//                    if (boatIsFull()){
-//                        finalGo();
-//                    }
+                    if (boatIsFull()){
+                        finalGotoVirtual();
+                    }
                     return;     // 最后一个泊口，等最后一帧在走
                 }
                 if (isLoadFinish()){
@@ -77,8 +74,23 @@ public class Boat {
         }
     }
 
+    private void finalGotoVirtual() {
+        Util.printDebug(this+"船最后一次调度："+bookBerth);
+        Util.printLog("泊口浪费时间:" + (totalFrame - frameId - bookBerth.transport_time) + "船泊停靠时间："+ (frameId-startFrame-1)+"运输时间"+ bookBerth.transport_time);
+        clacGoods();//结算货物
+        bookBerth.capacity = 0; // 没有船会去装了
+        goToVirtual();
+
+    }
+
+    private boolean boatIsFull() {
+        int left = capacity - goodSize;
+        int loadGoods = Math.min(countGoods(),bookBerth.existGoods.size()); // 容量无限下这段时间装载量
+        return left <= loadGoods;   // 实际装载量 > 轮船剩余空位
+    }
+
     private boolean mustGotoVirtual() {
-        // 时间不够，必须回虚拟点了,todo 这里可以试一下能不能卖掉
+        // 时间不够，必须回虚拟点了,
         if (frameId + bookBerth.transport_time >= totalFrame){
             return true;
         }
@@ -177,7 +189,7 @@ public class Boat {
         int boatId = 0;
         // ① 同区域的为一组
         for (Region region : RegionManager.regions) {
-            tmp = region.getCloestTwinsBerth(); // 找出区域内的成对泊口为一组，分配给一艘船
+            tmp = region.getClosestTwinsBerth(); // 找出区域内的成对泊口为一组，分配给一艘船
             while (tmp.size() > 1){
                 // 将泊位
                 List<Berth> addlist = new ArrayList<>(tmp.subList(0, 2));
@@ -209,7 +221,10 @@ public class Boat {
 
         Util.printDebug("打印boats 分配信息");
         for (Boat boat : boats) {
-            Util.printDebug(boat.id + ":"+boat.task.berths);
+            Util.printDebug(boat.id + ":");
+            for (Berth berth : boat.task.berths) {
+                Util.printLog(berth+":时间"+berth.transport_time+berth.staticValue);
+            }
         }
     }
 
@@ -220,10 +235,10 @@ public class Boat {
         Berth high = berthList.get(0);
         Berth low = berthList.get(1);
         for (Berth berth : berthList) {
-            if (berth.staticValue.get(1).getPeriodValue() > high.staticValue.get(1).getPeriodValue()){
+            if (berth.staticValue.get(1).getGoodNum() > high.staticValue.get(1).getGoodNum()){
                 high = berth;
             }
-            if (berth.staticValue.get(1).getPeriodValue() < low.staticValue.get(1).getPeriodValue()){
+            if (berth.staticValue.get(1).getGoodNum() < low.staticValue.get(1).getGoodNum()){
                 low = berth;
             }
         }
@@ -305,6 +320,10 @@ public class Boat {
         // 互相清算货物
         goodSize += realLoad;
         bookBerth.removeGoods(realLoad);
+
+        for (Berth berth : Const.berths) {
+            Util.printLog(berth+"堆积货物"+berth.existGoods.size()+"堆积价值"+berth.existValue);
+        }
     }
 
     private boolean isLoadFinish() {
@@ -334,8 +353,6 @@ public class Boat {
     public String toString() {
         return "Boat{" +
                 "id=" + id +
-                ", berthId=" + berthId +
-                ", status=" + readsts +
                 '}';
     }
 
@@ -351,7 +368,7 @@ public class Boat {
         int maxVal = target.existValue;
 
         for (Berth berth : task.berths) {
-            if (berth.bookBoats.size()>0){
+            if (!berth.bookBoats.isEmpty()){
                 continue;
             }
             if (berth.existValue>maxVal){
@@ -369,7 +386,7 @@ public class Boat {
         Berth target = null;
 
         for (Berth berth : Const.berths) {
-            if (berth.bookBoats.size()>0){
+            if (!berth.bookBoats.isEmpty()){
                 continue;
             }
             if (berth.existValue>maxVal){

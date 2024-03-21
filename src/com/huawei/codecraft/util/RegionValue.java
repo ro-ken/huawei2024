@@ -41,8 +41,12 @@ public class RegionValue {
     }
 
     public double getPeriodValue() {
+        double avg = 100;
         // 获取周期内的价值
-        return expGoodNum * Const.avgGoodValue;
+        if (Const.avgGoodValue != 0){
+            avg = Const.avgGoodValue;
+        }
+        return expGoodNum * avg;
     }
 
     public double getFpsValue() {

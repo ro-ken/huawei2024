@@ -99,7 +99,7 @@ public class Region {
     }
 
     // 获取该区域内两个最近的泊口,次近的，...
-    public ArrayList<Berth> getCloestTwinsBerth() {
+    public ArrayList<Berth> getClosestTwinsBerth() {
         if (berths.size()<2){
             return new ArrayList<>();
         }

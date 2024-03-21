@@ -117,7 +117,8 @@ public class BoatLastTask {
         if (this.berths.size() != 2){
             return;
         }
-        if (this.berths.get(0).staticValue.get(1).getPeriodValue() > this.berths.get(1).staticValue.get(1).getPeriodValue()){
+        // 最后应该是所有机器人往一点冲，要比较多机器人的价值
+        if (this.berths.get(0).staticValue.get(2).getGoodNum() > this.berths.get(1).staticValue.get(2).getGoodNum()){
             Berth b0 = berths.remove(0);
             berths.add(b0);
         }

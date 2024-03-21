@@ -12,7 +12,6 @@ import com.huawei.codecraft.zone.Region;
 import com.huawei.codecraft.zone.RegionManager;
 import com.huawei.codecraft.util.Point;
 import com.huawei.codecraft.way.Mapinfo;
-import com.huawei.codecraft.zone.Zone;
 
 import static com.huawei.codecraft.Util.*;
 import static com.huawei.codecraft.Const.*;
@@ -70,6 +69,7 @@ public class Main {
             pointToBerth.put(berth.pos,berth);
         }
         regionManager = new RegionManager(path);
+
         initBoat();
 
         Util.printDebug("打印区域信息");
