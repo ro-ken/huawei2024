@@ -4,17 +4,21 @@
 
 package com.huawei.codecraft;
 
-import java.io.FileNotFoundException;
-import java.util.*;
-
-import com.huawei.codecraft.core.*;
-import com.huawei.codecraft.zone.Region;
-import com.huawei.codecraft.zone.RegionManager;
+import com.huawei.codecraft.core.Berth;
+import com.huawei.codecraft.core.Boat;
+import com.huawei.codecraft.core.Good;
+import com.huawei.codecraft.core.Robot;
 import com.huawei.codecraft.util.Point;
 import com.huawei.codecraft.way.Mapinfo;
+import com.huawei.codecraft.zone.Region;
+import com.huawei.codecraft.zone.RegionManager;
 
-import static com.huawei.codecraft.Util.*;
+import java.io.FileNotFoundException;
+import java.util.HashSet;
+import java.util.Set;
+
 import static com.huawei.codecraft.Const.*;
+import static com.huawei.codecraft.Util.*;
 
 
 /**
@@ -33,6 +37,7 @@ public class Main {
         initLog();
         readInit();
         myInit();
+        initMapSeq();
         printOk();
         running();
     }
@@ -67,8 +72,10 @@ public class Main {
         initRobot();
         for (Berth berth : berths) {
             pointToBerth.put(berth.pos,berth);
+            idToBerth.put(berth.id, berth);
         }
-        regionManager = new RegionManager(path);
+        regionManager = new RegionManager();
+        regionManager.init();
 
         initBoat();
 
@@ -99,6 +106,25 @@ public class Main {
             }
             if (id == robot_num) break; //
         }
+    }
+
+    // 手动初始化地图
+    private static void initMapSeq() {
+        int[][][] berthsPos = {
+                {{1, 2}, {2, 3}, {3,4}}, // map1
+                {{1, 2}, {2, 3}, {3,4}}, // map2
+                {{1, 2}, {2, 3}, {3,4}}, // map3
+        };
+        if (map[berthsPos[0][0][0]][berthsPos[0][0][1]] == 'B' && map[berthsPos[0][1][0]][berthsPos[0][1][1]] == 'B' && map[berthsPos[0][2][0]][berthsPos[0][2][1]] == 'B') {
+            mapSeq = 1;
+        }
+        else if (map[berthsPos[1][0][0]][berthsPos[1][0][1]] == 'B' && map[berthsPos[1][1][0]][berthsPos[1][1][1]] == 'B' && map[berthsPos[1][2][0]][berthsPos[1][2][1]] == 'B') {
+            mapSeq = 2;
+        }
+        else if (map[berthsPos[2][0][0]][berthsPos[2][0][1]] == 'B' && map[berthsPos[2][1][0]][berthsPos[2][1][1]] == 'B' && map[berthsPos[2][2][0]][berthsPos[2][2][1]] == 'B') {
+            mapSeq = 3;
+        }
+        mapSeq =  defaultMap;
     }
 
     private static void handleFrame() {

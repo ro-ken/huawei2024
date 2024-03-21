@@ -43,7 +43,7 @@ public class PathTest {
 
     @Test
     public void test_Function_GetPath() throws IOException {
-        int map = 1;
+        int map = 4;
         init(map);
         // 初始化路径实例
         Path path = new PathImpl();
@@ -60,13 +60,36 @@ public class PathTest {
         init(map);
         // 初始化路径实例
         Path path = new PathImpl();
-        Point pos = new Point(35, 74);
+        Point pos = new Point(142, 191);
+//        List<Point> leftPath = new ArrayList<>(Arrays.asList(
+//                new Point(35, 76), new Point(35, 75), new Point(35, 74),
+//                new Point(35, 73), new Point(34, 73), new Point(34, 72),
+//                new Point(34, 71), new Point(33, 71), new Point(33, 70),
+//                new Point(33, 69), new Point(32, 69), new Point(31, 69),
+//                new Point(30, 69), new Point(30, 68), new Point(30, 67)
+//        ));
         List<Point> leftPath = new ArrayList<>(Arrays.asList(
-                new Point(35, 76), new Point(35, 75), new Point(35, 74),
-                new Point(35, 73), new Point(34, 73), new Point(34, 72),
-                new Point(34, 71), new Point(33, 71), new Point(33, 70),
-                new Point(33, 69), new Point(32, 69), new Point(31, 69),
-                new Point(30, 69), new Point(30, 68), new Point(30, 67)
+                new Point(141,190), new Point(142,190), new Point(142,191),
+                new Point(143,191), new Point(143,192), new Point(144,192),
+                new Point(144,193), new Point(145,193), new Point(145,194),
+                new Point(146,194), new Point(146,195), new Point(147,195),
+                new Point(147,196), new Point(148,196), new Point(149,196),
+                new Point(150,196), new Point(151,196), new Point(151,195),
+                new Point(151,194), new Point(152,194), new Point(153,194),
+                new Point(153,193), new Point(153,192), new Point(154,192),
+                new Point(154,191), new Point(154,190), new Point(155,190),
+                new Point(156,190), new Point(157,190), new Point(158,190),
+                new Point(158,189), new Point(158,188), new Point(159,188),
+                new Point(159,187), new Point(159,186), new Point(159,185),
+                new Point(159,184), new Point(159,183), new Point(159,182),
+                new Point(160,182), new Point(161,182), new Point(162,182),
+                new Point(163,182), new Point(164,182), new Point(165,182),
+                new Point(166,182), new Point(167,182), new Point(168,182),
+                new Point(169,182), new Point(170,182), new Point(171,182),
+                new Point(172,182), new Point(173,182), new Point(173,181),
+                new Point(173,180), new Point(173,179), new Point(173,178),
+                new Point(173,177), new Point(173,176), new Point(173,175),
+                new Point(173,174), new Point(148, 197) // 添加了遗漏的最后一个点
         ));
         ArrayList<Point> hidePath = path.getHidePointPath(pos, leftPath);
         for (Point point : hidePath) {

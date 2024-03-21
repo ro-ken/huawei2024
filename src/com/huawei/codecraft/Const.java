@@ -4,10 +4,10 @@ import com.huawei.codecraft.core.Berth;
 import com.huawei.codecraft.core.Boat;
 import com.huawei.codecraft.core.Good;
 import com.huawei.codecraft.core.Robot;
-import com.huawei.codecraft.zone.RegionManager;
 import com.huawei.codecraft.util.Point;
 import com.huawei.codecraft.way.Path;
 import com.huawei.codecraft.way.PathImpl;
+import com.huawei.codecraft.zone.RegionManager;
 import com.huawei.codecraft.zone.Zone;
 
 import java.util.ArrayList;
@@ -34,25 +34,27 @@ public class Const {
     // 存放地图字符
     public static char[][] map = new char[mapWidth][mapWidth];
     public static Object[][] ObjectMap = new Object[mapWidth][mapWidth];
-
     public static Robot[] robots = new Robot[robot_num];
     public static Berth[] berths = new Berth[berth_num];
     public static Boat[] boats = new Boat[boat_num];
     public static ArrayList<Good> frameGoods= new ArrayList<>();    // 每一帧新产生的货物
-    public static Path path = new PathImpl(); // 修改Path实现
-    public static Map<Point,Berth> pointToBerth = new HashMap<>();  // 左上角位置到泊位的映射
-    public static final int unreachableFps = 1000000;       // 不可达的时间
     public static final int noLimitedSize = 1000000;        // 无限容量信息
-    public static final double upperQuantile = 0.06;         // 上分位点,没增加0.02，聚合泊位数加一
-    public static final int maxThreshold = 40;              // 设定的最大阈值, 超过这个就不合并
-    public static final double minPointsPercent = 0.045;    // 设定的最小点数百分比，区域拥有泊位少于0.045，则直接不合并
     public static double expGoodNum = 2450;     // 期望总物品数，官方回答：15/100 * 15000
     public static HashSet<Robot> workRobots = new HashSet<>();// 每帧可以工作的机器人
     public static HashSet<Point> invalidPoints = new HashSet<>();   // 每帧的无效点
-    public static ArrayList<Zone> zones = new ArrayList<>();    // 陆地划分的区域
-    public static RegionManager regionManager;
     public static int countGoodNum = 0;     //已经生成的物品总数，到时候算平均价值
     public static double countGoodValue = 0;   //已经生成的物品总价值
     public static double avgGoodValue;      // 货物的平均价值，每帧更新
-
+    /*****************************地图相关参数*****************************/
+    public static RegionManager regionManager;
+    public static Path path = new PathImpl(); // 修改Path实现
+    public static final int unreachableFps = 1000000;       // 不可达的时间
+    public static ArrayList<Zone> zones = new ArrayList<>();    // 陆地划分的区域
+    public static Map<Point,Berth> pointToBerth = new HashMap<>();  // 左上角位置到泊位的映射
+    public static Map<Integer, Berth> idToBerth = new HashMap<>();  // id到泊位的映射
+    public static final int defaultMap = 0;
+    public static  int mapSeq;
+    public static final double upperQuantile = 0.06;         // 上分位点，每增加0.02，期望聚合泊位数增加2
+    public static final int maxThreshold = 40;              // 设定的最大阈值, 超过这个就不合并
+    public static final double minPointsPercent = 0.045;    // 设定的最小点数百分比，区域拥有泊位少于0.045，则直接不合并
 }

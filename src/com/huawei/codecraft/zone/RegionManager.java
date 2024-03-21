@@ -7,7 +7,6 @@ import com.huawei.codecraft.core.Robot;
 import com.huawei.codecraft.util.Point;
 import com.huawei.codecraft.util.RegionValue;
 import com.huawei.codecraft.util.UnionFind;
-import com.huawei.codecraft.way.Path;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -28,13 +27,19 @@ public class RegionManager {
     public static final Set<Point> pointSet= new HashSet<>();    // 点的set集合
     public static final Map<Point, Region> pointRegionMap = new HashMap<>();    // point 到 region 的映射，查找点属于的 region
     public static final Map<Point, Berth> pointBerthMap = new HashMap<>();  // 获取离点最近的泊位
-    private final Path pathFinder;  // Path 接口的引用
-
+    private static final int[][][] berthId = {
+            {{0,1},{2, 3, 4},{5},{6},{7}, {8, 9}},
+            {{0}, {1}, {2}, {3, 4, 5}, {6}, {7, 8}, {9}},
+            {{0, 1}, {2}, {4, 5}, {3, 6}, {7, 8}, {9}}
+    };
     /**
      * 构造函数
      */
-    public RegionManager(Path pathFinder) {
-        this.pathFinder = pathFinder;  // 通过构造器注入 Path 实现
+    public RegionManager() {
+
+    }
+
+    public void init() {
         createInitialRegions();
         getFullPathsFromPoints2Berths();
         initGlobalPoint2ClosestBerthMap();
@@ -42,7 +47,6 @@ public class RegionManager {
         assignRobotsToZone();
         assignRobotsToRegion(); // 给区域分配机器人
 //        printAll();
-
     }
 
     /**
@@ -210,14 +214,19 @@ public class RegionManager {
 
             // 计算泊位间的距离并确定阈值
             int threshold = calculateThreshold(largeRegion);
-
+            System.out.println("threshold:" + threshold);
             // 创建新的 Zone 对象并添加区域相关信息
             Zone zone = new Zone(zones.size());
             zone.accessPoints.addAll(largeRegion.getAccessiblePoints());
             zone.berths.addAll(largeRegion.getBerths());
 
             // 基于阈值和berth拥有的点综合对泊位进行合并
-            mergeBerths2NewRegions(largeRegion, threshold, unionFind, newRegions, zone);
+            if (mapSeq == defaultMap) {
+                mergeBerths2NewRegions(largeRegion, threshold, unionFind, newRegions, zone);
+            }
+            else {
+                mergeBerthByDefaultParam(newRegions, zone);
+            }
             zones.add(zone);  // 将 Zone 添加到全局列表
 
             // 将大区域内剩余的点分配到最近的新区域
@@ -230,6 +239,21 @@ public class RegionManager {
         // 更新区域集合
         regions.clear();
         regions.addAll(newRegions);
+    }
+
+    // 手动划分区域接口
+    private void mergeBerthByDefaultParam(List<Region> newRegions, Zone zone) {
+        int[][] mergeBerthId = berthId[mapSeq - 1];
+        for (int[] row : mergeBerthId) {
+            Region region = new Region(newRegions.size());
+            newRegions.add(region);
+            zone.addRegion(region);
+            for (int value : row) {
+                Berth  berth = idToBerth.get(value);
+                region.addBerth(berth);
+                pointRegionMap.put(berth.pos, region);
+            }
+        }
     }
 
     // 根据不同泊位之间的距离，计算出合适的阈值
@@ -306,7 +330,7 @@ public class RegionManager {
     private void secondMergeByPointsCounts(ArrayList<Berth> berthsList, UnionFind unionFind, List<Region> newRegions, Zone zone, Map<Point, Integer> rootPointsSum, Map<Point, Region> rootToRegion, Set<Berth> unassignedBerths) {
         for (Point root : rootPointsSum.keySet()) {
             // 如果这个聚类的总点数足以形成一个区域
-            if (rootPointsSum.get(root) >= minPointsPercent * pointSet.size()) {
+            if (rootPointsSum.get(root) > minPointsPercent * pointSet.size()) {
                 Region region = new Region(newRegions.size());
                 newRegions.add(region);
                 zone.addRegion(region);

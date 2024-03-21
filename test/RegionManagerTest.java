@@ -1,14 +1,14 @@
 import com.huawei.codecraft.core.Berth;
 import com.huawei.codecraft.util.Point;
 import com.huawei.codecraft.way.Mapinfo;
-import com.huawei.codecraft.way.Path;
-import com.huawei.codecraft.way.PathImpl;
 import com.huawei.codecraft.zone.Region;
 import com.huawei.codecraft.zone.RegionManager;
 import com.huawei.codecraft.zone.Zone;
 import org.junit.Test;
 
-import java.io.*;
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.List;
@@ -19,34 +19,34 @@ import static com.huawei.codecraft.zone.RegionManager.*;
 
 public class RegionManagerTest {
     private static final int[][][] berthsPos = {
-            // map1
-            {{3, 113}, {3, 161}, {3, 188}, {20, 87}, {29, 73}, {32, 62}, {38, 42}, {117, 3}, {135, 3}, {172, 3}},
-            // map2
-            {{20, 139}, {26, 116}, {28, 159}, {30, 67}, {50, 41}, {124, 13}, {173, 26}, {179, 57}, {179, 92}, {179, 156}},
-            // map3
-            {{5, 65}, {5, 135}, {8, 35}, {12, 153}, {20, 165}, {48, 3}, {48, 187}, {190, 3}, {190, 187}, {196, 195}},
-            // map4
-            {{61, 67}, {61, 87}, {61, 112}, {70, 137}, {83, 62}, {87, 137}, {88, 62}, {103, 62}, {110, 62}, {137, 88}},
-            // map5
-            {{5, 91}, {5, 107}, {71, 26}, {71, 172}, {75, 56}, {123, 142}, {127, 26}, {127, 172}, {193, 91}, {193, 107}},
-            // map6
-            {{95, 21}, {95, 61}, {95, 101}, {95, 139}, {95, 183}, {102, 11}, {102, 52}, {102, 92}, {102, 127}, {102, 169}},
-            // map7
-            {{1, 44}, {1, 153}, {24, 104}, {68, 97}, {96, 152}, {103, 43}, {130, 104}, {173, 97}, {197, 43}, {197, 154}},
             // map8
+            {{20, 139}, {26, 116}, {28, 159}, {30, 67}, {50, 41}, {124, 13}, {173, 26}, {179, 57}, {179, 92}, {179, 156}},
+           // map1
+            {{5, 65}, {5, 135}, {8, 35}, {12, 153}, {20, 165}, {48, 3}, {48, 187}, {190, 3}, {190, 187}, {196, 195}},
+            // map2
+            {{3, 113}, {3, 161}, {3, 188}, {20, 87}, {29, 73}, {32, 62}, {38, 42}, {117, 3}, {135, 3}, {172, 3}},
+            // map3
+            {{61, 67}, {61, 87}, {61, 112}, {70, 137}, {83, 62}, {87, 137}, {88, 62}, {103, 62}, {110, 62}, {137, 88}},
+            // map4
+            {{5, 91}, {5, 107}, {71, 26}, {71, 172}, {75, 56}, {123, 142}, {127, 26}, {127, 172}, {193, 91}, {193, 107}},
+            // map5
+            {{95, 21}, {95, 61}, {95, 101}, {95, 139}, {95, 183}, {102, 11}, {102, 52}, {102, 92}, {102, 127}, {102, 169}},
+            // map6
+            {{1, 44}, {1, 153}, {24, 104}, {68, 97}, {96, 152}, {103, 43}, {130, 104}, {173, 97}, {197, 43}, {197, 154}},
+            // map7
             {{7, 99}, {19, 99}, {35, 99}, {49, 121}, {49, 171}, {149, 17}, {149, 66}, {161, 99}, {175, 99}, {190, 99}}
     };
     private static final String[] FILE_NAMES = {
-            "test\\map1.txt",  // map-3.6 0
-            "test\\map2.txt",  // map-3.7 1
-            "test\\map3.txt",  // map-3.8 2
-            "test\\map4.txt",  // map-3.9 3
-            "test\\map5.txt",  // map-3.10 4
-            "test\\map6.txt",  // map-3.11 5
-            "test\\map7.txt",  // map-3.12 6
-            "test\\map8.txt"   // map-3.13 7
+            "test\\map8.txt",  // map-3.7 0
+            "test\\map1.txt",  // map-3.8 1
+            "test\\map2.txt",  // map-3.6 2
+            "test\\map3.txt",  // map-3.9 3
+            "test\\map4.txt",  // map-3.10 4
+            "test\\map5.txt",  // map-3.11 5
+            "test\\map6.txt",  // map-3.12 6
+            "test\\map7.txt"   // map-3.13 7
     };
-    private final int map = 1; // 测试地图,0对应map-3.6，测试不同地图修改这个
+    private final int map = 3; // 测试地图,0对应map-3.6，测试不同地图修改这个
     private RegionManager regionManager;
     private void initBerth() {
         for (int i = 0; i < 10; i++) {
@@ -65,10 +65,9 @@ public class RegionManagerTest {
 //                System.out.println(lines.get(i).toCharArray());
                 inputmap[i] = lines.get(i).toCharArray();
             }
-            Path path = new PathImpl();
             Mapinfo.init(inputmap);
             initBerth(); // 单元测试需要自己手动输入berth信息
-            regionManager = new RegionManager(path);
+            regionManager = new RegionManager();
             regionManager.testCreateInitialRegions();
         } catch (IOException e) {
             e.printStackTrace();

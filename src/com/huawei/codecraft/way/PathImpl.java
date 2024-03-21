@@ -152,7 +152,8 @@ public class PathImpl implements Path{
         restoreMapinfo(barriers);
 
         if (path == null) {
-            printLog("No valid hide point found");
+//            printLog("No valid hide point found");
+            System.out.println("No valid hide point found");
         }
         return path;
     }
