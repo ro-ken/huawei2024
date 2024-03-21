@@ -29,7 +29,6 @@ import static com.huawei.codecraft.Util.*;
 public class Main {
 
     public static int testRobot = 10;    // 测试机器人
-
     public static int totalValue = 0;
     public static int totalGoodNum = 0;
 

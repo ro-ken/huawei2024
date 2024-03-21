@@ -36,6 +36,13 @@ public class BoatLastTask {
         updateTime();
     }
 
+    public void addBoath(Twins<Berth, Berth> twins) {
+        this.berths.add(twins.getObj1());
+        this.berths.add(twins.getObj2());
+        Util.printLog(boat+":"+berths);
+        updateTime();
+    }
+
     public int getMinT() {
         return minT;
     }
@@ -163,4 +170,5 @@ public class BoatLastTask {
     public Berth getSecondBerth() {
         return berths.get(1);
     }
+
 }

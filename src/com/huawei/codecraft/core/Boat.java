@@ -1,7 +1,6 @@
 package com.huawei.codecraft.core;
 
 import com.huawei.codecraft.Const;
-import com.huawei.codecraft.Main;
 import com.huawei.codecraft.Util;
 import com.huawei.codecraft.util.BoatLastTask;
 import com.huawei.codecraft.util.BoatStatus;
@@ -270,6 +269,71 @@ public class Boat {
     }
 
     public static void init() {
+//        assignBerth();
+        assignBerthAvg();
+
+        for (Boat boat : boats) {
+            boat.task.sortBerth();
+        }
+
+        Util.printDebug("打印boats 分配信息");
+        for (Boat boat : boats) {
+            Util.printDebug(boat.id + ":");
+            for (Berth berth : boat.task.berths) {
+                Util.printLog(berth+":时间"+berth.transport_time+berth.staticValue);
+            }
+        }
+    }
+
+
+    private static void assignBerthAvg() {
+        // 为每个泊船分配泊位，每艘船每次拉货平均分配：minT * （两个泊口期望平均产货）
+        List<Berth> berthList =  new ArrayList<>(Arrays.asList(berths));// 剩余未分配泊口
+        ArrayList<Berth> tmp;
+        int boatId = 0;
+        // 计算平均 货物
+        while (berthList.size()>0){
+            Twins<Berth,Berth> twins = getAvgCarrySpeedBerths(berthList);
+            boats[boatId++].task.addBoath(twins); // 每艘船分配2个泊口
+        }
+    }
+
+    private static Twins<Berth, Berth> getAvgCarrySpeedBerths(List<Berth> berthList) {
+
+        if (berthList.size()<2){
+            Util.printErr("getAvgCarrySpeedBerths");
+            return null;
+        }
+        double max =0;
+        double ms = 0;
+        Berth tar1 = null;
+        // 先选择最高产速
+        for (Berth berth : berthList) {
+            double t = berth.staticValue.get(1).getGoodNum()/Good.maxSurvive * berth.transport_time;
+            if (t>max){
+                max = t;
+                tar1 = berth;
+                ms = berth.staticValue.get(1).getGoodNum()/Good.maxSurvive;
+            }
+        }
+        berthList.remove(tar1);
+        Berth tar2 = berthList.get(0);
+        double min = unreachableFps;
+        for (Berth berth : berthList) {
+            if (berth == tar2) continue;
+            double ts = berth.staticValue.get(1).getGoodNum()/Good.maxSurvive;
+            double fps = berth.transport_time + tar1.transport_time + b2bFps;
+            double total = (ts+ms) * fps;   // 产量 = 产速 * 周期
+            if (total < min){
+                min = total;
+                tar2 = berth;
+            }
+        }
+        berthList.remove(tar2);
+        return new Twins<>(tar1,tar2);
+    }
+
+    private static void assignBerth() {
         // 为每个泊船分配泊位
         List<Berth> berthList =  new ArrayList<>(Arrays.asList(berths));// 剩余未分配泊口
         ArrayList<Berth> tmp;
@@ -300,18 +364,6 @@ public class Boat {
         while (boatId<boat_num){
             tmp = getHighestLowestBerths(berthList);
             boats[boatId++].task.addBoath(tmp);  // 如果不是1v2，这里要修改
-        }
-
-        for (Boat boat : boats) {
-            boat.task.sortBerth();
-        }
-
-        Util.printDebug("打印boats 分配信息");
-        for (Boat boat : boats) {
-            Util.printDebug(boat.id + ":");
-            for (Berth berth : boat.task.berths) {
-                Util.printLog(berth+":时间"+berth.transport_time+berth.staticValue);
-            }
         }
     }
 
