@@ -1,6 +1,7 @@
 package com.huawei.codecraft.core;
 
 import com.huawei.codecraft.Const;
+import com.huawei.codecraft.Main;
 import com.huawei.codecraft.Util;
 import com.huawei.codecraft.util.*;
 import com.huawei.codecraft.zone.Region;
@@ -9,6 +10,7 @@ import com.huawei.codecraft.zone.RegionManager;
 import java.util.*;
 
 import static com.huawei.codecraft.Const.*;
+import static com.huawei.codecraft.Main.globalGreedy;
 
 //机器人
 public class Robot {
@@ -78,14 +80,17 @@ public class Robot {
                 Twins<Berth, Good> twins = pickLastGreedyTask(region.zone.berths);
                 setTask(twins);
             } else {
-//                boolean success = region.zone.reAssignRobot(this);
-//                if (!success) {
-//                    // 要换区域则，要先到区域
-//                    Twins<Berth, Good> twins = pickNewTask();
-//                    setTask(twins);
-//                }
-                Twins<Berth, Good> twins = pickNewTask();
-                setTask(twins);
+                if (Main.dynamicRegion){
+                    boolean success = region.zone.reAssignRobot(this);
+                    if (!success) {
+                        // 要换区域则，要先到区域
+                        Twins<Berth, Good> twins = pickNewTask();
+                        setTask(twins);
+                    }
+                }else {
+                    Twins<Berth, Good> twins = pickNewTask();
+                    setTask(twins);
+                }
             }
         }
     }
@@ -639,7 +644,11 @@ public class Robot {
             // 当前在本区域内，选择价值高的调度
             twins = pickBestValueGood();
             if (twins == null) {
-                twins = pickGreedyTaskInNeighbor();
+                if (globalGreedy){
+                    twins = pickLastGreedyTask(region.zone.berths);
+                }else {
+                    twins = pickGreedyTaskInNeighbor();
+                }
             }
         } else {
             // 判断原区域的货物是否足够多，才回去，
@@ -648,11 +657,19 @@ public class Robot {
                 // 需要返回region
                 twins = pickBestValueGood();
                 if (twins == null) {
-                    twins = pickGreedyTaskInNeighbor();
+                    if (globalGreedy){
+                        twins = pickLastGreedyTask(region.zone.berths);
+                    }else {
+                        twins = pickGreedyTaskInNeighbor();
+                    }
                 }
             }else {
                 // 不需要回去，贪心选择
-                twins = pickGreedyTaskInNeighbor();
+                if (globalGreedy){
+                    twins = pickLastGreedyTask(region.zone.berths);
+                }else {
+                    twins = pickGreedyTaskInNeighbor();
+                }
             }
         }
         return twins;

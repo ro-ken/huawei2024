@@ -67,7 +67,6 @@ public class BoatLastTask {
         }
     }
 
-
     public boolean lastPeriod() {
         return status == 1;
     }

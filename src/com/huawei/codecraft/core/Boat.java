@@ -1,6 +1,7 @@
 package com.huawei.codecraft.core;
 
 import com.huawei.codecraft.Const;
+import com.huawei.codecraft.Main;
 import com.huawei.codecraft.Util;
 import com.huawei.codecraft.util.BoatLastTask;
 import com.huawei.codecraft.util.BoatStatus;
@@ -270,7 +271,11 @@ public class Boat {
 
     public static void init() {
 //        assignBerth();
-        assignBerthAvg();
+        if (Main.boatAvgAssign){
+            assignBerthAvg();
+        }else {
+            assignBerth();
+        }
 
         for (Boat boat : boats) {
             boat.task.sortBerth();

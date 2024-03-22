@@ -54,7 +54,7 @@ public class Const {
     public static Map<Integer, Berth> idToBerth = new HashMap<>();  // id到泊位的映射
     public static final int defaultMap = 0;
     public static  int mapSeq;
-    public static final double upperQuantile = 0.06;         // 上分位点，每增加0.02，期望聚合泊位数增加2
-    public static final int maxThreshold = 40;              // 设定的最大阈值, 超过这个就不合并
-    public static final double minPointsPercent = 0.045;    // 设定的最小点数百分比，区域拥有泊位少于0.045，则直接不合并
+    public static double upperQuantile = 0.06;         // 上分位点，每增加0.02，期望聚合泊位数增加2
+    public static int maxThreshold = 40;              // 设定的最大阈值, 超过这个就不合并
+    public static double minPointsPercent = 0.045;    // 设定的最小点数百分比，区域拥有泊位少于0.045，则直接不合并
 }

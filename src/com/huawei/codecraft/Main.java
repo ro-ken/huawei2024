@@ -31,12 +31,15 @@ public class Main {
     public static int testRobot = 10;    // 测试机器人
     public static int totalValue = 0;
     public static int totalGoodNum = 0;
+    public static boolean globalGreedy = true;  // 若本区域没物品，全局贪心，局部贪心
+    public static boolean dynamicRegion = true;      // 是否动态分区
+    public static boolean boatAvgAssign = true;     // 按照平均时间分配泊口给轮船,否则按照距离分
 
     public static void main(String[] args) throws FileNotFoundException {
         initLog();
         readInit();
         myInit();
-        moheitu();      // 摸黑图
+//        moheitu();      // 摸黑图    ,
         tiaocan();      // 根据地图动态调参
         printOk();
         running();
@@ -58,7 +61,7 @@ public class Main {
         }
         if (count1 % 3 == 0){
             mapSeq = 1;
-            testRobot = 0;
+            testRobot = 0;      // todo   摸完以后必须注释掉   ********* ，摸出一个可以先调参，另外两个机器人数设为0,2，继续区分
         }else if (count1 % 3 == 1){
             mapSeq = 2;
             testRobot = 2;  // 派2个机器人，防止有个机器人被卡死
@@ -81,13 +84,42 @@ public class Main {
         printLog("摸黑图：count1"+count1+"count2" +count2+ "地图seq："+mapSeq);
 
     }
+
+
     private static void tiaocan() {
         if (mapSeq == 1){
+            upperQuantile = 0.06;         // 上分位点，每增加0.02，期望聚合泊位数增加2
+            maxThreshold = 40;              // 设定的最大阈值, 超过这个就不合并
+            minPointsPercent = 0.045;    // 设定的最小点数百分比，区域拥有泊位少于0.045，则直接不合并
+
+
+            dynamicRegion = true;      // 是否动态分区  todo  这个参数为true，那么globalGreedy参数意义将不大，没货直接换区了，不需要贪心调度
+            globalGreedy = true;  // 若本区域没物品，全局贪心，局部贪心
+            Robot.leaveCoef = 0.8; // 离开系数，这个值越高，越容易发生移动，越低，越稳定，一般不超过1,如果等于0 ，只有本区域没货才离开
+
+            boatAvgAssign = true;     // 按照平均时间分配泊口给轮船,否则按照距离分
 
         }else if (mapSeq == 2){
+            upperQuantile = 0.06;         // 上分位点，每增加0.02，期望聚合泊位数增加2
+            maxThreshold = 40;              // 设定的最大阈值, 超过这个就不合并
+            minPointsPercent = 0.045;    // 设定的最小点数百分比，区域拥有泊位少于0.045，则直接不合并
+
+            dynamicRegion = true;      // 是否动态分区
+            globalGreedy = true;  // 若本区域没物品，全局贪心，局部贪心
+            Robot.leaveCoef = 0.8; // 离开系数，这个值越高，越容易发生移动，越低，越稳定，一般不超过1,如果等于0 ，只有本区域没货才离开
+
+            boatAvgAssign = true;     // 按照平均时间分配泊口给轮船,否则按照距离分
 
         }else if (mapSeq == 3){
+            upperQuantile = 0.06;         // 上分位点，每增加0.02，期望聚合泊位数增加2
+            maxThreshold = 40;              // 设定的最大阈值, 超过这个就不合并
+            minPointsPercent = 0.045;    // 设定的最小点数百分比，区域拥有泊位少于0.045，则直接不合并
 
+            dynamicRegion = true;      // 是否动态分区
+            globalGreedy = true;  // 若本区域没物品，全局贪心，局部贪心
+            Robot.leaveCoef = 0.8; // 离开系数，这个值越高，越容易发生移动，越低，越稳定，一般不超过1,如果等于0 ，只有本区域没货才离开
+
+            boatAvgAssign = true;     // 按照平均时间分配泊口给轮船,否则按照距离分
         }
     }
 
@@ -198,23 +230,23 @@ public class Main {
             }
         }
 
-        if (frameId == 14999){
-            Util.printLog("打印运输货物信息");
-            Util.printLog("总货物："+totalGoodNum);
-            for (Region region : RegionManager.regions) {
-                Util.printLog(region+":"+region.totalGoodNum + "avg:" + region.totalGoodNum/15 + " ");
-                Util.printLog(":size："+region.accessiblePoints.size()+region.berths+"机器人数："+region.assignedRobots.size());
-                Util.printLog(region.staticValue.get(1));
-                Util.printLog(region.staticValue.get(2));
-                Util.printLog(region.staticValue.get(3));
-                for (Berth berth : region.berths) {
-                    Util.printLog(berth+":"+berth.totalGoodNum + "avg:"+ berth.totalGoodNum/15);
-                }
-            }
-            for (Robot robot : robots) {
-                Util.printLog(robot+":"+robot.totalGoodNum+" avg:"+robot.totalGoodNum/15);
-            }
-        }
+//        if (frameId == 14999){
+//            Util.printLog("打印运输货物信息");
+//            Util.printLog("总货物："+totalGoodNum);
+//            for (Region region : RegionManager.regions) {
+//                Util.printLog(region+":"+region.totalGoodNum + "avg:" + region.totalGoodNum/15 + " ");
+//                Util.printLog(":size："+region.accessiblePoints.size()+region.berths+"机器人数："+region.assignedRobots.size());
+//                Util.printLog(region.staticValue.get(1));
+//                Util.printLog(region.staticValue.get(2));
+//                Util.printLog(region.staticValue.get(3));
+//                for (Berth berth : region.berths) {
+//                    Util.printLog(berth+":"+berth.totalGoodNum + "avg:"+ berth.totalGoodNum/15);
+//                }
+//            }
+//            for (Robot robot : robots) {
+//                Util.printLog(robot+":"+robot.totalGoodNum+" avg:"+robot.totalGoodNum/15);
+//            }
+//        }
     }
 
     private static void updateGoodInfo() {
