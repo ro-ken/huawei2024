@@ -36,9 +36,59 @@ public class Main {
         initLog();
         readInit();
         myInit();
-        initMapSeq();
+        moheitu();      // 摸黑图
+        tiaocan();      // 根据地图动态调参
         printOk();
         running();
+    }
+
+    private static void moheitu() {
+        // 摸黑图
+        int line = 31;
+        int count1 = 0;
+        int line2 = 39;     // 如果没摸出来的话
+        int count2 = 0;
+        for (int i = 0; i <mapWidth; i++) {
+            if (map[line][i] == '.'){
+                count1 ++;
+            }
+            if (map[line2][i] == '.'){
+                count2 ++;
+            }
+        }
+        if (count1 % 3 == 0){
+            mapSeq = 1;
+            testRobot = 0;
+        }else if (count1 % 3 == 1){
+            mapSeq = 2;
+            testRobot = 2;  // 派2个机器人，防止有个机器人被卡死
+        }else if (count1 % 3 == 2){
+            mapSeq = 3;
+            testRobot = 10;     // 全派出去
+        }
+
+////  下面是第一次没测出来
+//        if (count1 % 3 == 0){
+//            mapSeq = 1;
+//            testRobot = 0;
+//        }else if (count1 % 3 == 2 && count2 % 2 == 0){
+//            mapSeq = 2;
+//            testRobot = 2;  // 派2个机器人，防止有个机器人被卡死
+//        }else if (count1 % 3 == 2 && count2 % 2 == 1){
+//            mapSeq = 3;
+//            testRobot = 10;     // 全派出去
+//        }
+        printLog("摸黑图：count1"+count1+"count2" +count2+ "地图seq："+mapSeq);
+
+    }
+    private static void tiaocan() {
+        if (mapSeq == 1){
+
+        }else if (mapSeq == 2){
+
+        }else if (mapSeq == 3){
+
+        }
     }
 
     public static void running(){
@@ -86,11 +136,11 @@ public class Main {
 
         initBoat();
 
-        Util.printDebug("打印区域信息");
-        for (Region region : RegionManager.regions) {
-            Util.printLog(region+":"+region.berths);
-        }
-        testRegionValue();
+//        Util.printDebug("打印区域信息");
+//        for (Region region : RegionManager.regions) {
+//            Util.printLog(region+":"+region.berths);
+//        }
+//        testRegionValue();
     }
 
     private static void initBoat() {
@@ -115,25 +165,6 @@ public class Main {
         }
     }
 
-    // 手动初始化地图
-    private static void initMapSeq() {
-        int[][][] berthsPos = {
-                {{1, 2}, {2, 3}, {3,4}}, // map1
-                {{1, 2}, {2, 3}, {3,4}}, // map2
-                {{1, 2}, {2, 3}, {3,4}}, // map3
-        };
-        if (map[berthsPos[0][0][0]][berthsPos[0][0][1]] == 'B' && map[berthsPos[0][1][0]][berthsPos[0][1][1]] == 'B' && map[berthsPos[0][2][0]][berthsPos[0][2][1]] == 'B') {
-            mapSeq = 1;
-        }
-        else if (map[berthsPos[1][0][0]][berthsPos[1][0][1]] == 'B' && map[berthsPos[1][1][0]][berthsPos[1][1][1]] == 'B' && map[berthsPos[1][2][0]][berthsPos[1][2][1]] == 'B') {
-            mapSeq = 2;
-        }
-        else if (map[berthsPos[2][0][0]][berthsPos[2][0][1]] == 'B' && map[berthsPos[2][1][0]][berthsPos[2][1][1]] == 'B' && map[berthsPos[2][2][0]][berthsPos[2][2][1]] == 'B') {
-            mapSeq = 3;
-        }
-        mapSeq =  defaultMap;
-    }
-
     private static void handleFrame() {
 
         // 处理轮船调度
@@ -156,7 +187,7 @@ public class Main {
         updateGoodInfo();
         invalidPoints.clear();  //
         workRobots.clear();     // 每帧初始化
-        for (int i = 0; i < robot_num; i++) {
+        for (int i = 0; i < testRobot; i++) {
             // 找出所有冻结机器人，
             if (robots[i].status == 0){
                 invalidPoints.add(robots[i].pos);
