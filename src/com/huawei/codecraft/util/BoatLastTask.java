@@ -121,7 +121,7 @@ public class BoatLastTask {
 
     // 判断是否可以去下一个泊口，而不耽误最后的周期
     public boolean canBerthGotoBerth(Berth nextBerth) {
-        // todo
+
         int costTime = nextBerth.transport_time + b2bFps + 5;// 装货预留时间
         if (frameId >= lastTFPS - costTime){
             return false;

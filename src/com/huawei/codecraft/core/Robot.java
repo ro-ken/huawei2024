@@ -27,6 +27,7 @@ public class Robot {
     public boolean changeRegionMode;    // 是否是换区域模式，这个模式下可以不拿物品朝目标区域走
     public RobotRunMode runMode = new RobotRunMode(this);
     public boolean greedyMode = false;  // 最后阶段切换到贪心模式
+    public static double leaveCoef = 0.8; // 离开系数，这个值越高，越容易发生移动，越低，越稳定，一般不超过1,如果等于0 ，只有本区域没货才离开
 
     public Robot(int id, int x, int y) {
         this.id = id;
@@ -74,7 +75,7 @@ public class Robot {
         // 到达目的地，可能任务结束，重新分配
         if (noTask()) {
             if (greedyMode) {
-                Twins<Berth, Good> twins = pickLastGreedyTask();
+                Twins<Berth, Good> twins = pickLastGreedyTask(region.zone.berths);
                 setTask(twins);
             } else {
 //                boolean success = region.zone.reAssignRobot(this);
@@ -89,14 +90,15 @@ public class Robot {
         }
     }
 
-    private Twins<Berth, Good> pickLastGreedyTask() {
+    private Twins<Berth, Good> pickLastGreedyTask(Set<Berth> berths) {
         // 贪心选择任务，选择单次价值最高的
         double maxV = 0;
         Berth tarBer = null;
         Good tarGood = null;
         Pair<Good> tarPair = null;
         Util.printLog(this);
-        for (Berth berth : region.zone.berths) {
+
+        for (Berth berth : berths) {
             if (berth.notFinalShip()) {
                 continue;
             }
@@ -637,7 +639,7 @@ public class Robot {
             // 当前在本区域内，选择价值高的调度
             twins = pickBestValueGood();
             if (twins == null) {
-                twins = pickLastGreedyTask();
+                twins = pickGreedyTaskInNeighbor();
             }
         } else {
             // 判断原区域的货物是否足够多，才回去，
@@ -646,11 +648,11 @@ public class Robot {
                 // 需要返回region
                 twins = pickBestValueGood();
                 if (twins == null) {
-                    twins = pickLastGreedyTask();
+                    twins = pickGreedyTaskInNeighbor();
                 }
             }else {
                 // 不需要回去，贪心选择
-                twins = pickLastGreedyTask();
+                twins = pickGreedyTaskInNeighbor();
             }
         }
         return twins;
@@ -661,7 +663,6 @@ public class Robot {
             return false;
         }
         // 当原区域价值足够，需要返回区域运货（来得及运完）
-        // 超过首个高价值物品存在时间超过T/3，或生成有价值物品总数超过exp_num/3
         int leftFps = unreachableFps;
         // 计算在fps内能否运完所有物品
         int needFps = region.getClosestBerthPathFps(pos);
@@ -674,7 +675,7 @@ public class Robot {
                 needFps += region.getClosestBerthPathFps(good.pos) * 2;
             }
         } else {
-            double expValue = region.staticValue.get(region.assignedRobots.size()).getFpsValue()/region.assignedRobots.size() * 0.8;   // 本区域的价值应该是要高于机器人待的区域的，所以回去条件放宽一些
+            double expValue = region.staticValue.get(region.assignedRobots.size()).getSingleRobotFpsValue() * leaveCoef;   // 本区域的价值应该是要高于机器人待的区域的，所以回去条件放宽一些
             for (Pair<Good> pair : region.regionGoodsByValue) {
                 if (pair.getValue() < expValue) {
                     break;  // 获取所有有价值的货物
@@ -686,51 +687,19 @@ public class Robot {
                 }
             }
         }
-        return needFps > leftFps;
+        return needFps >= leftFps;
     }
 
-    private Twins<Berth, Good> pickNeighborValueGood() {
+    private Twins<Berth, Good> pickGreedyTaskInNeighbor() {
         // 选择临近区域最有价值的货物，要求不能太远，送回来，选择最近两个区域即可,（包括本区域）
-        // 要求价值超过100 ，且最近的
-        int size = Math.min(region.neighborRegions.size(), 2);
-        int count = 0;  // 记录寻找的货物，不要找太多，最多比较10个
-        Good tar = null;
-        Pair<Good> tarPair = null;
-        int min = unreachableFps;
-        for (int i = 0; i < size; i++) {
-            Region neighbor = region.neighborRegions.get(i);
-            for (Pair<Good> pair : neighbor.regionGoodsByValue) {
-                if (count >= 10) {
-                    break;
-                }
-                Good good = pair.getKey();
-                int fps = bookBerth.getPathFps(good.pos);
-                if (tar == null) {
-                    tar = good;
-                    min = fps;
-                    tarPair = pair;
-                } else {
-                    if (good.value > 100 && (tar.value <= 100 || fps < min)) {
-                        // 高价值
-                        tar = good;
-                        min = fps;
-                        tarPair = pair;
-                    } else if (tar.value <= 100 && fps < min) {
-                        tar = good;
-                        min = fps;
-                        tarPair = pair;
-                    }
-                }
-                count++;
-            }
+        Set<Berth> berthSet = new HashSet<>();
+        if (!region.neighborRegions.isEmpty()){
+            berthSet.addAll(region.neighborRegions.get(0).berths);
         }
-        if (tar != null) {
-            Berth berth = RegionManager.pointBerthMap.get(tar.pos);
-            berth.removeDomainGood(tarPair);   // 能与不能都删掉
-            // 运到自己区域的泊口
-            return new Twins<>(bookBerth, tar);
+        if (region.neighborRegions.size() >=2){
+            berthSet.addAll(region.neighborRegions.get(1).berths);
         }
-        return null;
+        return pickLastGreedyTask(berthSet);
     }
 
     private Twins<Berth, Good> pickBestValueGood() {
@@ -743,8 +712,8 @@ public class Robot {
             Berth berth = RegionManager.pointBerthMap.get(good.pos);
             // 判断该货物的价值
             RegionValue regionValue = region.staticValue.get(region.assignedRobots.size());
-            if (regionValue.isAreaRich()){
-                if (pair.getValue() < regionValue.getFpsValue() * 0.8){
+            if (regionValue.isAreaRich() && AtLeastOneRobotHereIfMore()){
+                if (pair.getValue() < regionValue.getSingleRobotFpsValue() * leaveCoef){
                     return null;    // 价值太低
                 }
             }
@@ -756,11 +725,21 @@ public class Robot {
         return null;
     }
 
-    private Twins<Berth, Good> pickLeastGood() {
-        // 选择最久远的任务，防止没有任务做
-        // 1、选择本区域最早的物品
-        Twins<Berth, Good> twins = region.getLeastGood();
-        return twins;
+    private boolean AtLeastOneRobotHereIfMore() {
+        // 如果该片区域有两个机器人及以上，确保有一个机器人在本地工作
+        if (region.assignedRobots.size() <= 1){
+            return true;
+        }
+        for (Robot robot : region.assignedRobots) {
+            if (robot == this){
+                continue;
+            }
+            if (region.berths.contains(robot.bookBerth)){
+                // 证明该机器人在本区域
+                return true;
+            }
+        }
+        return false;
     }
 
     //预定物品

@@ -53,4 +53,8 @@ public class RegionValue {
         // 获取单帧价值
         return getPeriodValue()/totalFps;
     }
+    public double getSingleRobotFpsValue() {
+        // 获取单帧价值
+        return getFpsValue()/num;
+    }
 }
