@@ -11,7 +11,7 @@ import static com.huawei.codecraft.Const.*;
 
 // 工具类
 public class Util {
-    public static final boolean test = false;    // 是否可写入
+    public static final boolean test = true;    // 是否可写入
     public static  Scanner inStream = new Scanner(System.in) ;
     public static final PrintStream outStream = new PrintStream(new BufferedOutputStream(System.out));
     public static PrintStream log = null;

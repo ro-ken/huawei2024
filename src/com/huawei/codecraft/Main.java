@@ -31,15 +31,15 @@ public class Main {
     public static int testRobot = 10;    // 测试机器人
     public static int totalValue = 0;
     public static int totalGoodNum = 0;
-    public static boolean globalGreedy = true;  // 若本区域没物品，全局贪心，局部贪心
-    public static boolean dynamicRegion = true;      // 是否动态分区
+    public static boolean globalGreedy = false;  // 若本区域没物品，全局贪心，局部贪心
+    public static boolean dynamicRegion = false;      // 是否动态分区
     public static boolean boatAvgAssign = true;     // 按照平均时间分配泊口给轮船,否则按照距离分
 
     public static void main(String[] args) throws FileNotFoundException {
         initLog();
         readInit();
         myInit();
-        moheitu();      // 摸黑图    ,
+//        moheitu();      // 摸黑图    ,
         tiaocan();      // 根据地图动态调参
         printOk();
         running();
@@ -85,6 +85,23 @@ public class Main {
 
     }
 
+    // 手动初始化地图
+    private static void initMapSeq() {
+        int[][][] berthsPos = {
+                {{3, 175}, {15, 176}, {33,176}}, // map1
+                {{74, 74}, {74, 122}, {82, 60}}, // map2
+        };
+        if (map[berthsPos[0][0][0]][berthsPos[0][0][1]] == 'B' && map[berthsPos[0][1][0]][berthsPos[0][1][1]] == 'B' && map[berthsPos[0][2][0]][berthsPos[0][2][1]] == 'B') {
+            mapSeq = 1;
+        }
+        else if (map[berthsPos[1][0][0]][berthsPos[1][0][1]] == 'B' && map[berthsPos[1][1][0]][berthsPos[1][1][1]] == 'B' && map[berthsPos[1][2][0]][berthsPos[1][2][1]] == 'B') {
+            mapSeq = 2;
+        }
+        else {
+            mapSeq =  defaultMap;
+        }
+    }
+
 
     private static void tiaocan() {
         if (mapSeq == 1){
@@ -110,7 +127,7 @@ public class Main {
 
             boatAvgAssign = true;     // 按照平均时间分配泊口给轮船,否则按照距离分
 
-        }else if (mapSeq == 3){
+        }else if (mapSeq == 0){     // 黑图
             upperQuantile = 0.06;         // 上分位点，每增加0.02，期望聚合泊位数增加2
             maxThreshold = 40;              // 设定的最大阈值, 超过这个就不合并
             minPointsPercent = 0.045;    // 设定的最小点数百分比，区域拥有泊位少于0.045，则直接不合并

@@ -28,9 +28,8 @@ public class RegionManager {
     public static final Map<Point, Region> pointRegionMap = new HashMap<>();    // point 到 region 的映射，查找点属于的 region
     public static final Map<Point, Berth> pointBerthMap = new HashMap<>();  // 获取离点最近的泊位
     private static final int[][][] berthId = {
-            {{0,1},{2, 3, 4},{5},{6},{7}, {8, 9}},
-            {{0}, {1}, {2}, {3, 4, 5}, {6}, {7, 8}, {9}},
-            {{0, 1}, {2}, {4, 5}, {3, 6}, {7, 8}, {9}}
+            {{0,1},{2, 3},{4, 5},{6},{7, 8}, {9}},
+            {{0, 2}, {1}, {3, 4}, {5}, {6}, {7}, {8, 9}},
     };
     /**
      * 构造函数
