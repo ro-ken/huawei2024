@@ -39,7 +39,7 @@ public class Main {
         initLog();
         readInit();
         myInit();
-//        moheitu();      // 摸黑图    ,
+        initMapSeq();      // 摸黑图
         tiaocan();      // 根据地图动态调参
         printOk();
         running();
