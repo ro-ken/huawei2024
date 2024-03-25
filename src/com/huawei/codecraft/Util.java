@@ -1,5 +1,8 @@
 package com.huawei.codecraft;
+import com.huawei.codecraft.core.Berth;
 import com.huawei.codecraft.util.Point;
+import com.huawei.codecraft.zone.Region;
+import com.huawei.codecraft.zone.RegionManager;
 
 import java.io.BufferedOutputStream;
 import java.io.FileNotFoundException;
@@ -101,4 +104,83 @@ public class Util {
         }
         printLog(pathStr);
     }
+
+    private static void moheitu() {
+        // 摸黑图
+        int line = 31;
+        int count1 = 0;
+        int line2 = 39;     // 如果没摸出来的话
+        int count2 = 0;
+        for (int i = 0; i <mapWidth; i++) {
+            if (map[line][i] == '.'){
+                count1 ++;
+            }
+            if (map[line2][i] == '.'){
+                count2 ++;
+            }
+        }
+        if (count1 % 3 == 0){
+//            mapSeq = 1;
+//            testRobot = 0;      // todo   摸完以后必须注释掉   ********* ，摸出一个可以先调参，另外两个机器人数设为0,2，继续区分
+        }else if (count1 % 3 == 1){
+//            mapSeq = 2;
+//            testRobot = 2;  // 派2个机器人，防止有个机器人被卡死
+        }else if (count1 % 3 == 2){
+//            mapSeq = 3;
+//            testRobot = 10;     // 全派出去
+        }
+
+////  下面是第一次没测出来
+//        if (count1 % 3 == 0){
+//            mapSeq = 1;
+//            testRobot = 0;
+//        }else if (count1 % 3 == 2 && count2 % 2 == 0){
+//            mapSeq = 2;
+//            testRobot = 2;  // 派2个机器人，防止有个机器人被卡死
+//        }else if (count1 % 3 == 2 && count2 % 2 == 1){
+//            mapSeq = 3;
+//            testRobot = 10;     // 全派出去
+//        }
+        printLog("摸黑图：count1"+count1+"count2" +count2+ "地图seq："+mapSeq);
+
+    }
+
+    // 手动初始化地图
+    private static void initMapSeq() {
+        int[][][] berthsPos = {
+                {{3, 175}, {15, 176}, {33,176}}, // map1
+                {{74, 74}, {74, 122}, {82, 60}}, // map2
+        };
+        if (map[berthsPos[0][0][0]][berthsPos[0][0][1]] == 'B' && map[berthsPos[0][1][0]][berthsPos[0][1][1]] == 'B' && map[berthsPos[0][2][0]][berthsPos[0][2][1]] == 'B') {
+            mapSeq = 1;
+        }
+        else if (map[berthsPos[1][0][0]][berthsPos[1][0][1]] == 'B' && map[berthsPos[1][1][0]][berthsPos[1][1][1]] == 'B' && map[berthsPos[1][2][0]][berthsPos[1][2][1]] == 'B') {
+            mapSeq = 2;
+        }
+        else {
+            mapSeq =  defaultMap;
+        }
+    }
+
+    private static void testRegionValue() {
+        for (Region region : RegionManager.regions) {
+            printLog("测试Region------"+region+region.berths);
+            Util.printLog(region.staticValue.get(1));
+            Util.printLog(region.staticValue.get(2));
+            Util.printLog(region.staticValue.get(3));
+            for (Berth berth : region.berths) {
+                Util.printLog(berth+":"+berth.staticValue);
+            }
+            Util.printLog(" ");
+        }
+
+        printLog("berth 静态价值！");
+        for (Berth berth : berths) {
+            Util.printLog(berth+":size,"+berth.points+berth.staticValue.get(1));
+            Util.printLog(berth+":size,"+berth.points+berth.staticValue.get(2));
+            Util.printLog(berth+":size,"+berth.points+berth.staticValue.get(3));
+            Util.printLog(" ");
+        }
+    }
+
 }
