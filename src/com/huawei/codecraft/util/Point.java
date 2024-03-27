@@ -1,5 +1,7 @@
 package com.huawei.codecraft.util;
 
+import com.huawei.codecraft.Const;
+
 import java.util.Objects;
 
 // 地图坐标点
@@ -18,6 +20,23 @@ public class Point {
     public Point(Point pos) {
         this.x = pos.x;
         this.y = pos.y;
+    }
+
+    public static boolean isLand(Point pos) {
+        // 该点位于陆地上，其不是障碍
+        if (!Point.inMap(pos)){
+            return false;
+        }
+        // 不是海洋和障碍物，都可以走
+        return Const.map[pos.x][pos.y] != '*' && Const.map[pos.x][pos.y] != '#';
+    }
+
+    private static boolean inMap(Point pos) {
+        // 该点在地图上
+        if (pos.x<0 || pos.x >= Const.mapWidth){
+            return false;
+        }
+        return pos.y >= 0 && pos.y < Const.mapWidth;
     }
 
     @Override

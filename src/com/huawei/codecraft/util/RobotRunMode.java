@@ -111,21 +111,13 @@ public class RobotRunMode {
         return Const.frameId - startFrame >= robot.route.way.size() + hideWaitTime * 2;
     }
 
-    public Point beNormal() {
+    public void beNormal() {
         // 变回正常状态
         Util.printLog("beNormal:"+robot);
         // 变为普通模式
+        if (isHideMode()){
+            robot.changeRoad(oriTarget);
+        }
         beFree();
-        return oriTarget;   // 返回原始目标点
-    }
-    private void freeMe(){
-        waitFrame = 0;
-        startFrame = 0;
-        priority = 0;
-        master = null;
-    }
-
-    public boolean isNotNormal() {
-        return priority !=0;
     }
 }

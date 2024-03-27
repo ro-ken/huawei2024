@@ -31,7 +31,7 @@ public class Main {
     public static int testRobot = 10;    // 测试机器人
     public static int totalValue = 0;
     public static int totalGoodNum = 0;
-    public static boolean globalGreedy = false;  // 若本区域没物品，全局贪心，局部贪心
+    public static boolean globalGreedy = true;  // 若本区域没物品，全局贪心，局部贪心
     public static boolean dynamicRegion = false;      // 是否动态分区
     public static boolean boatAvgAssign = true;     // 按照平均时间分配泊口给轮船,否则按照距离分
 
@@ -48,13 +48,15 @@ public class Main {
         input0();   // 第一帧机器人确定机器人序号
         for (int i = 0; i < totalFrame; i++) {
             printLog("-------------frameId:"+frameId+"--------------");
+//            long sta = System.nanoTime();
             frameInit();
             handleFrame();
             printOk();
+//            long end = System.nanoTime();
+//            Util.printLog("单帧花费时间:"+(end-sta)/1000+"us");
             input();
         }
     }
-
 
 
     // 追加初始化工作
@@ -70,10 +72,10 @@ public class Main {
 
         initBoat();
 
-//        Util.printDebug("打印区域信息");
-//        for (Region region : RegionManager.regions) {
-//            Util.printLog(region+":"+region.berths);
-//        }
+        Util.printDebug("打印区域信息");
+        for (Region region : RegionManager.regions) {
+            Util.printLog(region+":"+region.berths);
+        }
 //        testRegionValue();
     }
 
@@ -125,6 +127,7 @@ public class Main {
             // 找出所有冻结机器人，
             if (robots[i].status == 0){
                 invalidPoints.add(robots[i].pos);
+                Util.printDebug("机器人被冻结"+robots[i]);
             }else {
                 if (robots[i].region != null){
                     workRobots.add(robots[i]);
