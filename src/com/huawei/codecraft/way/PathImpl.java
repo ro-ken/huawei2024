@@ -4,8 +4,9 @@ import com.huawei.codecraft.util.Point;
 
 import java.util.*;
 
+import static com.huawei.codecraft.Const.NoLimit;
 import static com.huawei.codecraft.Const.unreachableFps;
-import static com.huawei.codecraft.Util.printLog;
+import static com.huawei.codecraft.Util.*;
 import static com.huawei.codecraft.way.Mapinfo.isValid;
 import static com.huawei.codecraft.way.Mapinfo.map;
 
@@ -14,18 +15,16 @@ import static com.huawei.codecraft.way.Mapinfo.map;
  * Package: com.huawei.codecraft.way
  * Description: 寻路的具体接口实现
  */
-public class PathImpl implements Path{
+public class PathImpl implements Path {
     private static final int[][] directions = {{1, 0}, {-1, 0}, {0, -1}, {0, 1}};
 
-    @Override
-    public ArrayList<Point> getPath(Point p1, Point p2) {
+    private  ArrayList<Point> getPathWithLimit(Point p1, Point p2, int limitLen) {
 //        long startTime = System.nanoTime();  // Start timing
-
         if (!isAccessible(p1.x, p1.y) || !isAccessible(p2.x, p2.y)) {
-//            printLog("point is impossible");
+            printLog("point is impossible");
             return null;
         }
-
+        int curLen = 0;
         PriorityQueue<Pos> openSet = new PriorityQueue<>(Comparator.comparingInt(Pos::f));
         Map<Point, Pos> visitedNodes = new HashMap<>();
 
@@ -37,14 +36,16 @@ public class PathImpl implements Path{
 
         while (!openSet.isEmpty()) {
             Pos current = openSet.poll();
-
             if (current.pos.equals(p2)) {
-//                printLog("get path success");
 //                long endTime = System.nanoTime();  // End timing
 //                printLog("get path success, Time taken: " + (endTime - startTime) + " ns");
                 return constructPath(current);
             }
-
+            curLen += 1; // 当前路径长度 + 1
+            if (limitLen > 0 && limitLen < curLen) {
+                printDebug("road too long, stop find");
+                return null;
+            }
             for (int[] direction : directions) {
                 Point newPoint = new Point(current.pos.x + direction[0], current.pos.y + direction[1]);
 
@@ -62,8 +63,12 @@ public class PathImpl implements Path{
             }
         }
 
-//        printLog("No way");
+        printLog("No way");
         return null;
+    }
+    @Override
+    public ArrayList<Point> getPath(Point p1, Point p2) {
+          return getPathWithLimit(p1, p2, NoLimit);
     }
 
     @Override
@@ -77,10 +82,8 @@ public class PathImpl implements Path{
 
     @Override
     public ArrayList<Point> getPathWithBarrier(Point p1, Point p2, HashSet<Point> barriers) {
-        if (barriers.contains(p1)){
-            barriers.remove(p1);
-        }
-        ArrayList<Point> blocks = new ArrayList<Point>(barriers);
+        barriers.remove(p1);
+        ArrayList<Point> blocks = new ArrayList<>(barriers);
         changeMapinfo(blocks);
         ArrayList<Point> path =  getPath(p1, p2);
         restoreMapinfo(blocks);
@@ -88,9 +91,19 @@ public class PathImpl implements Path{
     }
 
     @Override
+    public ArrayList<Point> getPathWithBarrierWithLimit(Point pos, Point target, HashSet<Point> barriers, int maxLen) {
+        barriers.remove(pos);
+        ArrayList<Point> blocks = new ArrayList<>(barriers);
+        changeMapinfo(blocks);
+        ArrayList<Point> path =  getPathWithLimit(pos, target, maxLen);
+        restoreMapinfo(blocks);
+        return path;
+    }
+
+    @Override
     public ArrayList<Point> getHidePointPath(Point startPoint, List<Point> leftPath) {
         if (leftPath.size() < 2) {
-            printLog("Error: leftPath does not contain enough points");
+            printErr("leftPath does not contain enough points");
             return null;
         }
         ArrayList<Point> path = null;
@@ -140,8 +153,8 @@ public class PathImpl implements Path{
         restoreMapinfo(barriers);
 
         if (path == null) {
-//            printLog("No valid hide point found");
-            System.out.println("No valid hide point found");
+            printLog("No valid hide point found");
+//            System.out.println("No valid hide point found");
         }
         return path;
     }
@@ -168,25 +181,6 @@ public class PathImpl implements Path{
     private int estimateHeuristic(Point p1, Point p2) {
         // Example using Manhattan distance
         return Math.abs(p1.x - p2.x) + Math.abs(p1.y - p2.y);
-    }
-
-    private static Point offsetBerthPoint(Point robotPos, Point BerthPoint) {
-        // 假设最近泊位点为离机器人最近的泊位点
-        Point target = new Point();
-
-        if (robotPos.x > BerthPoint.x + 3) {
-            target.x = BerthPoint.x + 3;
-        } else {
-            target.x = Math.max(robotPos.x, BerthPoint.x);
-        }
-        if (robotPos.y > BerthPoint.y + 3) {
-            target.y = BerthPoint.y + 3;
-        }
-        else {
-            target.y = Math.max(robotPos.y, BerthPoint.y);
-        }
-
-        return  target;
     }
 
     private static boolean isAccessible(int x, int y) {

@@ -48,6 +48,7 @@ public class Const {
     /*****************************地图相关参数*****************************/
     public static RegionManager regionManager;
     public static Path path = new PathImpl(); // 修改Path实现
+    public static int NoLimit = -1;              // 无长度限制的寻路算法
     public static final int unreachableFps = 1000000;       // 不可达的时间
     public static ArrayList<Zone> zones = new ArrayList<>();    // 陆地划分的区域
     public static Map<Point,Berth> pointToBerth = new HashMap<>();  // 左上角位置到泊位的映射
