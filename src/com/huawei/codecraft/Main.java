@@ -34,6 +34,8 @@ public class Main {
     public static boolean globalGreedy = true;  // 若本区域没物品，全局贪心，局部贪心
     public static boolean dynamicRegion = false;      // 是否动态分区
     public static boolean boatAvgAssign = true;     // 按照平均时间分配泊口给轮船,否则按照距离分
+    public static int lastFrameId = 0;
+    public static int dumpFrame = 0;
 
     public static void main(String[] args) throws FileNotFoundException {
         initLog();
@@ -48,16 +50,17 @@ public class Main {
         input0();   // 第一帧机器人确定机器人序号
         for (int i = 0; i < totalFrame; i++) {
             printLog("-------------frameId:"+frameId+"--------------");
-//            long sta = System.nanoTime();
+
+            long sta = System.nanoTime();
             frameInit();
+            long t1 = System.nanoTime();
             handleFrame();
             printOk();
-//            long end = System.nanoTime();
-//            Util.printLog("单帧花费时间:"+(end-sta)/1000+"us");
+            long end = System.nanoTime();
+            Util.printLog("单帧花费时间:"+(end-sta)/1000+"us"+"frameInit时间:"+(t1-sta)/1000+"us,handleFrame时间"+(end-t1)/1000+"us");
             input();
         }
     }
-
 
     // 追加初始化工作
     private static void myInit() {
@@ -111,14 +114,22 @@ public class Main {
         // 处理机器人调度
         for (Robot workRobot : workRobots) {
             workRobot.schedule();   // 调度
-            workRobot.gotoNextPoint();  // 去下一个点
+            workRobot.updateNextPoint();  // 去下一个点
         }
         // 统一处理移动信息
-        Robot.printRobotMove();
+        Robot.handleRobotMove();
     }
 
     // 每一帧开始的初始化工作
     private static void frameInit() {
+        if (frameId - lastFrameId>1){
+            Util.printWarn("已跳帧："+(frameId -lastFrameId-1));
+            dumpFrame +=frameId -lastFrameId-1;
+        }
+        lastFrameId = frameId;
+        if (frameId == 15000){
+            Util.printLog("总共跳帧："+dumpFrame);
+        }
 
         updateGoodInfo();
         invalidPoints.clear();  //

@@ -66,12 +66,12 @@ public class Route {
         // 没有保存路径，自己寻路
         ArrayList<Point> path = Const.path.getPath(robot.pos,pos);
         long end = System.nanoTime();
-        Util.printLog("未保存路径，重新寻路！ 距离："+path.size()+"花费时间:"+(end-sta)/1000+"us");
         if (path == null){
             // 后续判断，如果target!=pos说明找不到路
             Util.printErr("setNewWay:找不到路"+robot.pos +"->"+pos);
             setWay(robot.pos);
         }else {
+            Util.printLog("未保存路径，重新寻路！ 距离："+path.size()+"花费时间:"+(end-sta)/1000+"us");
             setWay(path);
         }
     }
@@ -117,9 +117,7 @@ public class Route {
         if (index <= 1){
             return way;
         }else {
-            return new ArrayList<Point>(way.subList(index-2, way.size()));
+            return new ArrayList<>(way.subList(index-2, way.size()));
         }
     }
-
-
 }
