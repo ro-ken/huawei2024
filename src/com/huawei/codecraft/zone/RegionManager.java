@@ -1,5 +1,6 @@
 package com.huawei.codecraft.zone;
 
+import com.huawei.codecraft.Const;
 import com.huawei.codecraft.Util;
 import com.huawei.codecraft.core.Berth;
 import com.huawei.codecraft.core.Good;
@@ -537,7 +538,7 @@ public class RegionManager {
         int total = Good.maxSurvive;   //往返fps，只有一半的时间是在去的路上
         int robotNum = 1;
         double totalNum = 0;
-        for (int i = 1; i < 300; i++) {
+        for (int i = 1; i < 600; i++) {
             if (pathLenToNumMap.containsKey(i)){
                 int num = pathLenToNumMap.get(i);
                 double realNum= num * p;
@@ -546,14 +547,14 @@ public class RegionManager {
                 if (dis > total){ // 时间到了，不能在运
                     totalNum -= (dis - total)/2/i;  //加多了，减回去几个
                     staticValue.put(robotNum,new RegionValue(robotNum,true,i,totalNum));
-                    if (robotNum == 5){
+                    if (robotNum == robot_num){
                         break;  // 一个区域三个机器人最多了
                     }
                     robotNum ++;
                     total += total; // 2个机器人搬运距离翻倍
                 }
             }else {
-                while (robotNum <=5){
+                while (robotNum <=robot_num){
                     staticValue.put(robotNum,new RegionValue(robotNum,false,unreachableFps, area * p));
                     robotNum ++;
                 }
@@ -590,10 +591,6 @@ public class RegionManager {
         }
 
         region.addNewGood(newGood);
-        printDebug("打印新增物品信息");
-        printLog(region);
-        printLog(region.regionGoodsByTime);
-        printLog(region.regionGoodsByValue);
     }
 
     public void printAll() {
