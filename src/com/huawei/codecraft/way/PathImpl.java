@@ -76,12 +76,6 @@ public class PathImpl implements Path{
     }
 
     @Override
-    public ArrayList<Point> getToBerthPath(Point robotPos, Point BerthPoint) {
-        Point target = offsetBerthPoint(robotPos, BerthPoint);
-        return getPath(robotPos, target);
-    }
-
-    @Override
     public ArrayList<Point> getPathWithBarrier(Point p1, Point p2, HashSet<Point> barriers) {
         if (barriers.contains(p1)){
             barriers.remove(p1);

@@ -30,14 +30,6 @@ public interface Path {
     ArrayList<Point> getPath(Point src,Point dest);
 
     /**
-     * 获取机器人去泊口最佳的路径。
-     * @param robotPos  机器人位置
-     * @param BerthPoint    泊口位置
-     * @return 返回去往泊口的路径
-     */
-    ArrayList<Point> getToBerthPath(Point robotPos,Point BerthPoint);
-
-    /**
      * 获取拥有新障碍下的路径
      * @param pos   起点
      * @param target    目标终点
@@ -47,6 +39,16 @@ public interface Path {
     ArrayList<Point> getPathWithBarrier(Point pos,Point target, HashSet<Point> barriers);
 
     /**
+     * 获取拥有新障碍下的路径
+     * @param pos   起点
+     * @param target    目标终点
+     * @param barriers  新增的障碍物，至少包括两个点，障碍物机器人的(pos，next)
+     * @param maxLen  路径长度限制，超过这个长度不用找了直接返回null，
+     * @return 返回指定长度内的新路径，没有则为null
+     */
+    ArrayList<Point> getPathWithBarrierWithLimit(Point pos,Point target, HashSet<Point> barriers,int maxLen);
+
+    /**
      * 找临时避让点
      * @param pos   需要避让节点位置
      * @param leftPath    对方节点的剩余路径，避让点不能在路径上
@@ -54,10 +56,4 @@ public interface Path {
      */
     ArrayList<Point> getHidePointPath(Point pos, List<Point> leftPath);
 
-//    /**
-//     * 获取全局对地图的路径
-//     * @param berthPos 泊口的左上角位置
-//     * @return  整张地图点对于到泊口路径map
-//     */
-//    Map<Point, ArrayList<Point>> getMapPathToBerth(Point berthPos);
 }
