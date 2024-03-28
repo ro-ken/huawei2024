@@ -27,13 +27,13 @@ public class PathImpl implements Path{
         }
 
         PriorityQueue<Pos> openSet = new PriorityQueue<>(Comparator.comparingInt(Pos::f));
-        Map<Point, Pos> allNodes = new HashMap<>();
+        Map<Point, Pos> visitedNodes = new HashMap<>();
 
         Pos start = new Pos(p1, null, 0, estimateHeuristic(p1, p2));
         Pos end = new Pos(p2, null, 0, 0);
 
         openSet.add(start);
-        allNodes.put(p1, start);
+        visitedNodes.put(p1, start);
 
         while (!openSet.isEmpty()) {
             Pos current = openSet.poll();
@@ -53,11 +53,11 @@ public class PathImpl implements Path{
                 }
 
                 int newG = current.g + 1;  // 每一步代价为1
-                if (!allNodes.containsKey(newPoint) || newG < allNodes.get(newPoint).g) {
+                if (!visitedNodes.containsKey(newPoint) || newG < visitedNodes.get(newPoint).g) {
                     int newH = estimateHeuristic(newPoint, p2);
                     Pos next = new Pos(newPoint, current, newG, newH);
                     openSet.add(next);
-                    allNodes.put(newPoint, next);
+                    visitedNodes.put(newPoint, next);
                 }
             }
         }
@@ -94,57 +94,51 @@ public class PathImpl implements Path{
     }
 
     @Override
-    public ArrayList<Point> getHidePointPath(Point pos, List<Point> leftPath) {
+    public ArrayList<Point> getHidePointPath(Point startPoint, List<Point> leftPath) {
         if (leftPath.size() < 2) {
             printLog("Error: leftPath does not contain enough points");
             return null;
         }
-        ArrayList<Point> barriers = new ArrayList<Point>();
+        ArrayList<Point> path = null;
+        ArrayList<Point> barriers = new ArrayList<>();
         // 创建一个空的HashSet<Point>
         HashSet<Point> visited = new HashSet<>();
         visited.add(leftPath.get(0));
 
         barriers.add(leftPath.get(0));
-        if (!pos.equals(leftPath.get(1))) {
+        if (!startPoint.equals(leftPath.get(1))) {
             barriers.add(leftPath.get(1));
             visited.add(leftPath.get(1));
         }
 
         // 创建 leftPath 的hashSet
         HashSet<Point> pointHashSet = new HashSet<>(leftPath);
-
+        Pos startPos = new Pos(startPoint, null, 0, 0);
 
         // bfs 队列
-        Queue<Point> queue = new LinkedList<>();
-        queue.add(pos);
+        Queue<Pos> queue = new LinkedList<>();
+        queue.add(startPos);
 
         // 遍历之前将地图临时修改为障碍物，防止对位遍历
         changeMapinfo(barriers);
-        ArrayList<Point> path = null;
+
         // 遍历可能的避让方向
         while (!queue.isEmpty()) {
-            Point current = queue.poll();
-            int newX = current.x;
-            int newY = current.y;
+            Pos current = queue.poll();
             // 点是可达点且未被访问过
-            if (isAccessible(newX, newY) && !visited.contains(current)) {
-                if (!pointHashSet.contains(current)) {
-                    path = getPath(pos, current);  // 尝试找到一条避让路径
+            if (isAccessible(current.pos.x, current.pos.y) && !visited.contains(current.pos)) {
+                if (!pointHashSet.contains(current.pos)) {
+                    path = constructPath(current);  // 尝试找到一条避让路径
                     // 如果找到有效路径且路径终点不在leftPath中，则返回该路径
-                    if (path != null && !path.isEmpty()) {
-                        break;
-                    } else {
-                        path = null;  // 没有找到有效路径，继续尝试
-                    }
+                    break;
                 }
                 // 添加点为已探索
-                visited.add(current);
-
-                // 将相邻的点加入队列
-                queue.add(new Point(newX + 1, newY));
-                queue.add(new Point(newX - 1, newY));
-                queue.add(new Point(newX, newY + 1));
-                queue.add(new Point(newX, newY - 1));
+                visited.add(current.pos);
+                for (int[] direction : directions) {
+                    Point newPoint = new Point(current.pos.x + direction[0], current.pos.y + direction[1]);
+                    Pos next = new Pos(newPoint, current, 0, 0);
+                    queue.add(next);
+                }
             }
         }
 
