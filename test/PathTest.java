@@ -9,6 +9,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 
 public class PathTest {
@@ -92,6 +93,39 @@ public class PathTest {
                 new Point(173,174), new Point(148, 197) // 添加了遗漏的最后一个点
         ));
         ArrayList<Point> hidePath = path.getHidePointPath(pos, leftPath);
+        for (Point point : hidePath) {
+            System.out.println(point);
+        }
+    }
+
+    @Test
+    public void test_Function_getPathWithBarrierWithLimit() throws IOException {
+        int map = 0;
+        init(map);
+        // 初始化路径实例
+        Path path = new PathImpl();
+        Point pos = new Point(142, 191);
+        Point target = new Point(160, 190);
+        HashSet<Point> leftPath = new HashSet<>(Arrays.asList(
+                new Point(141,190), new Point(142,190), new Point(142,191),
+                new Point(143,191), new Point(143,192), new Point(144,192),
+                new Point(144,193), new Point(145,193), new Point(145,194),
+                new Point(146,194), new Point(146,195), new Point(147,195),
+                new Point(147,196), new Point(148,196), new Point(149,196),
+                new Point(150,196), new Point(151,196), new Point(151,195),
+                new Point(151,194), new Point(152,194), new Point(153,194),
+                new Point(153,193), new Point(153,192), new Point(154,192),
+                new Point(154,191), new Point(154,190), new Point(155,190),
+                new Point(156,190), new Point(157,190), new Point(158,190),
+                new Point(158,189), new Point(158,188), new Point(159,188),
+                new Point(159,187), new Point(159,186), new Point(159,185),
+                new Point(159,184), new Point(159,183), new Point(159,182),
+                new Point(160,182), new Point(161,182), new Point(162,182),
+                new Point(163,182), new Point(164,182), new Point(165,182),
+                new Point(166,182), new Point(167,182), new Point(168,182),
+                new Point(169,182), new Point(170,182), new Point(171,182)
+        ));
+        ArrayList<Point> hidePath = path.getPathWithBarrierWithLimit(pos, target, leftPath, 30);
         for (Point point : hidePath) {
             System.out.println(point);
         }

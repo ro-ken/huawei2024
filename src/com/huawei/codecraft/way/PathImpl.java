@@ -24,7 +24,6 @@ public class PathImpl implements Path {
             printLog("point is impossible");
             return null;
         }
-        int curLen = 0;
         PriorityQueue<Pos> openSet = new PriorityQueue<>(Comparator.comparingInt(Pos::f));
         Map<Point, Pos> visitedNodes = new HashMap<>();
 
@@ -41,8 +40,7 @@ public class PathImpl implements Path {
 //                printLog("get path success, Time taken: " + (endTime - startTime) + " ns");
                 return constructPath(current);
             }
-            curLen += 1; // 当前路径长度 + 1
-            if (limitLen > 0 && limitLen < curLen) {
+            if (limitLen > 0 && current.g > limitLen) {
                 printDebug("road too long, stop find");
                 return null;
             }
@@ -95,7 +93,10 @@ public class PathImpl implements Path {
         barriers.remove(pos);
         ArrayList<Point> blocks = new ArrayList<>(barriers);
         changeMapinfo(blocks);
-        ArrayList<Point> path =  getPathWithLimit(pos, target, maxLen);
+        if (maxLen < 2) {
+            printErr("too short length");
+        }
+        ArrayList<Point> path =  getPathWithLimit(pos, target, maxLen - 2);
         restoreMapinfo(blocks);
         return path;
     }
