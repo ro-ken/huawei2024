@@ -353,7 +353,15 @@ public class RegionManager {
         for (Berth unassignedBerth : unassignedBerths) {
             // 寻找最近的berth
             Berth nearestBerth = findNearestBerth(unassignedBerth, berthsList, unionFind, rootToRegion);
-
+            if (nearestBerth == null) { // 最近泊位为空，则证明该泊位是一个单独的区域
+                Region newRegion = new Region(newRegions.size());
+                newRegions.add(newRegion);
+                zone.addRegion(newRegion);
+                newRegion.addBerth(unassignedBerth);
+                pointRegionMap.put(unassignedBerth.pos, newRegion);
+                assignedBerths.add(unassignedBerth);
+                continue;
+            }
             int combinedPoints = unassignedBerth.points + nearestBerth.points; // 将两个berth的points相加
             // 如果最近距离的 berth 不存在region，且未处理，同时符合合并条件，那么创建新区域
              if (!rootToRegion.containsKey(unionFind.find(nearestBerth.pos)) && !assignedBerths.contains(nearestBerth) && combinedPoints >= minPointsPercent * pointSet.size()) {
