@@ -29,7 +29,10 @@ import static com.huawei.codecraft.Util.*;
 public class Main {
 
     public static int testRobot = 10;    // 测试机器人
-    public static int totalValue = 0;
+    public static int totalSellValue = 0;
+    public static int totalSellSize = 0;
+    public static int totalCarryValue = 0;
+    public static int totalCarrySize = 0;
     public static int totalGoodNum = 0;
     public static boolean globalGreedy = true;  // 若本区域没物品，全局贪心，局部贪心
     public static boolean dynamicRegion = false;      // 是否动态分区
@@ -43,22 +46,22 @@ public class Main {
         myInit();
         printOk();
         running();
+        printLastInfo();
     }
 
 
     public static void running(){
-        input0();   // 第一帧机器人确定机器人序号
-        for (int i = 0; i < totalFrame; i++) {
+//        input0();   // 第一帧机器人确定机器人序号
+        while (frameId < totalFrame) {
+            input();
             printLog("-------------frameId:"+frameId+"--------------");
-
             long sta = System.nanoTime();
             frameInit();
             long t1 = System.nanoTime();
             handleFrame();
             printOk();
             long end = System.nanoTime();
-            Util.printLog("单帧花费时间:"+(end-sta)/1000+"us"+"frameInit时间:"+(t1-sta)/1000+"us,handleFrame时间"+(end-t1)/1000+"us");
-            input();
+            printLog("单帧花费时间:"+(end-sta)/1000+"us"+"frameInit时间:"+(t1-sta)/1000+"us,handleFrame时间"+(end-t1)/1000+"us");
         }
     }
 

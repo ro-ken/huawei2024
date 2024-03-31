@@ -226,6 +226,9 @@ public class Robot {
         carry = 0;
         bookBerth.addBerthGood(bookGood);
         bookBerth.bookGoodSize--;
+        // 统计运货量
+        Main.totalCarrySize ++;
+        Main.totalCarryValue += bookGood.value;
     }
 
     private void loadGood() {
@@ -252,7 +255,7 @@ public class Robot {
         boolean flag;
         do {
             flag = false;
-            HashSet<Robot> clone = (HashSet<Robot>) workRobots.clone();
+            HashSet<Robot> clone = new HashSet<>(workRobots) ;
             for (Robot robot : clone) {
                 if (pointMap.get(robot.next) == 1) {
                     flag = true;    // 有节点退出
@@ -275,7 +278,7 @@ public class Robot {
         do {
             // 找出互相冲突的机器人
             Robot robot = conflict.remove(0);
-            ArrayList<Robot> clone = (ArrayList<Robot>) conflict.clone();
+            ArrayList<Robot> clone = new ArrayList<>(conflict);
             ArrayList<Robot> team = new ArrayList<>();
             team.add(robot);
             for (Robot rob : clone) {

@@ -586,7 +586,7 @@ public class RegionManager {
         // 增加新物品
         Region region = pointRegionMap.get(newGood.pos);
         if (region == null) {
-            Util.printErr("addNewGood region == null");
+            Util.printWarn("addNewGood region == null");
             return;
         }
 

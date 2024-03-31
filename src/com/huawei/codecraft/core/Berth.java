@@ -87,7 +87,8 @@ public class Berth {
     public void removeGood(){
         Good good = existGoods.pop();
         existValue -= good.value;
-        Main.totalValue += good.value;
+        Main.totalSellValue += good.value;
+        Main.totalSellSize ++;
         if (existValue <0){
             existValue = 0;
             Util.printLog("ERROR! existValue <0");
