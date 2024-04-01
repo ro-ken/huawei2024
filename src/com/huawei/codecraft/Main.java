@@ -94,8 +94,8 @@ public class Main {
 
         // 处理机器人调度
         for (Robot workRobot : workRobots) {
-            workRobot.schedule();   // 调度
-            workRobot.updateNextPoint();  // 去下一个点
+//            workRobot.schedule();   // 调度
+//            workRobot.updateNextPoint();  // 去下一个点
         }
         // 统一处理移动信息
 //        Robot.handleRobotMove();
@@ -111,18 +111,18 @@ public class Main {
         for (int i = 0; i < num; i++) {
             workRobots.add(robots[i]);
         }
-        if (frameId == 1){
-            // 买机器人，轮船，一艘船，6个机器人
-            for (int i = 0; i < 1; i++) {
-                Point pos = robotBuyPos.get(0);
-                robotBuy(pos);
-                robots[robot_num] = new Robot(robot_num,pos);
-                robot_num++;
-            }
-            boatBuy(boatBuyPos.get(0));
-            boats[boat_num] = new Boat(boat_num,boatBuyPos.get(0));
-            boat_num++;
-        }
+//        if (frameId == 1){
+//            // 买机器人，轮船，一艘船，6个机器人
+//            for (int i = 0; i < 1; i++) {
+//                Point pos = robotBuyPos.get(0);
+//                robotBuy(pos);
+//                robots[robot_num] = new Robot(robot_num,pos);
+//                robot_num++;
+//            }
+//            boatBuy(boatBuyPos.get(0));
+//            boats[boat_num] = new Boat(boat_num,boatBuyPos.get(0));
+//            boat_num++;
+//        }
     }
 
     private static void updateGoodInfo() {
@@ -180,7 +180,7 @@ public class Main {
                     mainRoad.add(t);
                 }else if (ch == '~'){   // 主航道
                     mainChannel.add(t);
-                }else if (ch == 'C'){   // 立交桥
+                }else if (ch == 'c'){   // 立交桥
                     mainRoad.add(t);
                     mainChannel.add(t);
                 }
