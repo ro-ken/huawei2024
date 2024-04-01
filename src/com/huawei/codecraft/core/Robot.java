@@ -17,23 +17,21 @@ public class Robot {
     public int id;     // 机器人编号
     public Point pos;
     public int carry;   // 是否携带货物，1：携带，0：未携带
-    public int status;  // 机器人状态，0：恢复状态，1：正常运行
     public int taskStatus;    // 0：无任务，1：有任务
 
     public Good bookGood;  // 预定的产品
     public Berth bookBerth;  // 预定的产品
     public Route route; //
     public Point next;  // 当前帧需要移动的下一个点
-    public int totalGoodNum;
     public Region region;   // 机器人属于的区域，区域初始化赋值
     public boolean changeRegionMode;    // 是否是换区域模式，这个模式下可以不拿物品朝目标区域走
     public RobotRunMode runMode = new RobotRunMode(this);
     public boolean greedyMode = false;  // 最后阶段切换到贪心模式
     public static double leaveCoef = 0.8; // 离开系数，这个值越高，越容易发生移动，越低，越稳定，一般不超过1,如果等于0 ，只有本区域没货才离开
 
-    public Robot(int id, int x, int y) {
+    public Robot(int id, Point p) {
         this.id = id;
-        pos = new Point(x, y);
+        pos = new Point(p);
         route = new Route(this);
         next = pos;
     }
@@ -222,7 +220,7 @@ public class Robot {
     }
 
     private void unloadGood() {
-        Util.printPull(id);
+        Util.robotPull(id);
         carry = 0;
         bookBerth.addBerthGood(bookGood);
         bookBerth.bookGoodSize--;
@@ -232,7 +230,7 @@ public class Robot {
     }
 
     private void loadGood() {
-        Util.printGet(id);
+        Util.robotGet(id);
         carry = 1;
         bookBerth.bookGoodSize++;
     }
@@ -664,13 +662,13 @@ public class Robot {
         }
         invalidPoints.add(next);
         if (next.x > pos.x) {
-            Util.printDown(id);
+            Util.robotDown(id);
         } else if (next.x < pos.x) {
-            Util.printUp(id);
+            Util.robotUp(id);
         } else if (next.y > pos.y) {
-            Util.printRight(id);
+            Util.robotRight(id);
         } else if (next.y < pos.y) {
-            Util.printLeft(id);
+            Util.robotLeft(id);
         }
     }
 

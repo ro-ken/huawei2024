@@ -55,44 +55,71 @@ public class Util {
         outStream.flush();
     }
 
-    public static void printLastInfo() {
+    public static void printLastInfo() throws InterruptedException {
+        Thread.sleep(1000);
         System.err.println("------运货信息：------");
         System.err.println("总计生成货物："+ countGoodNum+"总计价值："+countGoodValue+"单位价值："+countGoodValue/countGoodNum);
-        System.err.println("搬运码头货物："+ totalCarrySize+"总计价值："+ totalCarryValue+"单位价值："+totalCarryValue/totalCarrySize);
-        System.err.println("成功运输货物："+ totalSellSize+"总计价值："+totalSellValue+"单位价值："+totalSellValue/totalSellSize);
+//        System.err.println("搬运码头货物："+ totalCarrySize+"总计价值："+ totalCarryValue+"单位价值："+totalCarryValue/totalCarrySize);
+//        System.err.println("成功运输货物："+ totalSellSize+"总计价值："+totalSellValue+"单位价值："+totalSellValue/totalSellSize);
         System.err.println("-------------------");
+        System.err.println("总共跳帧："+dumpFrame);
+        printLog("总共跳帧："+dumpFrame);
     }
 
-    public static void printRight(int id){
+    public static void robotRight(int id){
         printMove(id,0);
     }
-    public static void printLeft(int id){
+    public static void robotLeft(int id){
         printMove(id,1);
     }
-    public static void printUp(int id){
+    public static void robotUp(int id){
         printMove(id,2);
     }
-    public static void printDown(int id){
+    public static void robotDown(int id){
         printMove(id,3);
     }
-
-    public static void printMove(int id,int num){
+    // 机器人移动
+    private static void printMove(int id,int num){
         outStream.printf("move %d %d\n", id,num);
     }
-    public static void printGet(int id){
+    public static void robotGet(int id){
         outStream.printf("get %d\n", id);
     }
-    public static void printPull(int id){
+    public static void robotPull(int id){
         outStream.printf("pull %d\n", id);
     }
-    // 将船移动到泊位
-    public static void printShip(int boatId,int berthId){
-        outStream.printf("ship %d %d\n", boatId,berthId);
+    public static void robotBuy(Point pos){
+        outStream.printf("lbot %d %d\n", pos.x,pos.y);
     }
-    // 船驶出至虚拟点
-    public static void printGo(int boatId){
-        outStream.printf("go %d\n", boatId);
+    public static void boatBuy(Point pos){
+        outStream.printf("lboat %d %d\n", pos.x,pos.y);
     }
+    // 将船前进移动一格
+    public static void boatShip(int boatId){
+        outStream.printf("ship %d\n", boatId);
+    }
+    // 将船重置到主航道，船进入恢复状态
+    public static void boatDept(int boatId){
+        outStream.printf("dept %d\n", boatId);
+    }
+    // 将对应船停靠到泊位上，船进入恢复状态
+    public static void boatBerth(int boatId){
+        outStream.printf("dept %d\n", boatId);
+    }
+    // 旋转船
+    private static void boatRot(int boatId,int d){
+        outStream.printf("dept %d %d\n", boatId,d);
+    }
+    // 顺时针
+    public static void boatClockwise(int boatId){
+        boatRot(boatId,0);
+    }
+    // 逆时针
+    public static void boatAnticlockwise(int boatId){
+        boatRot(boatId,1);
+    }
+
+
     //
     public static void printMap(){
         for (int i = 0; i < mapWidth; i++) {
@@ -192,4 +219,12 @@ public class Util {
         }
     }
 
+    // 记录跳帧情况
+    public static void handleDumpFrame() {
+        if (frameId - lastFrameId>1){
+            Util.printWarn("已跳帧："+(frameId -lastFrameId-1));
+            dumpFrame +=frameId -lastFrameId-1;
+        }
+        lastFrameId = frameId;
+    }
 }

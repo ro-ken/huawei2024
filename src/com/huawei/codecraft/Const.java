@@ -21,22 +21,27 @@ public class Const {
     // 地图宽度
     public static final int mapWidth = 200;
     // 10个机器人
-    public static final int robot_num = 10;
+    public static int robot_num;
     // 10个泊位
-    public static final int berth_num = 10;
+    public static int berth_num;
     // 5艘船
-    public static final int boat_num = 5;
+    public static int boat_num;
 
     // 总共帧数 5分钟
     public static final int totalFrame= 5 * 60 * 50;
     public static final int b2bFps = 500;   // 泊位到泊位时间
-    public static int money, frameId;
+    public static int money = 25000;    // 起始资金25000
+    public static int frameId;
     // 存放地图字符
     public static char[][] map = new char[mapWidth][mapWidth];
-    public static Object[][] ObjectMap = new Object[mapWidth][mapWidth];
-    public static Robot[] robots = new Robot[robot_num];
-    public static Berth[] berths = new Berth[berth_num];
+    public static Robot[] robots = new Robot[50];
+    public static Berth[] berths = new Berth[50];
     public static Boat[] boats = new Boat[boat_num];
+    public static ArrayList<Point> robotBuyPos = new ArrayList<>();      // 机器人购买点
+    public static ArrayList<Point> boatBuyPos = new ArrayList<>();       // 轮船购买点
+    public static ArrayList<Point> boatDeliveries = new ArrayList<>();       // 轮船交货点
+    public static HashSet<Point> mainRoad = new HashSet<>();       // 陆地主干道
+    public static HashSet<Point> mainChannel = new HashSet<>();       // 海洋主航道
     public static ArrayList<Good> frameGoods= new ArrayList<>();    // 每一帧新产生的货物
     public static final int noLimitedSize = 1000000;        // 无限容量信息
     public static double expGoodNum = 2450;     // 期望总物品数，官方回答：15/100 * 15000
@@ -45,6 +50,7 @@ public class Const {
     public static int countGoodNum = 0;     //已经生成的物品总数，到时候算平均价值
     public static double countGoodValue = 0;   //已经生成的物品总价值
     public static double avgGoodValue;      // 货物的平均价值，每帧更新
+
     /*****************************地图相关参数*****************************/
     public static RegionManager regionManager;
     public static Path path = new PathImpl(); // 修改Path实现

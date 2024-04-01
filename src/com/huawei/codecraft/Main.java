@@ -28,7 +28,7 @@ import static com.huawei.codecraft.Util.*;
  */
 public class Main {
 
-    public static int testRobot = 10;    // 测试机器人
+    public static int testRobot = 100;    // 测试机器人
     public static int totalSellValue = 0;
     public static int totalSellSize = 0;
     public static int totalCarryValue = 0;
@@ -40,7 +40,7 @@ public class Main {
     public static int lastFrameId = 0;
     public static int dumpFrame = 0;
 
-    public static void main(String[] args) throws FileNotFoundException {
+    public static void main(String[] args) throws FileNotFoundException, InterruptedException {
         initLog();
         readInit();
         myInit();
@@ -51,7 +51,6 @@ public class Main {
 
 
     public static void running(){
-//        input0();   // 第一帧机器人确定机器人序号
         while (frameId < totalFrame) {
             input();
             printLog("-------------frameId:"+frameId+"--------------");
@@ -67,51 +66,30 @@ public class Main {
 
     // 追加初始化工作
     private static void myInit() {
-        Mapinfo.init(map);
-        initRobot();
-        for (Berth berth : berths) {
-            pointToBerth.put(berth.pos,berth);
-            idToBerth.put(berth.id, berth);
-        }
-        regionManager = new RegionManager();
-        regionManager.init();
+//        Mapinfo.init(map);
+//        initRobot();
+//        for (Berth berth : berths) {
+//            pointToBerth.put(berth.pos,berth);
+//            idToBerth.put(berth.id, berth);
+//        }
+//        regionManager = new RegionManager();
+//        regionManager.init();
 
-        initBoat();
-
-        Util.printDebug("打印区域信息");
-        for (Region region : RegionManager.regions) {
-            Util.printLog(region+":"+region.berths);
-        }
+//        initBoat();
+//
+//        Util.printDebug("打印区域信息");
+//        for (Region region : RegionManager.regions) {
+//            Util.printLog(region+":"+region.berths);
+//        }
 //        testRegionValue();
     }
 
-    private static void initBoat() {
-        // 初始化船舶
-        for (int i = 0; i < boat_num; i++) {
-            boats[i] = new Boat(i);
-        }
-        Boat.init();
-    }
-
-    // 初始化机器人信息
-    private static void initRobot() {
-        int id = 0;
-        for (int i = 0; i < mapWidth; i++) {
-            for (int j = 0; j < mapWidth; j++) {
-                if (map[i][j] == 'A'){
-                    // 纵向为x，横向为y
-                    robots[id] = new Robot(id++,i,j);
-                }
-            }
-            if (id == robot_num) break; //
-        }
-    }
 
     private static void handleFrame() {
 
         // 处理轮船调度
         for (int i = 0; i < boat_num; i++) {
-            boats[i].schedule();
+//            boats[i].schedule();
         }
 
         // 处理机器人调度
@@ -120,33 +98,30 @@ public class Main {
             workRobot.updateNextPoint();  // 去下一个点
         }
         // 统一处理移动信息
-        Robot.handleRobotMove();
+//        Robot.handleRobotMove();
     }
 
     // 每一帧开始的初始化工作
     private static void frameInit() {
-        if (frameId - lastFrameId>1){
-            Util.printWarn("已跳帧："+(frameId -lastFrameId-1));
-            dumpFrame +=frameId -lastFrameId-1;
-        }
-        lastFrameId = frameId;
-        if (frameId == 15000){
-            Util.printLog("总共跳帧："+dumpFrame);
-        }
-
-        updateGoodInfo();
+        handleDumpFrame();  // 记录跳帧
+        updateGoodInfo();     // todo 重写更新信息
         invalidPoints.clear();  //
         workRobots.clear();     // 每帧初始化
-        for (int i = 0; i < testRobot; i++) {
-            // 找出所有冻结机器人，
-            if (robots[i].status == 0){
-                invalidPoints.add(robots[i].pos);
-                Util.printDebug("机器人被冻结"+robots[i]);
-            }else {
-                if (robots[i].region != null){
-                    workRobots.add(robots[i]);
-                }
+        int num = Math.min(testRobot,robot_num);
+        for (int i = 0; i < num; i++) {
+            workRobots.add(robots[i]);
+        }
+        if (frameId == 1){
+            // 买机器人，轮船，一艘船，6个机器人
+            for (int i = 0; i < 1; i++) {
+                Point pos = robotBuyPos.get(0);
+                robotBuy(pos);
+                robots[robot_num] = new Robot(robot_num,pos);
+                robot_num++;
             }
+            boatBuy(boatBuyPos.get(0));
+            boats[boat_num] = new Boat(boat_num,boatBuyPos.get(0));
+            boat_num++;
         }
     }
 
@@ -158,7 +133,7 @@ public class Main {
             countGoodNum += frameGoods.size();
             for (Good good : frameGoods) {
                 countGoodValue += good.value;
-                regionManager.addNewGood(good);
+//                regionManager.addNewGood(good);
             }
             avgGoodValue = countGoodValue / countGoodNum;
         }
@@ -170,87 +145,77 @@ public class Main {
             char[] line = inStream.nextLine().toCharArray();
             map[i] = line;
         }
+        ProcessMap();
 //        printMap();
-
+        berth_num = inStream.nextInt();
         // 初始化泊位
         for (int i = 0; i < berth_num; i++) {
             int id = inStream.nextInt();
             berths[id] = new Berth(id);
-            berths[id].pos.x = inStream.nextInt() + 1;  // 以右下的那个点作为这个泊位的代表点
-            berths[id].pos.y = inStream.nextInt() + 1;
-            berths[id].transport_time = inStream.nextInt();
+            berths[id].pos.x = inStream.nextInt() ;  // 以右下的那个点作为这个泊位的代表点
+            berths[id].pos.y = inStream.nextInt() ;
             berths[id].loading_speed = inStream.nextInt();
-            Util.printLog("泊口："+berths[id]);
+            printLog("泊口："+berths[id]);
         }
         Boat.capacity = inStream.nextInt();
-        Util.printLog("船的容量："+Boat.capacity);
+        printLog("船的容量："+Boat.capacity);
         inStream.nextLine();
         String okk = inStream.nextLine();
+    }
+
+    private static void ProcessMap() {
+        for (int i = 0; i < mapWidth; i++) {
+            for (int j = 0; j < mapWidth; j++) {
+                char ch = map[i][j];
+                Point t = new Point(i,j);
+                if (ch == 'R'){     // 机器人租赁点
+                    robotBuyPos.add(t);
+                    mainRoad.add(t);
+                }else if (ch == 'S'){   // 船舶租赁点
+                    boatBuyPos.add(t);
+                    mainChannel.add(t);
+                }else if (ch == 'T'){   // 交货点
+                    boatDeliveries.add(t);
+                }else if (ch == '>'){   // 主干道
+                    mainRoad.add(t);
+                }else if (ch == '~'){   // 主航道
+                    mainChannel.add(t);
+                }else if (ch == 'C'){   // 立交桥
+                    mainRoad.add(t);
+                    mainChannel.add(t);
+                }
+            }
+        }
     }
 
     public static void input() {
         frameId = inStream.nextInt();
         money = inStream.nextInt();
-        int goodsNum = inStream.nextInt();
+        int changeGoodNum = inStream.nextInt();
         frameGoods.clear();
-        for (int i = 1; i <= goodsNum; i++) {
+        for (int i = 1; i <= changeGoodNum; i++) {
             int x = inStream.nextInt();
             int y = inStream.nextInt();
             int val = inStream.nextInt();
-            Good good = new Good(x,y,val,frameId);
-            ObjectMap[x][y] = good;
-            frameGoods.add(good);
-        }
-        for(int i = 0; i < robot_num; i++) {
-            robots[i].carry = inStream.nextInt();
-            robots[i].pos.x = inStream.nextInt();
-            robots[i].pos.y = inStream.nextInt();
-            robots[i].status = inStream.nextInt();
-        }
-        for(int i = 0; i < boat_num; i ++) {
-            boats[i].readsts = inStream.nextInt();
-            boats[i].berthId = inStream.nextInt();
-        }
-
-        inStream.nextLine();
-        String okk = inStream.nextLine();
-
-    }
-    public static void input0() {
-        frameId = inStream.nextInt();
-        money = inStream.nextInt();
-        int goodsNum = inStream.nextInt();
-        frameGoods.clear();
-        for (int i = 1; i <= goodsNum; i++) {
-            int x = inStream.nextInt();
-            int y = inStream.nextInt();
-            int val = inStream.nextInt();
-            Good good = new Good(x,y,val,frameId);
-            ObjectMap[x][y] = good;
-            frameGoods.add(good);
-        }
-        // 以下变化
-        Set<Robot> set = new HashSet<>();
-        for (int i = 0; i < robot_num; i++) {
-            set.add(robots[i]);
-        }
-        for(int i = 0; i < robot_num; i++) {
-            int carry = inStream.nextInt();
-            int x = inStream.nextInt();
-            int y = inStream.nextInt();
-            int status = inStream.nextInt();
-            if (!robots[i].pos.equals(x,y)){ // 防止出题组乱序，重新编号
-                Robot robot = getRobotByPos(set,new Point(x,y));
-                robot.id = i;   // 重新编号
-                robots[i] = robot;
+            if (val > 0){   // 暂时只记录新增货物，不处理消失货物
+                Good good = new Good(x,y,val,frameId);
+                frameGoods.add(good);
             }
-            robots[i].carry = carry;
-            robots[i].status = status;
         }
-        // 以上变化
+        robot_num = inStream.nextInt();
+        for(int i = 0; i < robot_num; i++) {
+            int id = inStream.nextInt();    // 机器人id
+            robots[id].carry = inStream.nextInt();
+            robots[id].pos.x = inStream.nextInt();
+            robots[id].pos.y = inStream.nextInt();
+        }
+        boat_num = inStream.nextInt();
         for(int i = 0; i < boat_num; i ++) {
-            boats[i].readsts = inStream.nextInt();
-            boats[i].berthId = inStream.nextInt();
+            int id = inStream.nextInt();    // 轮船id
+            boats[id].carry = inStream.nextInt();
+            boats[id].pos.x = inStream.nextInt();
+            boats[id].pos.y = inStream.nextInt();
+            boats[id].readsts = inStream.nextInt();
         }
 
         inStream.nextLine();

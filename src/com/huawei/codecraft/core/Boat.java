@@ -5,6 +5,7 @@ import com.huawei.codecraft.Main;
 import com.huawei.codecraft.Util;
 import com.huawei.codecraft.util.BoatLastTask;
 import com.huawei.codecraft.util.BoatStatus;
+import com.huawei.codecraft.util.Point;
 import com.huawei.codecraft.util.Twins;
 import com.huawei.codecraft.zone.Region;
 import com.huawei.codecraft.zone.RegionManager;
@@ -22,28 +23,20 @@ public class Boat {
 
     // 状态：0移动；1正常运行（(即装货状态或运输完成状态）；2表示泊位外等待状态
     public int readsts;
+
+    public Point pos;
     BoatStatus status=BoatStatus.FREE;
     public static int capacity;
-//    public
+    public int carry;    // 携带物品数量
     public Berth bookBerth;
     public int startFrame;
     public int goodSize;
     BoatLastTask task ;
 
-    public Boat(int id) {
+    public Boat(int id,Point p) {
         this.id = id;
         task = new BoatLastTask(this);
-    }
-
-
-    public void schedule2() {
-        if (task.lastPeriod()){
-            // 最后周期调度
-            lastPeriodSched();
-        }else {
-            // 常规调度
-            normalSched();
-        }
+        pos = new Point(p);
     }
 
     public void schedule() {
@@ -52,7 +45,7 @@ public class Boat {
             lastPeriodSched();
         }else {
             // 常规调度
-            normalSched1();
+            normalSched();
         }
     }
 
@@ -106,7 +99,7 @@ public class Boat {
         return false;
     }
 
-    private void normalSched1() {
+    private void normalSched() {
         if (status == BoatStatus.FREE){
             // 没有任务
             ShipNextBerth();
@@ -183,43 +176,6 @@ public class Boat {
         return false;
     }
 
-    private void normalSched() {
-        if (status == BoatStatus.FREE){
-            // 没有任务
-            findBerthAndShip();
-        }
-        if (status == BoatStatus.SHIP){
-            // 行驶状态
-            if (isArrive()){
-                Util.printLog(this+"boat arrive："+bookBerth);
-                changeLoadMode();
-            }
-        }
-        if (status == BoatStatus.LOAD){
-            // 时间不够，需要返航进入周期
-            if (task.isBerthNeedBack()){
-                clacGoods();//结算货物
-                goToVirtual();
-            }else {
-                if (isLoadFinish()){
-                    clacGoods();//结算货物
-                    loadFinishNextStep();
-                }
-            }
-        }
-        if(status == BoatStatus.GO){
-            if (isArrive()){
-                resetBoat();        // 重置船
-                // 需要判断是否进入最后周期
-                if (task.canIntoLastPeriod()){
-                    doLastPeriod();
-                }else {
-                    findBerthAndShip();
-                }
-            }
-        }
-    }
-
     private void doLastPeriod() {
         // 最后一个周期任务
         task.changeLastPeriodMode();
@@ -269,108 +225,6 @@ public class Boat {
         startFrame = Const.frameId;
     }
 
-    public static void init() {
-//        assignBerth();
-        if (Main.boatAvgAssign){
-            assignBerthAvg();
-        }else {
-            assignBerth();
-        }
-
-        for (Boat boat : boats) {
-            boat.task.sortBerth();
-        }
-
-        Util.printDebug("打印boats 分配信息");
-        for (Boat boat : boats) {
-            Util.printDebug(boat.id + ":");
-            for (Berth berth : boat.task.berths) {
-                Util.printLog(berth+":时间"+berth.transport_time+berth.staticValue);
-            }
-        }
-    }
-
-
-    private static void assignBerthAvg() {
-        // 为每个泊船分配泊位，每艘船每次拉货平均分配：minT * （两个泊口期望平均产货）
-        List<Berth> berthList =  new ArrayList<>(Arrays.asList(berths));// 剩余未分配泊口
-        ArrayList<Berth> tmp;
-        int boatId = 0;
-        // 计算平均 货物
-        while (berthList.size()>0){
-            Twins<Berth,Berth> twins = getAvgCarrySpeedBerths(berthList);
-            boats[boatId++].task.addBoath(twins); // 每艘船分配2个泊口
-        }
-    }
-
-    private static Twins<Berth, Berth> getAvgCarrySpeedBerths(List<Berth> berthList) {
-
-        if (berthList.size()<2){
-            Util.printErr("getAvgCarrySpeedBerths");
-            return null;
-        }
-        double max =0;
-        double ms = 0;
-        Berth tar1 = null;
-        // 先选择最高产速
-        for (Berth berth : berthList) {
-            double t = berth.staticValue.get(1).getGoodNum()/Good.maxSurvive * berth.transport_time;
-            if (t>max){
-                max = t;
-                tar1 = berth;
-                ms = berth.staticValue.get(1).getGoodNum()/Good.maxSurvive;
-            }
-        }
-        berthList.remove(tar1);
-        Berth tar2 = berthList.get(0);
-        double min = unreachableFps;
-        for (Berth berth : berthList) {
-            if (berth == tar2) continue;
-            double ts = berth.staticValue.get(1).getGoodNum()/Good.maxSurvive;
-            double fps = berth.transport_time + tar1.transport_time + b2bFps;
-            double total = (ts+ms) * fps;   // 产量 = 产速 * 周期
-            if (total < min){
-                min = total;
-                tar2 = berth;
-            }
-        }
-        berthList.remove(tar2);
-        return new Twins<>(tar1,tar2);
-    }
-
-    private static void assignBerth() {
-        // 为每个泊船分配泊位
-        List<Berth> berthList =  new ArrayList<>(Arrays.asList(berths));// 剩余未分配泊口
-        ArrayList<Berth> tmp;
-        int boatId = 0;
-        // ① 同区域的为一组
-        for (Region region : RegionManager.regions) {
-            tmp = region.getClosestTwinsBerth(); // 找出区域内的成对泊口为一组，分配给一艘船
-            while (tmp.size() > 1){
-                // 将泊位
-                List<Berth> addlist = new ArrayList<>(tmp.subList(0, 2));
-                boats[boatId++].task.addBoath(addlist); // 每艘船分配2个泊口
-                tmp.removeAll(addlist);
-                berthList.removeAll(addlist);
-            }
-        }
-        // ② 距离近的为一组
-        while (!berthList.isEmpty()){
-            tmp = getClosestTwinsBerth(berthList);
-            if (tmp.size()>1){
-                boats[boatId++].task.addBoath(tmp); // 每艘船分配2个泊口
-            }else {
-                break;
-            }
-        }
-
-        // ③ 还没分完的是不同区域了，按价值高低，高 -> 低
-        // 剩余的泊口按照价值排序，
-        while (boatId<boat_num){
-            tmp = getHighestLowestBerths(berthList);
-            boats[boatId++].task.addBoath(tmp);  // 如果不是1v2，这里要修改
-        }
-    }
 
     private static ArrayList<Berth> getHighestLowestBerths(List<Berth> berthList) {
         // 得到berthList 价值最高和最低的berth；
@@ -453,7 +307,7 @@ public class Boat {
         bookBerth.addBoat(this);
         readsts = 0; // 状态转换成移动
         status = BoatStatus.SHIP;
-        Util.printShip(id,bookBerth.id);
+//        Util.printShip(id,bookBerth.id);
     }
 
     private void goToVirtual() {
@@ -461,7 +315,7 @@ public class Boat {
         resetBookBerth();
         readsts = 0;
         status = BoatStatus.GO;
-        Util.printGo(id);
+//        Util.printGo(id);
     }
 
     private int getRealLoad(){
@@ -537,40 +391,4 @@ public class Boat {
         return target;
     }
 
-    // 选择泊位
-    private Berth pickBerth() {
-        // 尽量选没有的
-        int maxVal = -1;
-        Berth target = null;
-
-        for (Berth berth : Const.berths) {
-            if (!berth.bookBoats.isEmpty()){
-                continue;
-            }
-            if (berth.existValue>maxVal){
-                maxVal = berth.existValue;
-                target = berth;
-            }
-        }
-        if (target == null){
-            for (Berth berth : Const.berths) {
-                if (berth.bookBoats.size()>1){
-                    continue;
-                }
-                if (berth.existValue>maxVal){
-                    maxVal = berth.existValue;
-                    target = berth;
-                }
-            }
-        }
-        if (target == null){
-            for (Berth berth : Const.berths) {
-                if (berth.existValue>maxVal){
-                    maxVal = berth.existValue;
-                    target = berth;
-                }
-            }
-        }
-        return target;
-    }
 }
