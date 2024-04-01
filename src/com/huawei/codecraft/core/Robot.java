@@ -34,6 +34,7 @@ public class Robot {
         pos = new Point(p);
         route = new Route(this);
         next = pos;
+
     }
 
     public void schedule() {
@@ -674,7 +675,7 @@ public class Robot {
 
     private boolean arriveBerth() {
         // 携带物品，并且到达目的地
-        return bookBerth.inMyPlace(pos);
+        return map[pos.x][pos.y] == 'B';
     }
 
     private boolean arriveGood() {
@@ -895,10 +896,15 @@ public class Robot {
             // 交错前行
             // 先判断左边能否走，(方向 pos -> next)
 //            Twins<Point,Point> left
-
             // 左边走不了，判断右边能否走
-
         }
         return null;
+    }
+
+    public void pickRegion() {
+        //
+        Region region = RegionManager.pointRegionMap.get(pos);
+        region.assignRobots(this);
+        region.zone.robots.add(this);
     }
 }

@@ -46,12 +46,6 @@ public class Berth {
         this.region = region;
     }
 
-    public Berth(int x, int y, int transport_time, int loading_speed) {
-        this.pos = new Point(x,y);
-        this.transport_time = transport_time;
-        this.loading_speed = loading_speed;
-    }
-
     public Pair<Good> calcGoodValue(Good good) {
         // 上层判断非空再传下来
         double fps = getPathFps(good.pos)*2;    // 一个来回

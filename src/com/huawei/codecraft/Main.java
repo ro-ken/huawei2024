@@ -66,16 +66,15 @@ public class Main {
 
     // 追加初始化工作
     private static void myInit() {
-//        Mapinfo.init(map);
-//        initRobot();
-//        for (Berth berth : berths) {
-//            pointToBerth.put(berth.pos,berth);
-//            idToBerth.put(berth.id, berth);
-//        }
-//        regionManager = new RegionManager();
-//        regionManager.init();
+        Mapinfo.init(map);
 
-//        initBoat();
+        for (Berth berth:berths) {
+            pointToBerth.put(berth.pos,berth);
+            idToBerth.put(berth.id, berth);
+        }
+        regionManager = new RegionManager();
+        regionManager.init();
+
 //
 //        Util.printDebug("打印区域信息");
 //        for (Region region : RegionManager.regions) {
@@ -94,11 +93,11 @@ public class Main {
 
         // 处理机器人调度
         for (Robot workRobot : workRobots) {
-//            workRobot.schedule();   // 调度
-//            workRobot.updateNextPoint();  // 去下一个点
+            workRobot.schedule();   // 调度
+            workRobot.updateNextPoint();  // 去下一个点
         }
         // 统一处理移动信息
-//        Robot.handleRobotMove();
+        Robot.handleRobotMove();
     }
 
     // 每一帧开始的初始化工作
@@ -109,20 +108,22 @@ public class Main {
         workRobots.clear();     // 每帧初始化
         int num = Math.min(testRobot,robot_num);
         for (int i = 0; i < num; i++) {
-            workRobots.add(robots[i]);
+            workRobots.add(robots.get(i));
         }
-//        if (frameId == 1){
-//            // 买机器人，轮船，一艘船，6个机器人
-//            for (int i = 0; i < 1; i++) {
-//                Point pos = robotBuyPos.get(0);
-//                robotBuy(pos);
-//                robots[robot_num] = new Robot(robot_num,pos);
-//                robot_num++;
-//            }
-//            boatBuy(boatBuyPos.get(0));
-//            boats[boat_num] = new Boat(boat_num,boatBuyPos.get(0));
-//            boat_num++;
-//        }
+        if (frameId == 1){
+            // 买机器人，轮船，一艘船，6个机器人
+            for (int i = 0; i < 1; i++) {
+                Point pos = robotBuyPos.get(0);
+                robotBuy(pos);
+                Robot robot = new Robot(robot_num,pos);
+                robot.pickRegion();
+                robots.add(robot);
+                robot_num++;
+            }
+            boatBuy(boatBuyPos.get(0));
+            boats.add(new Boat(boat_num,boatBuyPos.get(0)));
+            boat_num++;
+        }
     }
 
     private static void updateGoodInfo() {
@@ -133,7 +134,7 @@ public class Main {
             countGoodNum += frameGoods.size();
             for (Good good : frameGoods) {
                 countGoodValue += good.value;
-//                regionManager.addNewGood(good);
+                regionManager.addNewGood(good);
             }
             avgGoodValue = countGoodValue / countGoodNum;
         }
@@ -151,11 +152,12 @@ public class Main {
         // 初始化泊位
         for (int i = 0; i < berth_num; i++) {
             int id = inStream.nextInt();
-            berths[id] = new Berth(id);
-            berths[id].pos.x = inStream.nextInt() ;  // 以右下的那个点作为这个泊位的代表点
-            berths[id].pos.y = inStream.nextInt() ;
-            berths[id].loading_speed = inStream.nextInt();
-            printLog("泊口："+berths[id]);
+            Berth berth = new Berth(id);
+            berth.pos.x = inStream.nextInt() ;  // 以右下的那个点作为这个泊位的代表点
+            berth.pos.y = inStream.nextInt() ;
+            berth.loading_speed = inStream.nextInt();
+            berths.add(berth);
+            printLog("泊口："+berth);
         }
         Boat.capacity = inStream.nextInt();
         printLog("船的容量："+Boat.capacity);
@@ -205,17 +207,17 @@ public class Main {
         robot_num = inStream.nextInt();
         for(int i = 0; i < robot_num; i++) {
             int id = inStream.nextInt();    // 机器人id
-            robots[id].carry = inStream.nextInt();
-            robots[id].pos.x = inStream.nextInt();
-            robots[id].pos.y = inStream.nextInt();
+            robots.get(id).carry = inStream.nextInt();
+            robots.get(id).pos.x = inStream.nextInt();
+            robots.get(id).pos.y = inStream.nextInt();
         }
         boat_num = inStream.nextInt();
         for(int i = 0; i < boat_num; i ++) {
             int id = inStream.nextInt();    // 轮船id
-            boats[id].carry = inStream.nextInt();
-            boats[id].pos.x = inStream.nextInt();
-            boats[id].pos.y = inStream.nextInt();
-            boats[id].readsts = inStream.nextInt();
+            boats.get(id).carry = inStream.nextInt();
+            boats.get(id).pos.x = inStream.nextInt();
+            boats.get(id).pos.y = inStream.nextInt();
+            boats.get(id).readsts = inStream.nextInt();
         }
 
         inStream.nextLine();

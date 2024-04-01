@@ -34,9 +34,9 @@ public class Const {
     public static int frameId;
     // 存放地图字符
     public static char[][] map = new char[mapWidth][mapWidth];
-    public static Robot[] robots = new Robot[50];
-    public static Berth[] berths = new Berth[50];
-    public static Boat[] boats = new Boat[boat_num];
+    public static ArrayList<Robot> robots = new ArrayList<>();
+    public static ArrayList<Berth> berths = new ArrayList<>();
+    public static ArrayList<Boat> boats = new ArrayList<>();
     public static ArrayList<Point> robotBuyPos = new ArrayList<>();      // 机器人购买点
     public static ArrayList<Point> boatBuyPos = new ArrayList<>();       // 轮船购买点
     public static ArrayList<Point> boatDeliveries = new ArrayList<>();       // 轮船交货点

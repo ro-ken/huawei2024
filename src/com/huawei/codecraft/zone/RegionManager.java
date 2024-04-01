@@ -44,8 +44,8 @@ public class RegionManager {
         getFullPathsFromPoints2Berths();
         initGlobalPoint2ClosestBerthMap();
         splitRegions();
-        assignRobotsToZone();
-        assignRobotsToRegion(); // 给区域分配机器人
+
+        calcRegionValue(); // 给区域分配机器人
 //        printAll();
     }
 
@@ -507,9 +507,9 @@ public class RegionManager {
     }
 
     /**
-     * 给每个区域静态划分机器人，保证每个区域至少一个机器人，机器人少于区域数另说
+     * 计算区域与泊口的静态价值
      */
-    private void assignRobotsToRegion() {
+    private void calcRegionValue() {
         for (Berth berth : berths) {
             berth.staticValue = calcStaticValue(berth.pathLenToNumMap,berth.points);
         }
@@ -517,15 +517,9 @@ public class RegionManager {
         for (Region region : regions) {
             region.staticValue = calcStaticValue(region.pathLenToNumMap,region.accessiblePoints.size());
         }
-        //计算每个区域应该分多少机器人
-        for (Zone zone : zones) {
-            zone.assignRegionRobotNum();
-        }
+
 //        printRegion();
         // 给每个区域具体划分机器人，看其位置，就近划分
-        for (Zone zone : zones) {
-            zone.assignSpecificRegionRobot();
-        }
     }
 
     public static Map<Integer, RegionValue> calcStaticValue(Map<Integer,Integer> pathLenToNumMap, int area) {
