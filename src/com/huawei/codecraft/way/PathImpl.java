@@ -11,7 +11,7 @@ import static com.huawei.codecraft.way.Mapinfo.map;
 
 /**
  * ClassName: PathImpl
- * Package: com.huawei.codecraft.way
+ * Package: com.huawei.codec raft.way
  * Description: 寻路的具体接口实现
  */
 public class PathImpl implements Path {
@@ -27,7 +27,6 @@ public class PathImpl implements Path {
         Map<Point, Pos> visitedNodes = new HashMap<>();
 
         Pos start = new Pos(p1, null, 0, estimateHeuristic(p1, p2));
-        Pos end = new Pos(p2, null, 0, 0);
 
         openSet.add(start);
         visitedNodes.put(p1, start);
@@ -171,18 +170,18 @@ public class PathImpl implements Path {
     // 修改地图信息以添加障碍物
     private void changeMapinfo(ArrayList<Point> barriers) {
         for (Point barrier : barriers) {
-            if ( map[barrier.x][barrier.y] == -2) {
-                printLog("leftpath error,obstacle");
+            if (map[barrier.x][barrier.y] == ROAD) { // 将陆地暂时变为障碍物
+                map[barrier.x][barrier.y] = OBSTACLE;  // 标记障碍物
             }
-//            printLog("change pos" + barrier + " obstacle");
-            map[barrier.x][barrier.y] = -2;  // 标记障碍物
         }
     }
 
     // 恢复地图信息
     private void restoreMapinfo(ArrayList<Point> barriers) {
         for (Point barrier : barriers) {
-            map[barrier.x][barrier.y] = 0;  // 恢复为陆地
+           if (map[barrier.x][barrier.y] == OBSTACLE) {
+               map[barrier.x][barrier.y] = ROAD;  // 恢复为陆地
+           }
 //            printLog("restore pos" + barrier + " land");
         }
     }
