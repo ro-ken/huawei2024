@@ -22,8 +22,7 @@ public class BoatRoute {
         way = path;
         target = way.get(way.size()-1);
         index=0;
-        boat.next = boat.pos;
-        boat.updateNextPoint();
+        boat.next = getNextPoint();
     }
     private void setSelfWay() {
         // 只有一个点，机器人原地待命

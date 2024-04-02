@@ -11,9 +11,7 @@ import com.huawei.codecraft.core.Robot;
 import com.huawei.codecraft.util.Point;
 import com.huawei.codecraft.way.Mapinfo;
 import com.huawei.codecraft.zone.RegionManager;
-
 import java.io.FileNotFoundException;
-
 import static com.huawei.codecraft.Const.*;
 import static com.huawei.codecraft.Util.*;
 
@@ -24,18 +22,15 @@ import static com.huawei.codecraft.Util.*;
  * @since 2024-02-05
  */
 public class Main {
-
     public static int testRobot = 100;    // 测试机器人
     public static int totalSellValue = 0;
     public static int totalSellSize = 0;
     public static int totalCarryValue = 0;
     public static int totalCarrySize = 0;
-    public static int totalGoodNum = 0;
     public static boolean globalGreedy = true;  // 若本区域没物品，全局贪心，局部贪心
     public static boolean dynamicRegion = false;      // 是否动态分区
-    public static boolean boatAvgAssign = true;     // 按照平均时间分配泊口给轮船,否则按照距离分
     public static int lastFrameId = 0;
-    public static int dumpFrame = 0;
+    public static int dumpFrame = 0;    // 跳帧记录
 
     public static void main(String[] args) throws FileNotFoundException, InterruptedException {
         initLog();
@@ -57,7 +52,7 @@ public class Main {
             handleFrame();
             printOk();
             long end = System.nanoTime();
-            printLog("单帧花费时间:"+(end-sta)/1000+"us"+"frameInit时间:"+(t1-sta)/1000+"us,handleFrame时间"+(end-t1)/1000+"us");
+            printLog("单帧花费时间:"+(end-sta)/1000+"us"+"frameInit时间:"+(t1-sta)/1000+"us,handleFrame时间:"+(end-t1)/1000+"us");
         }
     }
 
@@ -83,10 +78,12 @@ public class Main {
 
     private static void handleFrame() {
 
-        // 处理轮船调度
+//        // 处理轮船调度
 //        for (Boat boat : boats) {
 //            boat.schedule();
+//            boat.updateNextPoint();
 //        }
+//        Boat.handleBoatMove();
 
         // 处理机器人调度
         for (Robot workRobot : workRobots) {
@@ -112,7 +109,7 @@ public class Main {
             // 买机器人，轮船，一艘船，6个机器人
             Point pos = robotBuyPos.get(0);
             buyRobot(pos);
-            buyBoat(boatBuyPos.get(0));
+//            buyBoat(boatBuyPos.get(0));
         }else {
             Point pos = robotBuyPos.get(0);
             if (money >= 2000){
