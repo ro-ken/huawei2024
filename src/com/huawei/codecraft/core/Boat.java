@@ -17,45 +17,121 @@ import static com.huawei.codecraft.Const.*;
 // 轮船
 public class Boat {
     public int id;
-
-    // 目标泊位，如果目标泊位是虚拟点，则为-1
-    public int berthId;
-
-    // 状态：0移动；1正常运行（(即装货状态或运输完成状态）；2表示泊位外等待状态
-    public int readsts;
+    public int readsts;    // 状态：0正常行驶；1恢复状态；2装载状态
 
     public Point pos;
+    public int direction;   // 机器人当前朝向
     BoatStatus status=BoatStatus.FREE;
     public static int capacity;
     public int carry;    // 携带物品数量
     public Berth bookBerth;
+    Point next;
     public int startFrame;
     public int goodSize;
+    BoatRoute route;
     BoatLastTask task ;
 
     public Boat(int id,Point p) {
         this.id = id;
-        task = new BoatLastTask(this);
         pos = new Point(p);
+//        route = new BoatRoute(this);      // todo 记得打开
     }
 
     public void schedule() {
-        if (task.lastPeriod()){
-            // 最后周期调度
-            lastPeriodSched();
-        }else {
-            // 常规调度
-            normalSched();
-        }
+        simpleSched();
     }
 
-    private void lastPeriodSched() {
+    private void simpleSched() {
+        // 轮船简单调度，在各大泊口间轮转，满了卸货
+        if (inRecoverMode()){
+            return;     // 恢复状态不能操作
+        }
+        if (status == BoatStatus.FREE){
+            // 没有任务
+            bookBerth = selectHighValueBerth();
+            status = BoatStatus.SHIP;
+            changeRoad(bookBerth.pos);
+        }
         if (status == BoatStatus.SHIP){
             // 行驶状态
-            if (isArrive()){
-                changeLoadMode();
+            if (isArriveBerthArea()){
+                Util.printLog(this+"boat arrive："+bookBerth);
+                berthing();
+            }
+            return;
+        }
+        if (status == BoatStatus.LOAD){
+            if (startFrame == 0){       // 走了记得清零
+                startFrame = frameId;
+            }
+            if (isLoadFinish()){
+                Util.printLog("搬运结束");
+                clacGoods();//结算货物
+                goToDelivery();
+                status = BoatStatus.GO;
+                startFrame = 0;
+                return ;
             }
         }
+        if(status == BoatStatus.GO){
+            if (isArriveDelivery()){
+                resetBoat();        // 重置船
+                // 需要判断是否进入最后周期
+                bookBerth = selectHighValueBerth();
+                status = BoatStatus.SHIP;
+            }
+        }
+    }
+    // 换新的路
+    public boolean changeRoad(Point target) {
+        route.setNewWay(target);
+        if (!route.target.equals(target)) {
+            Util.printLog(this.pos + "->" + target + ":tar" + route.target);
+            Util.printErr("boat 找不到路");
+            return false;
+        }
+        return true;
+    }
+    private boolean isArriveDelivery() {
+        // 是否到达交货点
+        return boatDeliveries.contains(pos);
+    }
+
+    private void berthing() {
+        // 靠泊
+        Util.boatBerth(id);
+        status = BoatStatus.LOAD;
+    }
+
+    private Berth selectHighValueBerth() {
+        // 选择task中价值最高的泊位
+        Berth target = berths.get(0);
+        int maxVal = target.existValue;
+
+        for (Berth berth : berths) {
+            if (!berth.bookBoats.isEmpty()){
+                continue;
+            }
+            if (berth.existValue>maxVal){
+                maxVal = berth.existValue;
+                target = berth;
+            }
+        }
+        return target;
+    }
+
+    private boolean inRecoverMode() {
+        return readsts == 1;
+    }
+    public void updateNextPoint() {
+        // 已经在下一个点了，要重新取点，否则不变
+        // 2出调用，每帧中间，有新路径
+        if (pos.equals(next)) {
+            next = route.getNextPoint();
+        }
+    }
+    private void lastPeriodSched() {
+
         if (status == BoatStatus.LOAD){
             if (mustGotoVirtual()){
                 finalGotoVirtual();
@@ -81,8 +157,7 @@ public class Boat {
         Util.printLog("泊口浪费时间:" + (totalFrame - frameId - bookBerth.transport_time) + "船泊停靠时间："+ (frameId-startFrame-1)+"运输时间"+ bookBerth.transport_time);
         clacGoods();//结算货物
         bookBerth.capacity = 0; // 没有船会去装了
-        goToVirtual();
-
+        goToDelivery();
     }
 
     private boolean boatIsFull() {
@@ -99,90 +174,7 @@ public class Boat {
         return false;
     }
 
-    private void normalSched() {
-        if (status == BoatStatus.FREE){
-            // 没有任务
-            ShipNextBerth();
-        }
-        if (status == BoatStatus.SHIP){
-            // 行驶状态
-            if (isArrive()){
-                Util.printLog(this+"boat arrive："+bookBerth);
-                changeLoadMode();
-            }
-        }
-        if (status == BoatStatus.LOAD){
-            handleNormalLoadMode();
-        }
-        if(status == BoatStatus.GO){
-            if (isArrive()){
-                resetBoat();        // 重置船
-                // 需要判断是否进入最后周期
-                if (task.canIntoLastPeriod1()){
-                    doLastPeriod();
-                }else {
-                    ShipNextBerth();
-                }
-            }
-        }
-    }
 
-    private void handleNormalLoadMode() {
-        if (boatIsFull()){
-            Util.printLog("货船已满");
-            clacGoods();//结算货物
-            goToVirtual();
-            return;
-        }
-        if (isLoadFinish()){
-            if (bookBerth == task.getFirstBerth()){
-                if (needGoToSecondBerth()){
-                    Util.printLog(this+"驶入berth[1]，当前"+bookBerth);
-                    clacGoods();//结算货物
-                    ShipNextBerth();
-                }
-            }else {
-                // 在第二个泊口
-                if (needGoToVirtual()){
-                    clacGoods();//结算货物
-                    goToVirtual();
-                }
-            }
-        }
-    }
-
-    private boolean needGoToVirtual() {
-        // 在第二个泊口是否需要返回虚拟点
-        // 且预估到第二个点的时间
-        int end = task.getClosestNormalEndT();
-        int needGoFid = end - bookBerth.transport_time;
-        if (frameId > needGoFid){
-            return true;
-        }
-        return false;
-    }
-
-    private boolean needGoToSecondBerth() {
-        int realLoad = getRealLoad();
-        int left = capacity - realLoad + task.getSecondBerth().existGoods.size();
-        if (left < 6) return true;  // 货满了赶紧走
-
-        // 且预估到第二个点的时间
-        int end = task.getClosestNormalEndT();
-        int needGoFid = end - task.getSecondBerth().transport_time - b2bFps - Math.min(50,capacity-realLoad);
-        if (frameId > needGoFid){
-            return true;
-        }
-        return false;
-    }
-
-    private void doLastPeriod() {
-        // 最后一个周期任务
-        task.changeLastPeriodMode();
-        Berth berth = task.getNextBerth();
-        changeBerthAndShip(berth);
-        setDeadLine(berth);
-    }
 
     private void setDeadLine(Berth berth) {
         // 给这个泊口设定deadLine
@@ -208,7 +200,7 @@ public class Boat {
             }
         }
         // 容量不够了，或没时间，先回去
-        goToVirtual();
+        goToDelivery();
     }
 
     private void changeBerthAndShip(Berth next) {
@@ -216,13 +208,6 @@ public class Boat {
         if (next == null)
             return;
         shipToBerth(next);
-    }
-
-    private void changeLoadMode() {
-        // 到泊口了，变为装货状态
-        status = BoatStatus.LOAD;
-        // 更新装货时间
-        startFrame = Const.frameId;
     }
 
 
@@ -273,8 +258,9 @@ public class Boat {
     }
 
 
-    private boolean isArrive() {
-        return readsts == 1;
+    // 是否到达了靠泊区
+    private boolean isArriveBerthArea() {
+        return bookBerth.boatInBerthArea.contains(pos);
     }
 
     private void findBerthAndShip() {
@@ -310,12 +296,11 @@ public class Boat {
 //        Util.printShip(id,bookBerth.id);
     }
 
-    private void goToVirtual() {
-        Util.printLog(this+"goto虚拟点");
+    private void goToDelivery() {
+        Util.printLog(this+"去交货点");
         resetBookBerth();
-        readsts = 0;
-        status = BoatStatus.GO;
-//        Util.printGo(id);
+        Util.boatDept(id);
+        changeRoad(boatDeliveries.get(0));
     }
 
     private int getRealLoad(){
@@ -328,7 +313,7 @@ public class Boat {
     }
 
     private void clacGoods() {
-        Util.printLog(this+":"+bookBerth+",结算货物：是first?"+(bookBerth == task.getFirstBerth()));
+        Util.printLog(this+":"+bookBerth+",结算货物：");
         int realLoad = getRealLoad();
         // 互相清算货物
         goodSize += realLoad;
@@ -370,10 +355,6 @@ public class Boat {
 
     private Berth pickTaskBerth() {
         // 选择task里的泊位,去货物多的
-        if (task.berths.size() != 2){
-            Util.printErr("pickTaskBerth");
-            return null;
-        }
 
         // 选择task中价值最高的泊位
         Berth target = task.berths.get(0);

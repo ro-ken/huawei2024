@@ -87,9 +87,9 @@ public class Main {
     private static void handleFrame() {
 
         // 处理轮船调度
-        for (int i = 0; i < boat_num; i++) {
-//            boats[i].schedule();
-        }
+//        for (Boat boat : boats) {
+//            boat.schedule();
+//        }
 
         // 处理机器人调度
         for (Robot workRobot : workRobots) {
@@ -112,19 +112,18 @@ public class Main {
         }
         if (frameId == 1){
             // 买机器人，轮船，一艘船，6个机器人
-            for (int i = 0; i < 1; i++) {
-                Point pos = robotBuyPos.get(0);
-                robotBuy(pos);
-                Robot robot = new Robot(robot_num,pos);
-                robot.pickRegion();
-                robots.add(robot);
-                robot_num++;
+            Point pos = robotBuyPos.get(0);
+            buyRobot(pos);
+            buyBoat(boatBuyPos.get(0));
+        }else {
+            Point pos = robotBuyPos.get(0);
+            if (money >= 2000){
+                buyRobot(pos);
             }
-            boatBuy(boatBuyPos.get(0));
-            boats.add(new Boat(boat_num,boatBuyPos.get(0)));
-            boat_num++;
         }
     }
+
+
 
     private static void updateGoodInfo() {
         if (!frameGoods.isEmpty()){
@@ -205,6 +204,7 @@ public class Main {
             }
         }
         robot_num = inStream.nextInt();
+        printLog("robot_num:"+robot_num);
         for(int i = 0; i < robot_num; i++) {
             int id = inStream.nextInt();    // 机器人id
             robots.get(id).carry = inStream.nextInt();
@@ -212,11 +212,13 @@ public class Main {
             robots.get(id).pos.y = inStream.nextInt();
         }
         boat_num = inStream.nextInt();
+        printLog("boat_num:"+boat_num);
         for(int i = 0; i < boat_num; i ++) {
             int id = inStream.nextInt();    // 轮船id
             boats.get(id).carry = inStream.nextInt();
             boats.get(id).pos.x = inStream.nextInt();
             boats.get(id).pos.y = inStream.nextInt();
+            boats.get(id).direction = inStream.nextInt();
             boats.get(id).readsts = inStream.nextInt();
         }
 

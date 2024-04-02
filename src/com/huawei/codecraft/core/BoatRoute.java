@@ -5,88 +5,60 @@ import com.huawei.codecraft.Util;
 import com.huawei.codecraft.util.Point;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
-public class Route {
-
-    Robot robot;
+public class BoatRoute {
+    Boat boat;
     public Point target;    // 要抵达的目标
     public List<Point> way = new ArrayList<>();
     public int index=0;
-    public Route(Robot robot){
-        this.robot = robot;
+    public BoatRoute(Boat boat){
+        this.boat = boat;
         setSelfWay();
     }
 
+    // 更新机器人路由
     private void setWay(List<Point> path) {
         way = path;
         target = way.get(way.size()-1);
         index=0;
-        robot.next = getNextPoint();
+        boat.next = boat.pos;
+        boat.updateNextPoint();
     }
-
-    public void updateNextPoint() {
-        // 已经在下一个点了，要重新取点，否则不变
-        // 2出调用，每帧中间，有新路径
-//        if (pos.equals(next)) {
-//            next = getNextPoint();
-//        }
-    }
-
     private void setSelfWay() {
         // 只有一个点，机器人原地待命
         List<Point> path = new ArrayList<>();
-        path.add(new Point(robot.pos));
+        path.add(new Point(boat.pos));
         setWay(path);
     }
+
     public void setNewWay(Point pos){
-        if (pos.equals(robot.pos)){
+        if (pos.equals(boat.pos)){
             // 原地待命
             setSelfWay();
             return;
         }
-        if (Const.pointToBerth.containsKey(pos)){
-            // 该点是泊位的距离
-            Berth berth = Const.pointToBerth.get(pos);
-            List<Point> path = berth.mapPath.get(robot.pos);
-            Util.printLog("setNewWay1:berth"+berth.pos+"pos"+robot.pos+"path"+path);
-            if (path != null){
-                List<Point> path1 = new ArrayList<>(path);
-                Collections.reverse(path1);  // 保存的是泊位到点的路径，需要翻转
-                setNewWay(path1);
-                return;
-            }
-        }else if (Const.pointToBerth.containsKey(robot.pos)){
-            // 机器人所在的点是泊位的点
-            Berth berth = Const.pointToBerth.get(robot.pos);
-            List<Point> path = berth.mapPath.get(pos);
-            Util.printDebug("setNewWay2:berth"+berth.pos+"pos"+robot.pos+"path"+path);
-            if (path != null){
-                setNewWay(path);
-                return;
-            }
-        }
+
         long sta = System.nanoTime();
         // 没有保存路径，自己寻路
-        ArrayList<Point> path = Const.path.getPath(robot.pos,pos);
+        ArrayList<Point> path = Const.path.getBoatPath(boat.pos,boat.direction,pos);
         long end = System.nanoTime();
         if (path == null){
             // 后续判断，如果target!=pos说明找不到路
-            Util.printErr("setNewWay:找不到路"+robot.pos +"->"+pos);
+            Util.printErr("boat setNewWay:找不到路"+boat.pos +"->"+pos);
             setSelfWay();
         }else {
-            Util.printLog("未保存路径，重新寻路！ 距离："+path.size()+"花费时间:"+(end-sta)/1000+"us");
+            Util.printLog("boat重新寻路！ 距离："+path.size()+"花费时间:"+(end-sta)/1000+"us");
             setWay(path);
         }
     }
     public void setNewWay(List<Point> path) {
-        Util.printLog(robot+"新路径："+path);
+        Util.printLog(boat+"新路径："+path);
         if (path != null){
             setWay(path);
         }else {
             setSelfWay();
-            Util.printErr("setNewWay，传入path为null，机器人位置："+robot.pos);
+            Util.printErr("setNewWay，传入path为null，机器人位置："+boat.pos);
         }
     }
 
@@ -95,7 +67,7 @@ public class Route {
             return target;
         }else {
             Point next = way.get(index++);
-            if (next.equals(robot.pos)){
+            if (next.equals(boat.pos)){
                 next = way.get(index++);   // 是自己的点，去下一个点
             }
             return next;
@@ -108,7 +80,7 @@ public class Route {
     }
 
     public void stayCurPoint() {
-        if (index >=2 && robot.pos.equals(way.get(index-2))){
+        if (index >=2 && boat.pos.equals(way.get(index-2))){
             index --;
         }
     }

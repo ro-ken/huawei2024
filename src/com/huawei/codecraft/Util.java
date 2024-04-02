@@ -1,5 +1,7 @@
 package com.huawei.codecraft;
 import com.huawei.codecraft.core.Berth;
+import com.huawei.codecraft.core.Boat;
+import com.huawei.codecraft.core.Robot;
 import com.huawei.codecraft.util.Point;
 import com.huawei.codecraft.zone.Region;
 import com.huawei.codecraft.zone.RegionManager;
@@ -104,11 +106,11 @@ public class Util {
     }
     // 将对应船停靠到泊位上，船进入恢复状态
     public static void boatBerth(int boatId){
-        outStream.printf("dept %d\n", boatId);
+        outStream.printf("berth %d\n", boatId);
     }
     // 旋转船
     private static void boatRot(int boatId,int d){
-        outStream.printf("dept %d %d\n", boatId,d);
+        outStream.printf("rot %d %d\n", boatId,d);
     }
     // 顺时针
     public static void boatClockwise(int boatId){
@@ -118,7 +120,32 @@ public class Util {
     public static void boatAnticlockwise(int boatId){
         boatRot(boatId,1);
     }
+    public static void buyBoat(Point pos) {
+        if (money < 8000){
+            return;
+        }
+        boatBuy(boatBuyPos.get(0));
+        money -= 8000;
+        boats.add(new Boat(boat_num,boatBuyPos.get(0)));
+        boat_num++;
+    }
 
+    public static void buyRobot(Point pos) {
+        if (money < 2000){
+            return;
+        }
+        for (Robot robot : robots) {
+            if (robot.pos.equals(pos)){
+                return; // 该点有其他机器人
+            }
+        }
+        robotBuy(pos);
+        money -= 2000;
+        Robot robot = new Robot(robot_num,pos);
+        robot.pickRegion();
+        robots.add(robot);
+        robot_num++;
+    }
 
     //
     public static void printMap(){

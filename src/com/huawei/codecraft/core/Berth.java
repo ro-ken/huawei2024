@@ -22,11 +22,11 @@ public class Berth {
     public PriorityQueue<Pair<Good>> domainGoodsByValue = new PriorityQueue<>();  // 需要被运输的货物,按照单位价值排序
     public Deque<Good> domainGoodsByTime = new LinkedList<>();      // 需要被运输的货物,按照时间先后排序
     public Set<Boat> bookBoats = new HashSet<>();
+    public HashSet<Point> boatInBerthArea = new HashSet<>();    // 靠泊区  todo 需要初始化
     public Deque<Good> existGoods = new LinkedList<>();     // 泊口存在的货物
     public int existValue=0;           // 泊口货物总价值
     public Map<Point,List<Point>> mapPath = new HashMap<>();   //  地图所有点到该泊位的路径信息
     public int deadLine = Const.totalFrame;     // 有效时间，超过这个时间轮船不装了，也不用往这里运了
-    public int totalGoodNum;
     public final Map<Integer,Integer> pathLenToNumMap = new HashMap<>();      // 计算区域点到泊口长度对应个数的map
     public Map<Integer, RegionValue> staticValue = new HashMap<>();     // 区域静态价值
     public int points;      // berth拥有的最短路径点个数
