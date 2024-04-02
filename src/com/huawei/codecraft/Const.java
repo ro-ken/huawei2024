@@ -65,7 +65,7 @@ public class Const {
     public static ArrayList<Zone> zones = new ArrayList<>();    // 陆地划分的区域
     public static Map<Point,Berth> pointToBerth = new HashMap<>();  // 左上角位置到泊位的映射
     public static Map<Integer, Berth> idToBerth = new HashMap<>();  // id到泊位的映射
-    public static Map<Point,Map<Point,Path>> hotPointPath = new HashMap<>();    // 热路径点
+    public static Map<Point,Map<Point,ArrayList<Point>>> hotPointPath = new HashMap<>();    // 热路径点
     public static final int defaultMap = 0;
     public static  int mapSeq;
     public static double upperQuantile = 0.06;         // 上分位点，每增加0.02，期望聚合泊位数增加2
