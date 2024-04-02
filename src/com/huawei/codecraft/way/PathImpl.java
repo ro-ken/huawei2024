@@ -4,8 +4,7 @@ import com.huawei.codecraft.util.Point;
 
 import java.util.*;
 
-import static com.huawei.codecraft.Const.NoLimit;
-import static com.huawei.codecraft.Const.unreachableFps;
+import static com.huawei.codecraft.Const.*;
 import static com.huawei.codecraft.Util.*;
 import static com.huawei.codecraft.way.Mapinfo.isValid;
 import static com.huawei.codecraft.way.Mapinfo.map;
@@ -40,7 +39,7 @@ public class PathImpl implements Path {
 //                printLog("get path success, Time taken: " + (endTime - startTime) + " ns");
                 return constructPath(current);
             }
-            if (limitLen > 0 && current.g > limitLen) {
+            if (limitLen != NoLimit && current.g > limitLen) {
                 printDebug("road too long, stop find");
                 return null;
             }
@@ -135,7 +134,7 @@ public class PathImpl implements Path {
             Pos current = queue.poll();
             // 点是可达点且未被访问过
             if (isAccessible(current.pos.x, current.pos.y) && !visited.contains(current.pos)) {
-                if (!pointHashSet.contains(current.pos)) {
+                if (!pointHashSet.contains(current.pos) || isHidePoint(current.pos)) {
                     path = constructPath(current);  // 尝试找到一条避让路径
                     // 如果找到有效路径且路径终点不在leftPath中，则返回该路径
                     break;
@@ -158,6 +157,15 @@ public class PathImpl implements Path {
 //            System.out.println("No valid hide point found");
         }
         return path;
+    }
+
+    @Override
+    public ArrayList<Point> getBoatPath(Point core, int direction, Point dest) {
+        return null;
+    }
+
+    private boolean isHidePoint(Point point) {
+        return map[point.x][point.y] == MAINROAD || map[point.x][point.y] == MAINBOTH;
     }
 
     // 修改地图信息以添加障碍物
@@ -185,7 +193,7 @@ public class PathImpl implements Path {
     }
 
     private static boolean isAccessible(int x, int y) {
-        return isValid(x, y) && map[x][y] == 0;
+        return isValid(x, y) && map[x][y] >= MAINBOTH;
     }
 
     private static ArrayList<Point> constructPath(Pos end) {

@@ -1,7 +1,8 @@
 package com.huawei.codecraft.way;
 
+import com.huawei.codecraft.Const;
+
 import static com.huawei.codecraft.Const.mapWidth;
-import static com.huawei.codecraft.Util.printLog;
 
 /**
  * ClassName: Mapinfo
@@ -25,20 +26,33 @@ public class Mapinfo {
             for (int j = 0; j < inputMap[i].length; j++) {
                 switch (inputMap[i][j]) {
                     case 'B':
-                        map[i][j] = 0;  // 陆地，暂时不区分陆地部分和海上部分，统一使用0代表空地
+                    case 'c':
+                        map[i][j] = Const.MAINBOTH;  // 陆地海洋主干道
+                        break;
+                    case '>':
+                    case 'R':
+                        map[i][j] =  Const.MAINROAD; // 陆地主干道
+                        break;
+                    case '~':
+                    case 'S':
+                    case 'K':
+                    case 'T':
+                        map[i][j] = Const.MAINSEA; // 海洋主干道
+                        break;
+                    case '.':
+                        map[i][j] =  Const.ROAD; // 陆地
                         break;
                     case '*':
-                        map[i][j] = -1; // 海洋
+                        map[i][j] =  Const.SEA; // 海洋
                         break;
-                    case 'A':
-                    case '.':
-                        map[i][j] =  0;  // 用1表示空地和机器人起始位置
+                    case 'C':
+                        map[i][j] =  Const.BOTH; // 海陆立体交通地块
                         break;
                     case '#':
-                        map[i][j] = -2; // 障碍物
+                        map[i][j] = Const.OBSTACLE; // 障碍物
                         break;
                     default:
-                        map[i][j] = 0; // 默认为0
+                        map[i][j] = Const.MAINBOTH; // 默认为0
                         break;
                 }
             }

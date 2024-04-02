@@ -1,6 +1,5 @@
 package com.huawei.codecraft.zone;
 
-import com.huawei.codecraft.Const;
 import com.huawei.codecraft.Util;
 import com.huawei.codecraft.core.Berth;
 import com.huawei.codecraft.core.Good;
@@ -13,7 +12,6 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static com.huawei.codecraft.Const.*;
-import static com.huawei.codecraft.Util.printDebug;
 import static com.huawei.codecraft.Util.printLog;
 import static com.huawei.codecraft.way.Mapinfo.isValid;
 import static com.huawei.codecraft.way.Mapinfo.map;
@@ -44,7 +42,6 @@ public class RegionManager {
         getFullPathsFromPoints2Berths();
         initGlobalPoint2ClosestBerthMap();
         splitRegions();
-
         calcRegionValue(); // 给区域分配机器人
 //        printAll();
     }
@@ -106,7 +103,7 @@ public class RegionManager {
             int y = current.y;
 
             // 跳过无效点或已经探索的点
-            if (!isValid(x, y) || map[x][y] != 0 || pointSet.contains(current)) {
+            if (!isValid(x, y) || map[x][y] < MAINBOTH || pointSet.contains(current)) {
                 continue;
             }
 

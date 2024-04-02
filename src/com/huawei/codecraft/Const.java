@@ -56,6 +56,14 @@ public class Const {
     public static final int UP = 2;
     public static final int DOWN = 3;
 
+    /*****************************地图基础参数定义*****************************/
+    public static final int MAINBOTH = 0;        // 海洋、陆地主干
+    public static final int MAINROAD = 1;       // 陆地主干道
+    public static final int MAINSEA = -1;       // 海洋主干
+    public static final int ROAD = 2;           // 陆地
+    public static final int SEA = -2;           // 海洋
+    public static final int BOTH = 3;           // 陆地、海洋
+    public static final int OBSTACLE = -3;      // 障碍
     /*****************************地图相关参数*****************************/
     public static RegionManager regionManager;
     public static Path path = new PathImpl(); // 修改Path实现
