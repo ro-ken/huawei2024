@@ -50,6 +50,11 @@ public class Const {
     public static int countGoodNum = 0;     //已经生成的物品总数，到时候算平均价值
     public static double countGoodValue = 0;   //已经生成的物品总价值
     public static double avgGoodValue;      // 货物的平均价值，每帧更新
+    /*****************************机器人和轮船对应的方向*****************************/
+    public static final int RIGHT = 0;
+    public static final int LEFT = 1;
+    public static final int UP = 2;
+    public static final int DOWN = 3;
 
     /*****************************地图相关参数*****************************/
     public static RegionManager regionManager;
