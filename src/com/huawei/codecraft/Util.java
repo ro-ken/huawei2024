@@ -61,7 +61,7 @@ public class Util {
         Thread.sleep(1000);
         System.err.println("------运货信息：------");
         System.err.println("总计生成货物："+ countGoodNum+"总计价值："+countGoodValue+"单位价值："+countGoodValue/countGoodNum);
-//        System.err.println("搬运码头货物："+ totalCarrySize+"总计价值："+ totalCarryValue+"单位价值："+totalCarryValue/totalCarrySize);
+        System.err.println("搬运码头货物："+ totalCarrySize+"总计价值："+ totalCarryValue+"单位价值："+totalCarryValue/totalCarrySize);
 //        System.err.println("成功运输货物："+ totalSellSize+"总计价值："+totalSellValue+"单位价值："+totalSellValue/totalSellSize);
         System.err.println("-------------------");
         System.err.println("总共跳帧："+dumpFrame);

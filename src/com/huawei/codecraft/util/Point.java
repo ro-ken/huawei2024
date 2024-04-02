@@ -1,6 +1,7 @@
 package com.huawei.codecraft.util;
 
 import com.huawei.codecraft.Const;
+import com.huawei.codecraft.way.Mapinfo;
 
 import java.util.Objects;
 
@@ -37,6 +38,10 @@ public class Point {
             return false;
         }
         return pos.y >= 0 && pos.y < Const.mapWidth;
+    }
+
+    public static boolean isMainRoad(Point pos) {
+        return Mapinfo.map[pos.x][pos.y] == 0 || Mapinfo.map[pos.x][pos.y] == 1;
     }
 
     @Override

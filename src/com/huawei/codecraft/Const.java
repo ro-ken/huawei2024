@@ -33,8 +33,6 @@ public class Const {
     public static ArrayList<Point> robotBuyPos = new ArrayList<>();      // 机器人购买点
     public static ArrayList<Point> boatBuyPos = new ArrayList<>();       // 轮船购买点
     public static ArrayList<Point> boatDeliveries = new ArrayList<>();       // 轮船交货点
-    public static HashSet<Point> mainRoad = new HashSet<>();       // 陆地主干道
-    public static HashSet<Point> mainChannel = new HashSet<>();       // 海洋主航道
     public static ArrayList<Good> frameGoods= new ArrayList<>();    // 每一帧新产生的货物
     public static final int noLimitedSize = 1000000;        // 无限容量信息
     public static double expGoodNum = 2450;     // 期望总物品数，官方回答：15/100 * 15000

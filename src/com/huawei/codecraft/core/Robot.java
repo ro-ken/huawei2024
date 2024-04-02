@@ -27,6 +27,7 @@ public class Robot {
     public boolean changeRegionMode;    // 是否是换区域模式，这个模式下可以不拿物品朝目标区域走
     public RobotRunMode runMode = new RobotRunMode(this);
     public boolean greedyMode = false;  // 最后阶段切换到贪心模式
+    public boolean frameMoved;
     public static double leaveCoef = 0.8; // 离开系数，这个值越高，越容易发生移动，越低，越稳定，一般不超过1,如果等于0 ，只有本区域没货才离开
 
     public Robot(int id, Point p) {
@@ -34,7 +35,6 @@ public class Robot {
         pos = new Point(p);
         route = new Route(this);
         next = pos;
-
     }
 
     public void schedule() {
@@ -246,10 +246,16 @@ public class Robot {
             if (robot.next.equals(robot.pos)) {
                 workRobots.remove(robot);
                 Util.printLog("stay" + robot);
-                invalidPoints.add(robot.pos);   // 不能动，无效机器人
+                if (!Point.isMainRoad(robot.pos)){
+                    invalidPoints.add(robot.pos);   // 不能动，无效机器人
+                }
+            }else if (Point.isMainRoad(robot.next)){
+                workRobots.remove(robot);
+                robot.printMove();
+            }else {
+                pointMap.merge(robot.pos, 1, Integer::sum);
+                pointMap.merge(robot.next, 1, Integer::sum);
             }
-            pointMap.merge(robot.pos, 1, Integer::sum);
-            pointMap.merge(robot.next, 1, Integer::sum);
         }
         boolean flag;
         do {
@@ -338,9 +344,13 @@ public class Robot {
         Set<Point> tmp = new HashSet<>();
         for (Robot robot : team) {
             if (invalidPoints.contains(robot.next) || tmp.contains(robot.next)) {
-                canGo = false;
+                if (!robot.frameMoved){
+                    canGo = false;
+                }
             }
-            tmp.add(robot.next);
+            if (!robot.frameMoved){
+                tmp.add(robot.next);
+            }
         }
         if (!canGo){
             invalidPoints.addAll(tmp);  // 如果不能走，把所有点都列为无效点
@@ -397,6 +407,11 @@ public class Robot {
         // 当前点无人，下一点有人，停留
         // 当前点无人，下一点无人，前进
         if (nexts.contains(oth.pos)) {
+            if (Point.isMainRoad(oth.pos)){
+                oth.frameMoved = true;
+                Util.printLog(oth+"该点在主干道上，保持不动！");
+                return;
+            }
             HashSet<Point> barr = new HashSet<>(nexts);
             Robot master =null;
             for (Robot robot : main) {
@@ -425,10 +440,23 @@ public class Robot {
             }
         } else {
             if (nexts.contains(oth.next)) {
-                // 下一个点有人，停留
-                oth.stayCurPoint();
+                oth.frameMoved = true;
+                Util.printLog(oth+"frameMoved，下一个位置有机器人，保持不动");
+
             } else {
                 // 两点都无人，照常前进
+                // 判断前面机器人是否选择了避让，如果避让了，就原地不动
+                for (Robot robot : robots) {
+                    if (robot.pos.equals(oth.next)){
+                        if (robot.runMode.isHideMode()){
+                            oth.frameMoved = true;
+                            Util.printLog(oth+"frameMoved，前面机器人选择避让，本机器人不能前进！");
+                            return;
+                        }
+                    }
+                }
+
+
             }
         }
     }
@@ -489,6 +517,15 @@ public class Robot {
         // 计算是否有紧急机器人，非要哪个避让，若有返回<master,slave>,若没有,都可让，返回null;
         Robot rob1 = cores.getObj1();
         Robot rob2 = cores.getObj2();
+        // 先判断有无主干道，在主干道的让
+        if (Point.isMainRoad(rob1.pos) || Point.isMainRoad(rob2.pos)){
+            if (Point.isMainRoad(rob1.pos)){
+                return new Twins<>(rob2, rob1);     // 1让
+            }else {
+                return new Twins<>(rob1, rob2);
+            }
+        }
+
         boolean onlyWay1 = rob1.myOnlyWay(team);
         boolean onlyWay2 = rob2.myOnlyWay(team);
         if (onlyWay1 && !onlyWay2) {
@@ -537,6 +574,14 @@ public class Robot {
 
     // 处理有优先级的冲突
     private static void handleMasterSlave(Robot master, Robot slave) {
+
+        if (Point.isMainRoad(slave.pos)){
+            master.printMove();
+            Util.printLog(slave+"frameMoved，在主干道上，暂停一帧避让");
+            slave.frameMoved = true;
+            return;
+        }
+
         Twins<ArrayList<Point>, Integer> newPath = changeRoadPath(slave, master);
         if (newPath.getObj2() < 6) {
             slave.route.setNewWay(newPath.getObj1());
@@ -545,13 +590,20 @@ public class Robot {
             if (newPath.getObj1() == null) {
                 Util.printWarn("slave 找不到避让点");
             } else {
+//                if (newPath.getObj1().size() == 2){
+//                    // 隔壁避让
+//                    if (invalidPoints.contains(newPath.getObj1().get(1))){
+//                        // todo 有死角情况解决
+//
+//                    }
+//                }
                 slave.gotoHidePoint(newPath.getObj1(), master);
             }
         }
     }
 
     private void gotoHidePoint(ArrayList<Point> path, Robot master) {
-        Util.printLog("slave:" + this.id + "master" + master.id + "hide 点：" + path);
+        Util.printLog("slave:" + this.id + "，master：" + master.id + "，hide 点：" + path);
         runMode.setHideMode(master);  // 设置主从优先关系
         route.setNewWay(path);
     }
@@ -653,15 +705,23 @@ public class Robot {
 
     // 打印自己的移动信息
     public void printMove() {
+        if (frameMoved) {
+            return;
+        }else {
+            // 确保每个机器人只打印一次
+            frameMoved = true;
+        }
         Util.printLog("move:" + this);
         if (next == null) {
             return;
         }
-        if (invalidPoints.contains(next)) {
-            Util.printErr("printMove:next位置冲突！");
-            return;
+        if (!Point.isMainRoad(next)){
+            if (invalidPoints.contains(next) ) {
+                Util.printErr("printMove:next位置冲突！");
+                return;
+            }
+            invalidPoints.add(next);
         }
-        invalidPoints.add(next);
         if (next.x > pos.x) {
             Util.robotDown(id);
         } else if (next.x < pos.x) {

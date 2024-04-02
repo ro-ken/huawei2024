@@ -10,12 +10,9 @@ import com.huawei.codecraft.core.Good;
 import com.huawei.codecraft.core.Robot;
 import com.huawei.codecraft.util.Point;
 import com.huawei.codecraft.way.Mapinfo;
-import com.huawei.codecraft.zone.Region;
 import com.huawei.codecraft.zone.RegionManager;
 
 import java.io.FileNotFoundException;
-import java.util.HashSet;
-import java.util.Set;
 
 import static com.huawei.codecraft.Const.*;
 import static com.huawei.codecraft.Util.*;
@@ -109,6 +106,7 @@ public class Main {
         int num = Math.min(testRobot,robot_num);
         for (int i = 0; i < num; i++) {
             workRobots.add(robots.get(i));
+            robots.get(i).frameMoved = false;
         }
         if (frameId == 1){
             // 买机器人，轮船，一艘船，6个机器人
@@ -122,8 +120,6 @@ public class Main {
             }
         }
     }
-
-
 
     private static void updateGoodInfo() {
         if (!frameGoods.isEmpty()){
@@ -146,7 +142,6 @@ public class Main {
             map[i] = line;
         }
         ProcessMap();
-//        printMap();
         berth_num = inStream.nextInt();
         // 初始化泊位
         for (int i = 0; i < berth_num; i++) {
@@ -171,19 +166,10 @@ public class Main {
                 Point t = new Point(i,j);
                 if (ch == 'R'){     // 机器人租赁点
                     robotBuyPos.add(t);
-                    mainRoad.add(t);
                 }else if (ch == 'S'){   // 船舶租赁点
                     boatBuyPos.add(t);
-                    mainChannel.add(t);
                 }else if (ch == 'T'){   // 交货点
                     boatDeliveries.add(t);
-                }else if (ch == '>'){   // 主干道
-                    mainRoad.add(t);
-                }else if (ch == '~'){   // 主航道
-                    mainChannel.add(t);
-                }else if (ch == 'c'){   // 立交桥
-                    mainRoad.add(t);
-                    mainChannel.add(t);
                 }
             }
         }
@@ -204,7 +190,9 @@ public class Main {
             }
         }
         robot_num = inStream.nextInt();
-        printLog("robot_num:"+robot_num);
+        if (robot_num != robots.size()){
+            printErr("robot_num != robots.size()");
+        }
         for(int i = 0; i < robot_num; i++) {
             int id = inStream.nextInt();    // 机器人id
             robots.get(id).carry = inStream.nextInt();
@@ -212,7 +200,9 @@ public class Main {
             robots.get(id).pos.y = inStream.nextInt();
         }
         boat_num = inStream.nextInt();
-        printLog("boat_num:"+boat_num);
+        if (boat_num != boats.size()){
+            printErr("boat_num != boats.size()");
+        }
         for(int i = 0; i < boat_num; i ++) {
             int id = inStream.nextInt();    // 轮船id
             boats.get(id).carry = inStream.nextInt();
@@ -225,15 +215,5 @@ public class Main {
         inStream.nextLine();
         String okk = inStream.nextLine();
 
-    }
-
-    private static Robot getRobotByPos(Set<Robot> set, Point point) {
-        for (Robot robot : set) {
-            if (robot.pos.equals(point)){
-                // 两个位置重合就是
-                return robot;
-            }
-        }
-        return null;
     }
 }
