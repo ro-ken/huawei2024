@@ -56,4 +56,12 @@ public interface Path {
      */
     ArrayList<Point> getHidePointPath(Point pos, List<Point> leftPath);
 
+    /**
+     * 获取海洋上的两点路径
+     * @param core 轮船核心点坐标
+     * @param direction 轮船起始方向
+     * @param dest  轮船目的地
+     * @return  轮船核心点轨迹
+     */
+    ArrayList<Point> getBoatPath(Point core, int direction ,Point dest);
 }
