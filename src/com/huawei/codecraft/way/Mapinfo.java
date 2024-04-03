@@ -2,6 +2,7 @@ package com.huawei.codecraft.way;
 
 import com.huawei.codecraft.Const;
 
+import static com.huawei.codecraft.Const.ROAD;
 import static com.huawei.codecraft.Const.mapWidth;
 
 /**
@@ -11,6 +12,7 @@ import static com.huawei.codecraft.Const.mapWidth;
  */
 public class Mapinfo {
     public static int[][] map = new int[mapWidth][mapWidth];
+    public static int[][] seaMap = new int[mapWidth][mapWidth]; // 经过预处理为船行走的 map，经过了预处理
 
     // 私有化构造函数防止外部实例化
     private Mapinfo() {
@@ -54,6 +56,16 @@ public class Mapinfo {
                     default:
                         map[i][j] = Const.MAINBOTH; // 默认为0
                         break;
+                }
+            }
+        }
+    }
+
+    public static void initSeaMap() {
+        for (int i = 0; i < mapWidth; i++) {
+            for (int j = 0; j < mapWidth; j++) {
+                if (map[i][j] == Const.MAINROAD || map[i][j] == Const.OBSTACLE || map[i][j] == ROAD) {
+                    seaMap[i][j] = ROAD;
                 }
             }
         }

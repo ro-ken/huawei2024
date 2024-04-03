@@ -8,6 +8,7 @@ import static com.huawei.codecraft.Const.*;
 import static com.huawei.codecraft.Util.*;
 import static com.huawei.codecraft.way.Mapinfo.isValid;
 import static com.huawei.codecraft.way.Mapinfo.map;
+import static com.huawei.codecraft.way.Mapinfo.seaMap;
 
 /**
  * ClassName: PathImpl
@@ -16,6 +17,34 @@ import static com.huawei.codecraft.way.Mapinfo.map;
  */
 public class PathImpl implements Path {
     private static final int[][] directions = {{1, 0}, {-1, 0}, {0, -1}, {0, 1}};
+    private static final int clockwise = 0; // 顺时针
+    private static final int counterClockwise = 1;  // 逆时针
+    public  static final int shipLen = 3;
+    public static Point[] ship = new Point[shipLen];
+    private static final int[][][] turnTimes = {
+            {{4, 2 , 3, 1},{4, 2, 1, 3}}, // turnTimes[][0] 代表顺时针转换次数，turnTimes[][1]代表逆时针转换次数
+            {{2, 4 , 1, 3},{2, 4, 3, 1}},
+            {{1, 3 , 4, 2},{3, 1, 4, 2}},
+            {{3, 1 , 2, 4},{1, 3, 2, 4}}
+    };
+
+    private static final int[][][] clockwiseCoordinate = {  // 顺时针转时坐标变化
+            {{0, 0},{2, 2}, {2, 0}, {0, 2}}, // clockwiseCoordinate[][0] 代表x，clockwiseCoordinate[][1]代表y
+            {{-2, -2},{0, 0}, {0, -2}, {-2, 0}},
+            {{-2, 0},{0, 2}, {0, 0}, {-2, 2}},
+            {{0, -2},{2, 0}, {2, -2}, {0, 0}}
+    };
+
+    private static final int[][][] counterClockwiseCoordinate = {  // 顺时针转时坐标变化
+            {{0, 0},{0, 2}, {1, 1}, {-1, 1}}, // counterClockwiseCoordinate[][0] 代表x，counterClockwiseCoordinate[][1]代表y
+            {{2, 0},{0, 0}, {-1, -1}, {1, -1}},
+            {{-1, -1},{-1, 1}, {0, 0}, {-2, 0}},
+            {{1, -1},{1, 1}, {2, 0}, {0, 0}}
+    };
+
+    public PathImpl() {
+
+    }
 
     private  ArrayList<Point> getPathWithLimit(Point p1, Point p2, int limitLen) {
 //        long startTime = System.nanoTime();  // Start timing
@@ -159,10 +188,219 @@ public class PathImpl implements Path {
     }
 
     @Override
+    // TODO：暂时不考虑主干路减速的存在，之后寻路时再优化
     public ArrayList<Point> getBoatPath(Point core, int direction, Point dest) {
-        return null;
+        ArrayList<Point> path = new ArrayList<>();
+       // 陆地寻路，直接按照 manhadun 距离进行搜索即可
+        // 优先走水平，再走垂直，这样来回路径默认错开
+        int horizon = judgeHorizon(core, dest);         // 判断水平方向，开始确定唯一
+        int vertical = judgeVertical(core, dest);       // 判断垂直方向, 开始确定唯一
+        int times = 0;
+        initShip(core);
+        refreshShip(core, direction);
+        path.add(new Point(core));
+        while (!ship[2].equals(dest) && times < 2000) {
+            times += 1;
+            if (canMoveHorizon(horizon, direction, dest)) { // 走水平
+                if (direction != horizon) {   // 方向改为水平
+                    turnDirection(direction, horizon, dest, path);
+                    direction = horizon;
+                }
+                pushForward(horizon, path);
+            }
+            else { // 走垂直
+                if (direction != vertical) { // 方向改为垂直
+                    turnDirection(direction, vertical, dest, path);
+                    direction = vertical;
+                }
+                pushForward(vertical, path);
+            }
+        }
+        if (!ship[2].equals(dest)) {
+            System.out.println("get path error");
+            return null;
+        }
+        // 因为是前置节点到达了终点，所以需要加上去
+        path.add(new Point(ship[1]));
+        path.add(new Point(ship[2]));
+        return path;
     }
 
+    private void initShip(Point core) {
+        for (int i = 0; i < shipLen; i++) {
+            ship[i] = new Point(core);
+        }
+    }
+
+    // 根据当前方向获取船只核心点方向上得节点，ship[0] 对应核心点 core
+    private void refreshShip(Point core, int direction) {
+        for (int i = 0; i < shipLen; i++) {
+            if (direction == LEFT) {
+                ship[i].y = core.y - i;
+                ship[i].x = core.x;
+            }
+            else if (direction == RIGHT) {
+                ship[i].y = core.y + i;
+                ship[i].x = core.x;
+            }
+            else if (direction == UP) {
+                ship[i].x = core.x - i;
+                ship[i].y = core.y;
+            }
+            else {
+                ship[i].x = core.x + i;
+                ship[i].y = core.y;
+            }
+        }
+    }
+
+    private  boolean canMoveHorizon(int destDirection, int direction, Point dest) {
+        if (direction == destDirection) {
+            if (destDirection == LEFT) { //目标方向向左，当前方向 x不可以小于 dest.x
+                return isValid(ship[2].x, ship[2].y - 1) &&  seaMap[ship[2].x][ship[2].y - 1] != ROAD &&
+                        isValid(ship[2].x - 1, ship[2].y - 1) && (seaMap[ship[2].x - 1][ship[2].y - 1] != ROAD)
+                        && ship[2].y > dest.y ;
+            }
+            else {
+                return isValid(ship[2].x, ship[2].y + 1) && seaMap[ship[2].x][ship[2].y + 1] != ROAD &&
+                        isValid(ship[2].x + 1, ship[2].y + 1) && seaMap[ship[2].x + 1][ship[2].y + 1] != ROAD &&
+                        ship[2].y < dest.y;
+            }
+        }
+        // 不同向需要旋转才可以
+        if (direction == UP) {
+            if (destDirection == LEFT) {
+                return canCounterClockwiseTurn(direction) && ship[2].y > dest.y;
+            }
+            else {
+                return canClockwiseTurn(direction) && ship[2].y < dest.y;
+            }
+        }
+        else {
+            if (destDirection == LEFT) {
+                return canClockwiseTurn(direction) && ship[2].y > dest.y;
+            }
+            else {
+                return canCounterClockwiseTurn(direction)  && ship[2].y < dest.y;
+            }
+        }
+    }
+
+    private void turnDirection(int direction, int newDirection, Point dest,ArrayList<Point> path) {
+        // 判断逆时针和顺时针的次数，哪个少转哪个，如果都一样就看哪个能转
+        if (turnTimes[direction][clockwise][newDirection] <= turnTimes[direction][counterClockwise][newDirection]) {
+            if (canClockwiseTurn(direction)) {
+                turnClockwise(direction, newDirection, path);
+            }
+            else {
+                turnCounterClockwise(direction, newDirection, dest, path);
+            }
+        }
+        else {
+            if (canCounterClockwiseTurn(direction)) {
+                turnCounterClockwise(direction, newDirection, dest, path);
+            }
+            else {
+                turnClockwise(direction, newDirection, path);
+            }
+        }
+    }
+
+    private boolean canClockwiseTurn(int direction) {
+        // 顺时针，坐标会沿着角落进行轮转，判断角坐标是否存在不可达点
+        for (int i = 0; i <= 3; i++) {
+            int x = ship[0].x + clockwiseCoordinate[direction][i][0];
+            int y = ship[0].y + clockwiseCoordinate[direction][i][1];
+            if (isValid(x, y) && seaMap[x][y] == ROAD) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private boolean canCounterClockwiseTurn(int direction) {
+        // 逆时针，判断核心点上面
+        // 顺时针，坐标会沿着角落进行轮转，判断角坐标是否存在不可达点
+        for (int i = 0; i <= 3; i++) {
+            int x = ship[0].x + counterClockwiseCoordinate[direction][i][0];
+            int y = ship[0].y + counterClockwiseCoordinate[direction][i][1];
+            if (isValid(x, y) && seaMap[x][y] == ROAD) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private void  turnClockwise(int direction, int newDirection, ArrayList<Point> path) {
+        for (int i = 0; i < shipLen; i++) {
+            System.out.println("before" + ship[i]);
+        }
+        // 顺时针旋转，核心点转之后刚好能够转到前置Point得位置
+        System.out.println("before" + ship[0]);
+        ship[0].x = ship[2].x;
+        ship[0].y = ship[2].y;
+        System.out.println("after" + ship[0]);
+        // 更新ship得前驱节点
+        refreshShip(ship[0], newDirection);
+        System.out.println("refresh" + ship[0]);
+        path.add(new Point(ship[0]));
+    }
+
+    private void  turnCounterClockwise(int direction, int newDirection, Point dest, ArrayList<Point> path) {
+        // 逆时针旋转，则需要特殊得处理
+        if (ship[2].x == dest.x || ship[2].y == dest.y) {
+            path.add(new Point(ship[1]));
+
+            // 以 ship 1 位置进行逆时针旋转刚好使得 x y 对齐
+            ship[0].x = ship[1].x + counterClockwiseCoordinate[direction][newDirection][0];
+            ship[0].y = ship[1].y + counterClockwiseCoordinate[direction][newDirection][1];
+        }
+        else {
+            ship[0].x = ship[0].x + counterClockwiseCoordinate[direction][newDirection][0];
+            ship[0].y = ship[0].y + counterClockwiseCoordinate[direction][newDirection][1];
+        }
+
+        // 更新ship得前驱节点
+        refreshShip(ship[0], newDirection);
+
+        path.add(new Point(ship[0]));
+    }
+
+    private void pushForward(int direction,  ArrayList<Point> path) {
+        if (direction == LEFT) {
+            ship[0].y -= 1;
+        }
+        else if (direction == RIGHT) {
+            ship[0].y += 1;
+        }
+        else if (direction == UP) {
+            ship[0].x -= 1;
+        }
+        else {
+            ship[0].x += 1;
+        }
+        refreshShip(ship[0], direction);
+        path.add(new Point(ship[0]));
+   }
+
+    private  int judgeVertical(Point core, Point dest) {
+        if (core.x < dest.x) {
+            return DOWN;
+        }
+        else {
+            return UP;
+        }
+    }
+
+    private  int judgeHorizon(Point core, Point dest) {
+        if (core.y < dest.y) {
+            return RIGHT;
+        }
+        else {
+            return LEFT;
+        }
+    }
+    
     private boolean isHidePoint(Point point) {
         return map[point.x][point.y] == MAINROAD || map[point.x][point.y] == MAINBOTH;
     }
