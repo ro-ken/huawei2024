@@ -52,7 +52,7 @@ public class Main {
             handleFrame();
             printOk();
             long end = System.nanoTime();
-            printLog("单帧花费时间:"+(end-sta)/1000+"us"+"frameInit时间:"+(t1-sta)/1000+"us,handleFrame时间:"+(end-t1)/1000+"us");
+//            printLog("单帧花费时间:"+(end-sta)/1000+"us"+"frameInit时间:"+(t1-sta)/1000+"us,handleFrame时间:"+(end-t1)/1000+"us");
         }
     }
 
@@ -78,12 +78,13 @@ public class Main {
 
     private static void handleFrame() {
 
-//        // 处理轮船调度
-//        for (Boat boat : boats) {
-//            boat.schedule();
-//            boat.updateNextPoint();
-//        }
-//        Boat.handleBoatMove();
+        // 处理轮船调度
+        for (Boat boat : boats) {
+            boat.schedule();
+            boat.updateNextPoint();
+            Util.printLog(boat);
+        }
+        Boat.handleBoatMove();
 
         // 处理机器人调度
         for (Robot workRobot : workRobots) {
@@ -105,17 +106,24 @@ public class Main {
             workRobots.add(robots.get(i));
             robots.get(i).frameMoved = false;
         }
-        if (frameId == 1){
-            // 买机器人，轮船，一艘船，6个机器人
+        if(robot_num <1){
             Point pos = robotBuyPos.get(0);
             buyRobot(pos);
-//            buyBoat(boatBuyPos.get(0));
-        }else {
-            Point pos = robotBuyPos.get(0);
-            if (money >= 2000){
-                buyRobot(pos);
-            }
         }
+        if (boat_num <1){
+            buyBoat(boatBuyPos.get(0));
+        }
+//        if (frameId == 1){
+//            // 买机器人，轮船，一艘船，6个机器人
+//            Point pos = robotBuyPos.get(0);
+//            buyRobot(pos);
+//            buyBoat(boatBuyPos.get(0));
+//        }else {
+//            Point pos = robotBuyPos.get(0);
+//            if (money >= 2000){
+//                buyRobot(pos);
+//            }
+//        }
     }
 
     private static void updateGoodInfo() {

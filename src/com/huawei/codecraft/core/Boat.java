@@ -50,13 +50,16 @@ public class Boat {
             }else  if (dis == 1) {
                 // 1为前进
                 Util.boatShip(id);
+                Util.printLog("boat前进");
             }else if (dis == 2){
                 if (Math.abs(next.x-pos.x)==1){
                     // 逆时针，下一个点在对角
                     Util.boatAnticlockwise(id);
+                    Util.printLog("boat左转");
                 }else {
                     // 顺时针
                     Util.boatClockwise(id);
+                    Util.printLog("boat右转");
                 }
             }else {
                 Util.printErr("下一个坐标点有误");
@@ -150,6 +153,7 @@ public class Boat {
     // 换新的路
     public void changeRoad(Point target) {
         route.setNewWay(target);
+        Util.printLog("boat 寻路："+route.way);
         if (!route.target.equals(target)) {
             Util.printLog(this.pos + "->" + target + ":tar" + route.target);
             Util.printErr("boat 找不到路");
@@ -407,6 +411,12 @@ public class Boat {
     public String toString() {
         return "Boat{" +
                 "id=" + id +
+                ", rsts=" + readsts +
+                ", pos=" + pos +
+                ", dire=" + direction +
+                ", status=" + status +
+                ", next=" + next +
+                ", target=" + route.target +
                 '}';
     }
 
