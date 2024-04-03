@@ -341,7 +341,7 @@ public class PathImpl implements Path {
         for (int i = 0; i <= 3; i++) {
             int x = ship[0].x + counterClockwiseCoordinate[direction][i][0];
             int y = ship[0].y + counterClockwiseCoordinate[direction][i][1];
-            if (isValid(x, y) || seaMap[x][y] == ROAD) {
+            if (!isValid(x, y) || seaMap[x][y] == ROAD) {
                 return false;
             }
         }
