@@ -36,12 +36,11 @@ public class RegionManagerTest {
     private RegionManager regionManager;
 
     private void initBerth() {
-        for (int i = 0; i < berthsPos[map].length; i++) {
-            Berth berth = new Berth(i);
-            berth.pos.x = berthsPos[map][i][0];
-            berth.pos.y = berthsPos[map][i][1];
-            berths.add(berth);
-            pointToBerth.put(berth.pos, berth);
+        for (int i = 0; i < 10; i++) {
+            berths.set(i, new Berth(i));
+            berths.get(i).pos.x = berthsPos[map][i][0];
+            berths.get(i).pos.y = berthsPos[map][i][1];
+            pointToBerth.put(berths.get(i).pos, berths.get(i));
         }
     }
 
