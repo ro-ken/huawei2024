@@ -19,42 +19,30 @@ import static com.huawei.codecraft.zone.RegionManager.*;
 
 public class RegionManagerTest {
     private static final int[][][] berthsPos = {
-            // map8
-            {{20, 139}, {26, 116}, {28, 159}, {30, 67}, {50, 41}, {124, 13}, {173, 26}, {179, 57}, {179, 92}, {179, 156}},
-           // map1
-            {{5, 65}, {5, 135}, {8, 35}, {12, 153}, {20, 165}, {48, 3}, {48, 187}, {190, 3}, {190, 187}, {196, 195}},
+            // map1
+            {{36, 98}, {50, 170}, {99, 16}, {99, 65}, {169, 99}},
             // map2
-            {{3, 113}, {3, 161}, {3, 188}, {20, 87}, {29, 73}, {32, 62}, {38, 42}, {117, 3}, {135, 3}, {172, 3}},
+            {{93, 71}, {93, 147}, {102, 51}, {102, 91}, {102, 130}, {102, 168}},
             // map3
-            {{61, 67}, {61, 87}, {61, 112}, {70, 137}, {83, 62}, {87, 137}, {88, 62}, {103, 62}, {110, 62}, {137, 88}},
-            // map4
-            {{5, 91}, {5, 107}, {71, 26}, {71, 172}, {75, 56}, {123, 142}, {127, 26}, {127, 172}, {193, 91}, {193, 107}},
-            // map5
-            {{95, 21}, {95, 61}, {95, 101}, {95, 139}, {95, 183}, {102, 11}, {102, 52}, {102, 92}, {102, 127}, {102, 169}},
-            // map6
-            {{1, 44}, {1, 153}, {24, 104}, {68, 97}, {96, 152}, {103, 43}, {130, 104}, {173, 97}, {197, 43}, {197, 154}},
-            // map7
-            {{7, 99}, {19, 99}, {35, 99}, {49, 121}, {49, 171}, {149, 17}, {149, 66}, {161, 99}, {175, 99}, {190, 99}}
+            {{26, 105}, {95, 26}, {105, 173}, {173, 97}}
     };
     private static final String[] FILE_NAMES = {
-            "test\\map8.txt",  // map-3.7 0
-            "test\\map1.txt",  // map-3.8 1
-            "test\\map2.txt",  // map-3.6 2
-            "test\\map3.txt",  // map-3.9 3
-            "test\\map4.txt",  // map-3.10 4
-            "test\\map5.txt",  // map-3.11 5
-            "test\\map6.txt",  // map-3.12 6
-            "test\\map7.txt"   // map-3.13 7
+            "test\\map1.txt",  // map1 0
+            "test\\map2.txt",  // map2 1
+            "test\\map3.txt"  // map3 2
     };
-    private final int map = 3; // 测试地图,0对应map-3.6，测试不同地图修改这个
+    private final int map = 2; // 测试地图,0对应map1
+    private final String fileName_suffix = FILE_NAMES[map].substring(8);
     private RegionManager regionManager;
+
     private void initBerth() {
-        for (int i = 0; i < 10; i++) {
-           berths[i] = new Berth(i);
-           berths[i].pos.x = berthsPos[map][i][0];
-           berths[i].pos.y = berthsPos[map][i][1];
-           pointToBerth.put(berths[i].pos, berths[i]);
-       }
+        for (int i = 0; i < berthsPos[map].length; i++) {
+            Berth berth = new Berth(i);
+            berth.pos.x = berthsPos[map][i][0];
+            berth.pos.y = berthsPos[map][i][1];
+            berths.add(berth);
+            pointToBerth.put(berth.pos, berth);
+        }
     }
 
     private void init() {
@@ -73,6 +61,7 @@ public class RegionManagerTest {
             e.printStackTrace();
         }
     }
+
     @Test
     public void testCreateInitialRegions() {    // 初始区域测试
         long startTime = System.nanoTime();  // Start timing
@@ -103,7 +92,7 @@ public class RegionManagerTest {
     }
 
     @Test
-    public void testGlobalPoint2ClosestBerthMap() {  // 测试 点 到 最短泊位的hash表
+    public void testGlobalPoint2ClosestBerthMap() {  // 测试点到最短泊位的hash表
         System.out.println("*************testGlobalPoint2ClosestBerthMap**************");
         long startTime = System.nanoTime();  // Start timing
         init();
@@ -133,11 +122,11 @@ public class RegionManagerTest {
         regionManager.testSplitRegions();
 
         // 打印
-        printRegionDetails();
-        printZoneDetails();
-        printHashMapDetailsToFile();
+//        printRegionDetails();
+//        printZoneDetails();
+//        printHashMapDetailsToFile();
         printPointDetailsToFile();
-        printGlobalPoint2ClosestBerthToFile();
+//        printGlobalPoint2ClosestBerthToFile();
 
         long endTime = System.nanoTime();  // End timing
         System.out.println("region init Time taken: " + (endTime - startTime) + " ns");
@@ -189,6 +178,7 @@ public class RegionManagerTest {
             e.printStackTrace();
         }
     }
+
     public void printPathsDetailsToFile() {
         String fileName = "berth2point.txt";
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(fileName, false))) {
@@ -242,7 +232,7 @@ public class RegionManagerTest {
 
     // 打印点所属于的区域
     public void printPointDetailsToFile() {
-        String fileName = "point2Region.txt";
+        String fileName = "point2Region" + fileName_suffix;
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(fileName, false))) { // false to overwrite
             writer.write("Total regions: " + regions.size() + "\n");
             for (Region region : regions) {
@@ -258,6 +248,7 @@ public class RegionManagerTest {
                         writer.write(point + " ");
                     }
                     writer.write("\n");  // Move to the next line after printing all points of the region.
+                    writer.write("This region end\n");
                 }
             }
         } catch (IOException e) {

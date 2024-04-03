@@ -1,6 +1,7 @@
 package com.huawei.codecraft.util;
 
 import com.huawei.codecraft.Const;
+import com.huawei.codecraft.way.Mapinfo;
 
 import java.util.Objects;
 
@@ -39,6 +40,10 @@ public class Point {
         return pos.y >= 0 && pos.y < Const.mapWidth;
     }
 
+    public static boolean isMainRoad(Point pos) {
+        return Mapinfo.map[pos.x][pos.y] == 0 || Mapinfo.map[pos.x][pos.y] == 1;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -61,11 +66,7 @@ public class Point {
     }
 
     // 计算两点的网格距离
-    public int clacGridDis(Point point) {
-        return clacGridDis(point.x,point.y);
-    }
-
-    public int clacGridDis(int x, int y) {
-        return Math.abs(this.x-x)+Math.abs(this.y-y);
+    public int clacGridDis(Point oth) {
+        return Math.abs(this.x-oth.x)+Math.abs(this.y-oth.y);
     }
 }

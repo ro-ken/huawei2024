@@ -58,27 +58,31 @@ public class Util {
     }
 
     public static void printLastInfo() throws InterruptedException {
-        Thread.sleep(1000);
+        Thread.sleep(20);
         System.err.println("------运货信息：------");
+        printLog("------运货信息：------");
         System.err.println("总计生成货物："+ countGoodNum+"总计价值："+countGoodValue+"单位价值："+countGoodValue/countGoodNum);
-//        System.err.println("搬运码头货物："+ totalCarrySize+"总计价值："+ totalCarryValue+"单位价值："+totalCarryValue/totalCarrySize);
+        printLog("总计生成货物："+ countGoodNum+"总计价值："+countGoodValue+"单位价值："+countGoodValue/countGoodNum);
+        System.err.println("搬运码头货物："+ totalCarrySize+"总计价值："+ totalCarryValue+"单位价值："+totalCarryValue/totalCarrySize);
+        printLog("搬运码头货物："+ totalCarrySize+"总计价值："+ totalCarryValue+"单位价值："+totalCarryValue/totalCarrySize);
 //        System.err.println("成功运输货物："+ totalSellSize+"总计价值："+totalSellValue+"单位价值："+totalSellValue/totalSellSize);
         System.err.println("-------------------");
+        printLog("-------------------");
         System.err.println("总共跳帧："+dumpFrame);
         printLog("总共跳帧："+dumpFrame);
     }
 
     public static void robotRight(int id){
-        printMove(id,0);
+        printMove(id,RIGHT);
     }
     public static void robotLeft(int id){
-        printMove(id,1);
+        printMove(id,LEFT);
     }
     public static void robotUp(int id){
-        printMove(id,2);
+        printMove(id,UP);
     }
     public static void robotDown(int id){
-        printMove(id,3);
+        printMove(id,DOWN);
     }
     // 机器人移动
     private static void printMove(int id,int num){

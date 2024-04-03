@@ -6,9 +6,7 @@ import com.huawei.codecraft.Util;
 import com.huawei.codecraft.util.BoatLastTask;
 import com.huawei.codecraft.util.BoatStatus;
 import com.huawei.codecraft.util.Point;
-import com.huawei.codecraft.util.Twins;
-import com.huawei.codecraft.zone.Region;
-import com.huawei.codecraft.zone.RegionManager;
+
 
 import java.util.*;
 
@@ -34,7 +32,71 @@ public class Boat {
     public Boat(int id,Point p) {
         this.id = id;
         pos = new Point(p);
-//        route = new BoatRoute(this);      // todo 记得打开
+        route = new BoatRoute(this);      // todo 记得打开
+    }
+
+    public static void handleBoatMove() {
+        for (Boat boat : boats) {
+            boat.printMove();
+        }
+    }
+
+    private void printMove() {
+        if (status == BoatStatus.SHIP || status == BoatStatus.GO){
+            int dis = next.clacGridDis(pos);
+            Util.printLog("move:" + this);
+            if (dis == 0)  {
+                Util.printWarn("船位置重合！");
+            }else  if (dis == 1) {
+                // 1为前进
+                Util.boatShip(id);
+            }else if (dis == 2){
+                if (Math.abs(next.x-pos.x)==1){
+                    // 逆时针，下一个点在对角
+                    Util.boatAnticlockwise(id);
+                }else {
+                    // 顺时针
+                    Util.boatClockwise(id);
+                }
+            }else {
+                Util.printErr("下一个坐标点有误");
+            }
+        }
+    }
+
+    private boolean isAntiClockwise() {
+
+        return false;
+    }
+
+    private boolean isClockwise() {
+        // 是否顺时针转
+        // 是否向前
+        if (direction == RIGHT){
+            return next.y - pos.y == 1;
+        }else if (direction == LEFT){
+            return next.y - pos.y == -1;
+        }else if (direction == UP){
+            return next.x - pos.x == -1;
+        }else if (direction == DOWN){
+            return next.x - pos.x == 1;
+        }
+        return false;
+    }
+
+    private boolean isForward() {
+        // 是否向前
+
+        if (direction == RIGHT){
+            return next.y - pos.y == 1;
+        }else if (direction == LEFT){
+            return next.y - pos.y == -1;
+        }else if (direction == UP){
+            return next.x - pos.x == -1;
+        }else if (direction == DOWN){
+            return next.x - pos.x == 1;
+        }
+        return false;
     }
 
     public void schedule() {
@@ -46,22 +108,27 @@ public class Boat {
         if (inRecoverMode()){
             return;     // 恢复状态不能操作
         }
+        if (status != BoatStatus.FREE){
+            handleBoatTask();
+        }
         if (status == BoatStatus.FREE){
             // 没有任务
             bookBerth = selectHighValueBerth();
             status = BoatStatus.SHIP;
             changeRoad(bookBerth.pos);
         }
+    }
+
+    private void handleBoatTask() {
         if (status == BoatStatus.SHIP){
-            // 行驶状态
+            // 驶向泊口状态
             if (isArriveBerthArea()){
                 Util.printLog(this+"boat arrive："+bookBerth);
-                berthing();
+                Util.boatBerth(id);
+                status = BoatStatus.LOAD;   // 可以测试一下是否能立马泊靠
             }
-            return;
-        }
-        if (status == BoatStatus.LOAD){
-            if (startFrame == 0){       // 走了记得清零
+        }else if (status == BoatStatus.LOAD){
+            if (startFrame == 0){
                 startFrame = frameId;
             }
             if (isLoadFinish()){
@@ -70,37 +137,27 @@ public class Boat {
                 goToDelivery();
                 status = BoatStatus.GO;
                 startFrame = 0;
-                return ;
             }
-        }
-        if(status == BoatStatus.GO){
+        }else if(status == BoatStatus.GO){
             if (isArriveDelivery()){
                 resetBoat();        // 重置船
                 // 需要判断是否进入最后周期
-                bookBerth = selectHighValueBerth();
-                status = BoatStatus.SHIP;
+                status = BoatStatus.FREE;
             }
         }
     }
+
     // 换新的路
-    public boolean changeRoad(Point target) {
+    public void changeRoad(Point target) {
         route.setNewWay(target);
         if (!route.target.equals(target)) {
             Util.printLog(this.pos + "->" + target + ":tar" + route.target);
             Util.printErr("boat 找不到路");
-            return false;
         }
-        return true;
     }
     private boolean isArriveDelivery() {
         // 是否到达交货点
         return boatDeliveries.contains(pos);
-    }
-
-    private void berthing() {
-        // 靠泊
-        Util.boatBerth(id);
-        status = BoatStatus.LOAD;
     }
 
     private Berth selectHighValueBerth() {

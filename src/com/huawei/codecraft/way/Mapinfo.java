@@ -24,8 +24,8 @@ public class Mapinfo {
      * @param inputMap 原始地图
      */
     public static void init(char[][] inputMap) {
-        for (int i = 0; i < inputMap.length; i++) {
-            for (int j = 0; j < inputMap[i].length; j++) {
+        for (int i = 0; i < mapWidth; i++) {
+            for (int j = 0; j < mapWidth; j++) {
                 switch (inputMap[i][j]) {
                     case 'B':
                     case 'c':
