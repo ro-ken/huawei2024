@@ -11,8 +11,9 @@ import static com.huawei.codecraft.Const.mapWidth;
  * Description: 初始化地图信息
  */
 public class Mapinfo {
-    public static int[][] map = new int[mapWidth][mapWidth];
-    public static int[][] seaMap = new int[mapWidth][mapWidth]; // 经过预处理为船行走的 map，经过了预处理
+    public static int[][] map = new int[mapWidth][mapWidth];            // 经过处理得数字化map，方便寻路判断
+    public static int[][] originalMap = new int[mapWidth][mapWidth];    // 原始得地图map
+    public static int[][] seaMap = new int[mapWidth][mapWidth];          // 经过预处理为船行走的 map，经过了预处理
 
     // 私有化构造函数防止外部实例化
     private Mapinfo() {
@@ -26,6 +27,7 @@ public class Mapinfo {
     public static void init(char[][] inputMap) {
         for (int i = 0; i < mapWidth; i++) {
             for (int j = 0; j < mapWidth; j++) {
+                originalMap[i][j] = inputMap[i][j];
                 switch (inputMap[i][j]) {
                     case 'B':
                     case 'c':

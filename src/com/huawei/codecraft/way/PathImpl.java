@@ -28,8 +28,8 @@ public class PathImpl implements Path {
             {{3, 1 , 2, 4},{1, 3, 2, 4}}
     };
 
-    private static final Map<Integer, Integer> clockwiseRotation = new HashMap<>();
-    private static final Map<Integer, Integer> counterClockwiseRotation = new HashMap<>();
+    private static final Map<Integer, Integer> clockwiseRotation = new HashMap<>(); // 轮转方向顺时针映射
+    private static final Map<Integer, Integer> counterClockwiseRotation = new HashMap<>(); // 轮转方向逆时针映射
 
     static {
         clockwiseRotation.put(0, 3);
@@ -206,7 +206,7 @@ public class PathImpl implements Path {
     // TODO：暂时不考虑主干路减速的存在，之后寻路时再优化
     public ArrayList<Point> getBoatPath(Point core, int direction, Point dest) {
         ArrayList<Point> path = new ArrayList<>();
-       // 陆地寻路，直接按照 manhadun 距离进行搜索即可
+        // 陆地寻路，直接按照 manhadun 距离进行搜索即可
         // 优先走水平，再走垂直，这样来回路径默认错开
         int horizon = judgeHorizon(core, dest);         // 判断水平方向，开始确定唯一
         int vertical = judgeVertical(core, dest);       // 判断垂直方向, 开始确定唯一
@@ -214,7 +214,8 @@ public class PathImpl implements Path {
         initShip(core);
         refreshShip(core, direction);
         path.add(new Point(core));
-        while (!ship[2].equals(dest) && times < 2000) {
+        // TODO：一般来说地图搜索不可能超过1000次，暂时先这样，后续多测测看会不会死循环
+        while (!ship[2].equals(dest) && times < 1000) {
             times += 1;
             if (canMoveHorizon(horizon, direction, dest)) { // 走水平
                 if (direction != horizon) {   // 方向改为水平
@@ -248,6 +249,7 @@ public class PathImpl implements Path {
     }
 
     // 根据当前方向获取船只核心点方向上得节点，ship[0] 对应核心点 core
+    // 更新核心点上所有点的坐标
     private void refreshShip(Point core, int direction) {
         for (int i = 0; i < shipLen; i++) {
             if (direction == LEFT) {
@@ -326,7 +328,7 @@ public class PathImpl implements Path {
         for (int i = 0; i <= 3; i++) {
             int x = ship[0].x + clockwiseCoordinate[direction][i][0];
             int y = ship[0].y + clockwiseCoordinate[direction][i][1];
-            if (isValid(x, y) && seaMap[x][y] == ROAD) {
+            if (!isValid(x, y) || seaMap[x][y] == ROAD) {
                 return false;
             }
         }
@@ -339,7 +341,7 @@ public class PathImpl implements Path {
         for (int i = 0; i <= 3; i++) {
             int x = ship[0].x + counterClockwiseCoordinate[direction][i][0];
             int y = ship[0].y + counterClockwiseCoordinate[direction][i][1];
-            if (isValid(x, y) && seaMap[x][y] == ROAD) {
+            if (isValid(x, y) || seaMap[x][y] == ROAD) {
                 return false;
             }
         }

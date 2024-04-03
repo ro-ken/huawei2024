@@ -1,5 +1,6 @@
 package com.huawei.codecraft.zone;
 
+import com.huawei.codecraft.Const;
 import com.huawei.codecraft.Util;
 import com.huawei.codecraft.core.Berth;
 import com.huawei.codecraft.core.Good;
@@ -7,6 +8,7 @@ import com.huawei.codecraft.core.Robot;
 import com.huawei.codecraft.util.Point;
 import com.huawei.codecraft.util.RegionValue;
 import com.huawei.codecraft.util.UnionFind;
+import com.huawei.codecraft.way.Mapinfo;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -14,7 +16,7 @@ import java.util.stream.Collectors;
 import static com.huawei.codecraft.Const.*;
 import static com.huawei.codecraft.Util.printLog;
 import static com.huawei.codecraft.way.Mapinfo.isValid;
-import static com.huawei.codecraft.way.Mapinfo.map;
+import static com.huawei.codecraft.way.Mapinfo.originalMap;
 
 /**
  * ClassName: RegionManager
@@ -42,6 +44,7 @@ public class RegionManager {
         getFullPathsFromPoints2Berths();
         initGlobalPoint2ClosestBerthMap();
         splitRegions();
+        allocateBerthingPoints(); // 分配泊位得靠泊点
         calcRegionValue(); // 给区域分配机器人
 //        printAll();
     }
@@ -71,6 +74,10 @@ public class RegionManager {
 
     public void testGlobalPoint2ClosestBerthMap() {
         initGlobalPoint2ClosestBerthMap();
+    }
+
+    public void testAllocateBerthingPoints() {
+        allocateBerthingPoints(); // 分配泊位得靠泊点
     }
 
     public void testSplitRegions() {
@@ -103,7 +110,7 @@ public class RegionManager {
             int y = current.y;
 
             // 跳过无效点或已经探索的点
-            if (!isValid(x, y) || map[x][y] < MAINBOTH || pointSet.contains(current)) {
+            if (!isValid(x, y) || Mapinfo.map[x][y] < MAINBOTH || pointSet.contains(current)) {
                 continue;
             }
 
@@ -498,6 +505,27 @@ public class RegionManager {
                     // 将机器人添加到该zone的机器人集合中
                     zone.robots.add(robot);
                     break; // 找到所属zone后不需要继续判断其他zone
+                }
+            }
+        }
+    }
+
+    private void allocateBerthingPoints() {
+        for (int i = 0; i < Const.mapWidth; i++) {
+            for (int j = 0; j < Const.mapWidth; j++) {
+                // 如果该点是泊位点，加入到对应得泊位停靠表中
+                if (originalMap[i][j] == 'K' || originalMap[i][j] == 'B') {
+                    int minDistance = unreachableFps;
+                    Berth ClosestBerth = null;
+                    for (Berth berth : berths) {
+                        int distance = Math.abs(berth.pos.x - i) + Math.abs(berth.pos.y - j);
+                        if (distance < minDistance) {
+                            minDistance = distance;
+                            ClosestBerth = berth;
+                        }
+                    }
+                    assert ClosestBerth != null;
+                    ClosestBerth.boatInBerthArea.add(new Point(i, j));
                 }
             }
         }

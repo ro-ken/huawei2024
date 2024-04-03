@@ -31,16 +31,17 @@ public class RegionManagerTest {
             "test\\map2.txt",  // map2 1
             "test\\map3.txt"  // map3 2
     };
-    private final int map = 2; // 测试地图,0对应map1
+    private final int map = 0; // 测试地图,0对应map1
     private final String fileName_suffix = FILE_NAMES[map].substring(8);
     private RegionManager regionManager;
 
     private void initBerth() {
-        for (int i = 0; i < 10; i++) {
-            berths.set(i, new Berth(i));
-            berths.get(i).pos.x = berthsPos[map][i][0];
-            berths.get(i).pos.y = berthsPos[map][i][1];
-            pointToBerth.put(berths.get(i).pos, berths.get(i));
+        for (int i = 0; i < berthsPos[map].length; i++) {
+            Berth berth = new Berth(i);
+            berth.pos.x = berthsPos[map][i][0];
+            berth.pos.y = berthsPos[map][i][1];
+            berths.add(berth); // 使用add而不是set
+            pointToBerth.put(berth.pos, berth);
         }
     }
 
@@ -121,12 +122,27 @@ public class RegionManagerTest {
         regionManager.testSplitRegions();
 
         // 打印
-//        printRegionDetails();
+          printRegionDetails();
 //        printZoneDetails();
 //        printHashMapDetailsToFile();
-        printPointDetailsToFile();
+//        printPointDetailsToFile();
 //        printGlobalPoint2ClosestBerthToFile();
 
+        long endTime = System.nanoTime();  // End timing
+        System.out.println("region init Time taken: " + (endTime - startTime) + " ns");
+        System.out.println("*********************************************");
+    }
+
+    @Test
+    public void testAllocateBerthingPoints() {
+        System.out.println("*************testAllocateBerthingPoints**************");
+        long startTime = System.nanoTime();  // Start timing
+        init();
+
+        // 测试函数
+        regionManager.testAllocateBerthingPoints();
+
+        printRegionDetails();
         long endTime = System.nanoTime();  // End timing
         System.out.println("region init Time taken: " + (endTime - startTime) + " ns");
         System.out.println("*********************************************");
@@ -145,6 +161,7 @@ public class RegionManagerTest {
             System.out.println("  Berths in region: " + region.getBerths().size());
             for (Berth berth : region.getBerths()) {
                 System.out.println("    Berth at: " + berth.pos + "total points:" + berth.points);
+                System.out.println("berthing points numbers: " + berth.boatInBerthArea.size());
             }
             System.out.println("  Accessible points in region: " + region.getAccessiblePoints().size());
             System.out.println(" neighborRegion: ");

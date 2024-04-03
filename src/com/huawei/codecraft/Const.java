@@ -33,11 +33,12 @@ public class Const {
     public static ArrayList<Point> robotBuyPos = new ArrayList<>();      // 机器人购买点
     public static ArrayList<Point> boatBuyPos = new ArrayList<>();       // 轮船购买点
     public static ArrayList<Point> boatDeliveries = new ArrayList<>();       // 轮船交货点
+    public static HashSet<Robot> workRobots = new HashSet<>();// 每帧可以工作的机器人
+    public static HashSet<Point> invalidPoints = new HashSet<>();   // 每帧的无效点
+    /*****************************物品相关参数*****************************/
     public static ArrayList<Good> frameGoods= new ArrayList<>();    // 每一帧新产生的货物
     public static final int noLimitedSize = 1000000;        // 无限容量信息
     public static double expGoodNum = 2450;     // 期望总物品数，官方回答：15/100 * 15000
-    public static HashSet<Robot> workRobots = new HashSet<>();// 每帧可以工作的机器人
-    public static HashSet<Point> invalidPoints = new HashSet<>();   // 每帧的无效点
     public static int countGoodNum = 0;     //已经生成的物品总数，到时候算平均价值
     public static double countGoodValue = 0;   //已经生成的物品总价值
     public static double avgGoodValue;      // 货物的平均价值，每帧更新
@@ -46,7 +47,6 @@ public class Const {
     public static final int LEFT = 1;
     public static final int UP = 2;
     public static final int DOWN = 3;
-
     /*****************************地图基础参数定义*****************************/
     public static final int MAINBOTH = 0;        // 海洋、陆地主干
     public static final int MAINROAD = 1;       // 陆地主干道
@@ -55,17 +55,18 @@ public class Const {
     public static final int SEA = -2;           // 海洋
     public static final int BOTH = 3;           // 陆地、海洋
     public static final int OBSTACLE = -3;      // 障碍
-    /*****************************地图相关参数*****************************/
+    /*****************************路径相关参数*****************************/
     public static RegionManager regionManager;
     public static Path path = new PathImpl(); // 修改Path实现
     public static int NoLimit = -1;              // 无长度限制的寻路算法
     public static final int unreachableFps = 1000000;       // 不可达的时间
-    public static ArrayList<Zone> zones = new ArrayList<>();    // 陆地划分的区域
-    public static Map<Point,Berth> pointToBerth = new HashMap<>();  // 左上角位置到泊位的映射
-    public static Map<Integer, Berth> idToBerth = new HashMap<>();  // id到泊位的映射
     public static Map<Point,Map<Point,ArrayList<Point>>> hotPointPath = new HashMap<>();    // 热路径点
+    /*****************************区域相关参数*****************************/
     public static final int defaultMap = 0;
     public static  int mapSeq;
+    public static Map<Point,Berth> pointToBerth = new HashMap<>();  // 左上角位置到泊位的映射
+    public static Map<Integer, Berth> idToBerth = new HashMap<>();  // id到泊位的映射
+    public static ArrayList<Zone> zones = new ArrayList<>();    // 陆地划分的区域
     public static double upperQuantile = 0.06;         // 上分位点，每增加0.02，期望聚合泊位数增加2
     public static int maxThreshold = 40;              // 设定的最大阈值, 超过这个就不合并
     public static double minPointsPercent = 0.045;    // 设定的最小点数百分比，区域拥有泊位少于0.045，则直接不合并
