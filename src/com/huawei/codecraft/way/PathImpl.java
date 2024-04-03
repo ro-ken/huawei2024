@@ -52,7 +52,7 @@ public class PathImpl implements Path {
 
     private static final int[][][] counterClockwiseCoordinate = {  // 顺时针转时坐标变化
             {{0, 0},{0, 2}, {1, 1}, {-1, 1}}, // counterClockwiseCoordinate[][0] 代表x，counterClockwiseCoordinate[][1]代表y
-            {{2, 0},{0, 0}, {-1, -1}, {1, -1}},
+            {{0, -2},{0, 0}, {1, -1}, {-1, -1}},
             {{-1, -1},{-1, 1}, {0, 0}, {-2, 0}},
             {{1, -1},{1, 1}, {2, 0}, {0, 0}}
     };
@@ -208,8 +208,6 @@ public class PathImpl implements Path {
         ArrayList<Point> path = new ArrayList<>();
         // 陆地寻路，直接按照 manhadun 距离进行搜索即可
         // 优先走水平，再走垂直，这样来回路径默认错开
-        int horizon = judgeHorizon(core, dest);         // 判断水平方向，开始确定唯一
-        int vertical = judgeVertical(core, dest);       // 判断垂直方向, 开始确定唯一
         int times = 0;
         initShip(core);
         refreshShip(core, direction);
@@ -217,6 +215,9 @@ public class PathImpl implements Path {
         // TODO：一般来说地图搜索不可能超过1000次，暂时先这样，后续多测测看会不会死循环
         while (!ship[2].equals(dest) && times < 1000) {
             times += 1;
+            // 实时判断水平和垂直走向
+            int horizon = judgeHorizon(ship[0], dest);
+            int vertical = judgeVertical(ship[0], dest);
             if (canMoveHorizon(horizon, direction, dest)) { // 走水平
                 if (direction != horizon) {   // 方向改为水平
                     turnDirection(direction, horizon, dest, path);
@@ -233,7 +234,7 @@ public class PathImpl implements Path {
             }
         }
         if (!ship[2].equals(dest)) {
-            System.out.println("get path error");
+            printErr("can't get boat path error");
             return null;
         }
         // 因为是前置节点到达了终点，所以需要加上去
@@ -376,7 +377,6 @@ public class PathImpl implements Path {
                 ship[0].x = ship[0].x + counterClockwiseCoordinate[direction][tempDirection][0];
                 ship[0].y = ship[0].y + counterClockwiseCoordinate[direction][tempDirection][1];
             }
-
             // 更新ship得前驱节点
             refreshShip(ship[0], tempDirection);
 
