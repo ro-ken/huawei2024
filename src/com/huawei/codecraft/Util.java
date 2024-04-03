@@ -106,10 +106,12 @@ public class Util {
     }
     // 将船重置到主航道，船进入恢复状态
     public static void boatDept(int boatId){
+        printLog("boat："+boatId+"离港");
         outStream.printf("dept %d\n", boatId);
     }
     // 将对应船停靠到泊位上，船进入恢复状态
     public static void boatBerth(int boatId){
+        printLog("boat："+boatId+"靠泊");
         outStream.printf("berth %d\n", boatId);
     }
     // 旋转船

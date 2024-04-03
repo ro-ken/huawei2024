@@ -59,7 +59,7 @@ public class Main {
     // 追加初始化工作
     private static void myInit() {
         Mapinfo.init(map);
-
+        Mapinfo.initSeaMap();
         for (Berth berth:berths) {
             pointToBerth.put(berth.pos,berth);
             idToBerth.put(berth.id, berth);
@@ -106,7 +106,11 @@ public class Main {
             workRobots.add(robots.get(i));
             robots.get(i).frameMoved = false;
         }
-        if(robot_num <1){
+        for (Boat boat : boats) {
+            boat.frameMoved = false;
+        }
+
+        if(robot_num <8){
             Point pos = robotBuyPos.get(0);
             buyRobot(pos);
         }

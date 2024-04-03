@@ -1,7 +1,6 @@
 package com.huawei.codecraft.core;
 
 import com.huawei.codecraft.Const;
-import com.huawei.codecraft.Main;
 import com.huawei.codecraft.Util;
 import com.huawei.codecraft.util.BoatLastTask;
 import com.huawei.codecraft.util.BoatStatus;
@@ -28,11 +27,13 @@ public class Boat {
     public int goodSize;
     BoatRoute route;
     BoatLastTask task ;
+    public boolean frameMoved;  // 只能动一次
+    private boolean firstGo = true;
 
     public Boat(int id,Point p) {
         this.id = id;
         pos = new Point(p);
-        route = new BoatRoute(this);      // todo 记得打开
+        route = new BoatRoute(this);
     }
 
     public static void handleBoatMove() {
@@ -42,6 +43,7 @@ public class Boat {
     }
 
     private void printMove() {
+        if (frameMoved) return;
         if (status == BoatStatus.SHIP || status == BoatStatus.GO){
             int dis = next.clacGridDis(pos);
             Util.printLog("move:" + this);
@@ -67,41 +69,6 @@ public class Boat {
         }
     }
 
-    private boolean isAntiClockwise() {
-
-        return false;
-    }
-
-    private boolean isClockwise() {
-        // 是否顺时针转
-        // 是否向前
-        if (direction == RIGHT){
-            return next.y - pos.y == 1;
-        }else if (direction == LEFT){
-            return next.y - pos.y == -1;
-        }else if (direction == UP){
-            return next.x - pos.x == -1;
-        }else if (direction == DOWN){
-            return next.x - pos.x == 1;
-        }
-        return false;
-    }
-
-    private boolean isForward() {
-        // 是否向前
-
-        if (direction == RIGHT){
-            return next.y - pos.y == 1;
-        }else if (direction == LEFT){
-            return next.y - pos.y == -1;
-        }else if (direction == UP){
-            return next.x - pos.x == -1;
-        }else if (direction == DOWN){
-            return next.x - pos.x == 1;
-        }
-        return false;
-    }
-
     public void schedule() {
         simpleSched();
     }
@@ -117,6 +84,7 @@ public class Boat {
         if (status == BoatStatus.FREE){
             // 没有任务
             bookBerth = selectHighValueBerth();
+            Util.printLog("boat下一个泊口"+bookBerth);
             status = BoatStatus.SHIP;
             changeRoad(bookBerth.pos);
         }
@@ -127,21 +95,31 @@ public class Boat {
             // 驶向泊口状态
             if (isArriveBerthArea()){
                 Util.printLog(this+"boat arrive："+bookBerth);
-                Util.boatBerth(id);
-                status = BoatStatus.LOAD;   // 可以测试一下是否能立马泊靠
+                Util.boatBerth(id);     // 如果还输入了其他指令，该指令将无效
+                frameMoved = true;
+                status = BoatStatus.LOAD;
             }
         }else if (status == BoatStatus.LOAD){
+            Util.printLog("装货ing");
             if (startFrame == 0){
                 startFrame = frameId;
             }
             if (isLoadFinish()){
+                Util.printLog("startFrame"+startFrame);
                 Util.printLog("搬运结束");
                 clacGoods();//结算货物
                 goToDelivery();
+                Util.boatDept(id);
+                frameMoved = true;
                 status = BoatStatus.GO;
+                firstGo = true;
                 startFrame = 0;
             }
         }else if(status == BoatStatus.GO){
+            if (firstGo){
+                changeRoad(boatDeliveries.get(0));
+                firstGo = false;
+            }
             if (isArriveDelivery()){
                 resetBoat();        // 重置船
                 // 需要判断是否进入最后周期
@@ -248,22 +226,6 @@ public class Boat {
         goodSize = 0;
     }
 
-    private void loadFinishNextStep() {
-        // 装载结束后下一步动作，虚拟点 or 泊口
-        Berth next = task.getNextBerth();
-        // 计算还能否装下一个泊口的货物
-        int nextGood = next.getPredictGoodNum(b2bFps);
-        if (capacity >= goodSize + nextGood){
-            // 容量够
-            if (task.canBerthGotoBerth(next)){
-                changeBerthAndShip(next);
-                return;
-            }
-        }
-        // 容量不够了，或没时间，先回去
-        goToDelivery();
-    }
-
     private void changeBerthAndShip(Berth next) {
         resetBookBerth();
         if (next == null)
@@ -360,8 +322,6 @@ public class Boat {
     private void goToDelivery() {
         Util.printLog(this+"去交货点");
         resetBookBerth();
-        Util.boatDept(id);
-        changeRoad(boatDeliveries.get(0));
     }
 
     private int getRealLoad(){
@@ -369,7 +329,7 @@ public class Boat {
         int left = capacity - goodSize;
         int loadGoods = Math.min(countGoods(),bookBerth.existGoods.size()); // 容量无限下这段时间装载量
         int realLoad = Math.min(left,loadGoods);    // 实际装载量
-        Util.printLog("船的装载："+goodSize+"/"+capacity+"，单次装载量："+realLoad + "，泊口货物："+bookBerth.existGoods.size()+"，装载时间："+(Const.frameId - startFrame - 1));
+        Util.printLog("船的装载："+goodSize+"/"+capacity+"，单次装载量："+realLoad + "，泊口货物："+bookBerth.existGoods.size()+"，装载时间："+(Const.frameId - startFrame + 1));
         return realLoad;
     }
 
@@ -396,7 +356,7 @@ public class Boat {
 
     // 计算已经装了多少货物
     private int countGoods() {
-        int fps = Const.frameId - startFrame - 1;// 当前帧也可以装，后续可以检查
+        int fps = Const.frameId - startFrame + 1;// 当前帧也可以装，后续可以检查
         int count = fps * bookBerth.loading_speed;
         return count;
     }

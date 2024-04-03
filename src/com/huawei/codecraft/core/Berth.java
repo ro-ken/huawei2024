@@ -104,14 +104,6 @@ public class Berth {
         return pos.x >= this.pos.x-1 && pos.x <= this.pos.x + 2 && pos.y >= this.pos.y-1 && pos.y <= this.pos.y + 2;
     }
 
-
-    public int getPredictGoodNum(int time) {
-        // 从现在开始 持续time时间，返回预计有多少货物
-        // todo
-        return existGoods.size() + 10;
-    }
-
-
     public boolean canCarryGood(Good good) {
         // 计算能否去取该货物，默认机器人在泊口
         int dis = getPathFps(good.pos);
