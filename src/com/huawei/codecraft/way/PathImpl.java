@@ -28,6 +28,21 @@ public class PathImpl implements Path {
             {{3, 1 , 2, 4},{1, 3, 2, 4}}
     };
 
+    private static final Map<Integer, Integer> clockwiseRotation = new HashMap<>();
+    private static final Map<Integer, Integer> counterClockwiseRotation = new HashMap<>();
+
+    static {
+        clockwiseRotation.put(0, 3);
+        clockwiseRotation.put(1, 2);
+        clockwiseRotation.put(2, 0);
+        clockwiseRotation.put(3, 1);
+
+        counterClockwiseRotation.put(0, 2);
+        counterClockwiseRotation.put(1, 3);
+        counterClockwiseRotation.put(2, 1);
+        counterClockwiseRotation.put(3, 0);
+    }
+
     private static final int[][][] clockwiseCoordinate = {  // 顺时针转时坐标变化
             {{0, 0},{2, 2}, {2, 0}, {0, 2}}, // clockwiseCoordinate[][0] 代表x，clockwiseCoordinate[][1]代表y
             {{-2, -2},{0, 0}, {0, -2}, {-2, 0}},
@@ -332,38 +347,40 @@ public class PathImpl implements Path {
     }
 
     private void  turnClockwise(int direction, int newDirection, ArrayList<Point> path) {
-        for (int i = 0; i < shipLen; i++) {
-            System.out.println("before" + ship[i]);
-        }
         // 顺时针旋转，核心点转之后刚好能够转到前置Point得位置
-        System.out.println("before" + ship[0]);
-        ship[0].x = ship[2].x;
-        ship[0].y = ship[2].y;
-        System.out.println("after" + ship[0]);
-        // 更新ship得前驱节点
-        refreshShip(ship[0], newDirection);
-        System.out.println("refresh" + ship[0]);
-        path.add(new Point(ship[0]));
+        while (direction != newDirection) {
+            direction = clockwiseRotation.get(direction);
+            ship[0].x = ship[2].x;
+            ship[0].y = ship[2].y;
+
+            // 更新ship得前驱节点
+            refreshShip(ship[0], direction);
+            path.add(new Point(ship[0]));
+        }
     }
 
     private void  turnCounterClockwise(int direction, int newDirection, Point dest, ArrayList<Point> path) {
-        // 逆时针旋转，则需要特殊得处理
-        if (ship[2].x == dest.x || ship[2].y == dest.y) {
-            path.add(new Point(ship[1]));
+        while (direction != newDirection) {
+            int tempDirection = counterClockwiseRotation.get(direction);    // 获取下一个方向
+            // 逆时针旋转，则需要特殊得处理
+            if (ship[2].x == dest.x || ship[2].y == dest.y) {
+                path.add(new Point(ship[1]));
 
-            // 以 ship 1 位置进行逆时针旋转刚好使得 x y 对齐
-            ship[0].x = ship[1].x + counterClockwiseCoordinate[direction][newDirection][0];
-            ship[0].y = ship[1].y + counterClockwiseCoordinate[direction][newDirection][1];
+                // 以 ship 1 位置进行逆时针旋转刚好使得 x y 对齐
+                ship[0].x = ship[1].x + counterClockwiseCoordinate[direction][tempDirection][0];
+                ship[0].y = ship[1].y + counterClockwiseCoordinate[direction][tempDirection][1];
+            }
+            else {
+                ship[0].x = ship[0].x + counterClockwiseCoordinate[direction][tempDirection][0];
+                ship[0].y = ship[0].y + counterClockwiseCoordinate[direction][tempDirection][1];
+            }
+
+            // 更新ship得前驱节点
+            refreshShip(ship[0], tempDirection);
+
+            path.add(new Point(ship[0]));
+            direction = tempDirection;
         }
-        else {
-            ship[0].x = ship[0].x + counterClockwiseCoordinate[direction][newDirection][0];
-            ship[0].y = ship[0].y + counterClockwiseCoordinate[direction][newDirection][1];
-        }
-
-        // 更新ship得前驱节点
-        refreshShip(ship[0], newDirection);
-
-        path.add(new Point(ship[0]));
     }
 
     private void pushForward(int direction,  ArrayList<Point> path) {
