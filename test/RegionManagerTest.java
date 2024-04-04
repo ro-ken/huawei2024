@@ -31,8 +31,8 @@ public class RegionManagerTest {
             "test\\map2.txt",  // map2 1
             "test\\map3.txt"  // map3 2
     };
-    private final int map = 0; // 测试地图,0对应map1
-    private final String fileName_suffix = FILE_NAMES[map].substring(8);
+    private final int map = 2; // 测试地图,0对应map1
+    private final String fileName_suffix = FILE_NAMES[map].substring(8); // 地图名尾缀
     private RegionManager regionManager;
 
     private void initBerth() {
@@ -122,10 +122,10 @@ public class RegionManagerTest {
         regionManager.testSplitRegions();
 
         // 打印
-          printRegionDetails();
+//          printRegionDetails();
 //        printZoneDetails();
 //        printHashMapDetailsToFile();
-//        printPointDetailsToFile();
+        printPointDetailsToFile();
 //        printGlobalPoint2ClosestBerthToFile();
 
         long endTime = System.nanoTime();  // End timing
@@ -177,7 +177,7 @@ public class RegionManagerTest {
     }
 
     public void printGlobalPoint2ClosestBerthToFile() {
-        String fileName = "points.txt";
+        String fileName = "points" + fileName_suffix;
         int total = 0;
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(fileName, false))) {
             for (Berth berth : berths) {
@@ -196,7 +196,7 @@ public class RegionManagerTest {
     }
 
     public void printPathsDetailsToFile() {
-        String fileName = "berth2point.txt";
+        String fileName = "berth2point"  + fileName_suffix;
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(fileName, false))) {
             writer.write("Paths from Berths to Points:\n");
             for (Berth berth : berths) {
@@ -286,7 +286,7 @@ public class RegionManagerTest {
     }
 
     public void printHashMapDetailsToFile() {
-        String fileName = "mapDetails.txt";
+        String fileName = "mapDetails" + fileName_suffix;
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(fileName, false))) {
             // 打印每个区域的邻居区域信息
             writer.write("neighborRegions:\n");
