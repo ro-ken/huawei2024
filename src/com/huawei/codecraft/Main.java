@@ -110,7 +110,8 @@ public class Main {
             boat.frameMoved = false;
         }
 
-        if(robot_num <8){
+        if(robot_num <15){
+//            Robot.buyRobot();
             Point pos = robotBuyPos.get(0);
             buyRobot(pos);
         }

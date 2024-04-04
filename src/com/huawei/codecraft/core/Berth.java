@@ -3,6 +3,7 @@ package com.huawei.codecraft.core;
 import com.huawei.codecraft.Const;
 import com.huawei.codecraft.Main;
 import com.huawei.codecraft.Util;
+import com.huawei.codecraft.util.BerthRegion;
 import com.huawei.codecraft.util.Pair;
 import com.huawei.codecraft.util.Point;
 import com.huawei.codecraft.util.RegionValue;
@@ -32,6 +33,13 @@ public class Berth {
     public int points;      // berth拥有的最短路径点个数
     public int capacity = noLimitedSize;
     public int bookGoodSize;
+
+    public static ArrayList<BerthRegion> assignBerthToNewRobot() {
+        // 寻找一片新区域给新增的机器人
+
+
+        return null;
+    }
 
     public void setDeadLine(int deadLine) {
         this.deadLine = deadLine;

@@ -37,6 +37,15 @@ public class Robot {
         next = pos;
     }
 
+    // 购买一个机器人，并对其初始化
+    public static void buyRobot() {
+        // 1、先计算能不能买
+        // 2、买了以后分配的泊口
+        // 3、对应购买点购买
+        ArrayList<BerthRegion> list = Berth.assignBerthToNewRobot();
+
+    }
+
     public void schedule() {
         if (runMode.isHideMode()) {
             hideSched();
@@ -544,8 +553,30 @@ public class Robot {
         } else {
             // 都可让
             Util.printLog("calcPriorityByUrgent:都可让");
-            return null;
+            // 谁周围的机器人少谁让
+            int num1 = rob1.getNeighborRobotNum();
+            int num2 = rob1.getNeighborRobotNum();
+            if (num1>num2){
+                Util.printLog(rob1+"周围较挤，不让");
+                return new Twins<>(rob1,rob2);
+            } else if (num2 > num1) {
+                Util.printLog(rob2+"周围较挤，不让");
+                return new Twins<>(rob2,rob1);
+            }else {
+                return null;
+            }
         }
+    }
+
+    private int getNeighborRobotNum() {
+        // 获得周围邻居机器人数
+        int count = 0;
+        for (Robot robot : robots) {
+            if (robot.pos.clacGridDis(pos) == 1){
+                count ++ ;
+            }
+        }
+        return count;
     }
 
     private boolean myOnlyWay(ArrayList<Robot> team) {
@@ -611,6 +642,7 @@ public class Robot {
     public void updateNextPoint() {
         // 已经在下一个点了，要重新取点，否则不变
         // 2出调用，每帧中间，有新路径
+        // todo 快到泊口处优化找最近泊口
         if (pos.equals(next)) {
             next = route.getNextPoint();
         }
