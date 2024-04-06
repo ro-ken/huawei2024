@@ -1,9 +1,6 @@
 package com.huawei.codecraft;
 
-import com.huawei.codecraft.core.Berth;
-import com.huawei.codecraft.core.Boat;
-import com.huawei.codecraft.core.Good;
-import com.huawei.codecraft.core.Robot;
+import com.huawei.codecraft.core.*;
 import com.huawei.codecraft.util.Point;
 import com.huawei.codecraft.way.Path;
 import com.huawei.codecraft.way.PathImpl;
@@ -30,6 +27,7 @@ public class Const {
     public static ArrayList<Robot> robots = new ArrayList<>();
     public static ArrayList<Berth> berths = new ArrayList<>();
     public static ArrayList<Boat> boats = new ArrayList<>();
+    public static ArrayList<DeliveryPoint> deliveryPoints = new ArrayList<>();      // 交货点
     public static ArrayList<Point> robotBuyPos = new ArrayList<>();      // 机器人购买点
     public static ArrayList<Point> boatBuyPos = new ArrayList<>();       // 轮船购买点
     public static ArrayList<Point> boatDeliveries = new ArrayList<>();       // 轮船交货点

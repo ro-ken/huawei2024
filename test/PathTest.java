@@ -40,11 +40,12 @@ public class PathTest {
 
     @Test
     public void test_Function_GetPath() throws IOException {
-        int map = 0;
+        int map = 3;
         init(map);
         // 初始化路径实例
         Path path = new PathImpl();
-        ArrayList<Point> path1 = path.getPath(new Point(6, 5), new Point(55, 80));
+        ArrayList<Point> path1 = path.getPath(new Point(2, 195), new Point(93, 71));
+        ArrayList<Point> path2 = path.getPath(new Point(93, 71), new Point(2, 195));
        // ArrayList<Point> path2 = path.getPath(new Point(1, 3), new Point(6, 9));
         int fps  = path.getPathFps(new Point(6, 5), new Point(55, 80));
         path1.forEach(System.out::print);
@@ -53,16 +54,17 @@ public class PathTest {
 
     @Test
     public void test_Function_getBoatPath() throws IOException {
-        int map = 0;
+        int map = 1;
         init(map);
         // 初始化路径实例
         Path path = new PathImpl();
-        ArrayList<Point> path1 = path.getBoatPath(new Point(110, 90), 0, new Point(42, 150));
-        ArrayList<Point> path2 = path.getBoatPath(new Point(42, 150), 0, new Point(110, 90));
+//        ArrayList<Point> path3 = path.getBoatPath(new Point(104, 26), 0, new Point(26, 105));
+//        ArrayList<Point> path2 = path.getBoatPath(new Point(100, 101), 2, new Point(105, 173));
+        ArrayList<Point> path1 = path.getBoatPath(new Point(36, 98), 0, new Point(2, 196));
 
         path1.forEach(System.out::print);
         System.out.println();
-        path2.forEach(System.out::print);
+//        path2.forEach(System.out::print);
     }
 
     @Test

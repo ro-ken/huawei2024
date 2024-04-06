@@ -3,6 +3,7 @@ package com.huawei.codecraft.zone;
 import com.huawei.codecraft.Const;
 import com.huawei.codecraft.Util;
 import com.huawei.codecraft.core.Berth;
+import com.huawei.codecraft.core.DeliveryPoint;
 import com.huawei.codecraft.core.Good;
 import com.huawei.codecraft.core.Robot;
 import com.huawei.codecraft.util.Point;
@@ -15,8 +16,7 @@ import java.util.stream.Collectors;
 
 import static com.huawei.codecraft.Const.*;
 import static com.huawei.codecraft.Util.printLog;
-import static com.huawei.codecraft.way.Mapinfo.isValid;
-import static com.huawei.codecraft.way.Mapinfo.originalMap;
+import static com.huawei.codecraft.way.Mapinfo.*;
 
 /**
  * ClassName: RegionManager
@@ -43,6 +43,7 @@ public class RegionManager {
         createInitialRegions();
         getFullPathsFromPoints2Berths();
         initGlobalPoint2ClosestBerthMap();
+        initRectangleArea();
         splitRegions();
         allocateBerthingPoints(); // 分配泊位得靠泊点
         calcRegionValue(); // 给区域分配机器人
@@ -82,6 +83,10 @@ public class RegionManager {
 
     public void testSplitRegions() {
         splitRegions();
+    }
+
+    public void testInitRectangleArea() {
+        initRectangleArea();
     }
     /**
      * @function 创建初始的连通区域，根据地图的联通性得到最初的连通区域，同时得到所有的连通点pointRegionMap
@@ -529,6 +534,137 @@ public class RegionManager {
                 }
             }
         }
+    }
+
+    private void initRectangleArea() {
+        initBerthRectangleArea();
+        initDeliveryPointRectangleArea();
+    }
+
+    private void initBerthRectangleArea() {
+        for (Berth berth : berths) {
+            Point core = berth.pos;
+            HashSet<Point> pointSet;
+
+            // 获得水平方向上的矩形
+            pointSet = getRectanglePointsVertical(core);
+            berth.rectangleAreaPoints.add(pointSet);
+
+            // 获得垂直方向的矩形
+            pointSet = getRectanglePointsHorizon(core);
+            berth.rectangleAreaPoints.add(pointSet);
+        }
+    }
+
+    private void initDeliveryPointRectangleArea() {
+        for (DeliveryPoint deliveryPoint : deliveryPoints) {
+            HashSet<Point> pointSet;
+            Point core = deliveryPoint.pos;
+
+            // 获得水平方向上的矩形
+            pointSet = getRectanglePointsVertical(core);
+            deliveryPoint.deliveryRectangleAreaPoints.add(pointSet);
+
+            // 获得垂直方向的矩形
+            pointSet = getRectanglePointsHorizon(core);
+            deliveryPoint.deliveryRectangleAreaPoints.add(pointSet);
+        }
+    }
+
+    private  HashSet<Point> getRectanglePointsVertical(Point core) {
+        // 垂直方向扩散得到区域
+        // 水平方向增长
+        int up = -1;
+        int down = 1;
+        int upLen = unreachableFps;
+        int downLen = unreachableFps;
+        Point core1 = new Point(core.x, core.y);
+        Point core2 = new Point(core.x, core.y);
+
+        // 从core开始计算每个的最大上宽和最大下宽
+        while (isValid(core1.x, core1.y) && seaMap[core1.x][core1.y] != Const.ROAD) {
+            Point upPoint = new Point(core1.x + up, core1.y);
+            Point downPoint = new Point(core1.x + down, core1.y);
+            upLen = Math.min(upLen, getVerticalLen(upPoint, core1, up));
+            downLen = Math.min(downLen, getVerticalLen(downPoint, core1, down));
+            core1.y -= 1;
+        }
+        // 求出右边的宽度
+        while (isValid(core2.x, core2.y) && seaMap[core2.x][core2.y] != Const.ROAD) {
+            Point upPoint = new Point(core2.x + up, core2.y);
+            Point downPoint = new Point(core2.x + down, core2.y);
+            upLen = Math.min(upLen, getVerticalLen(upPoint, core2, up));
+            downLen = Math.min(downLen, getVerticalLen(downPoint, core2, down));
+            core2.y += 1;
+        }
+        int leftLen = Math.abs(core1.y - core.y) - 1;
+        int rightLen = Math.abs(core2.y - core.y) - 1;
+
+        // 将整个矩形中的点加入到hashset
+        HashSet<Point> pointSet = new HashSet<>();
+        for (int i = core.x - upLen; i <= core.x + downLen; i++) {
+            for (int j = core.y - leftLen; j <= core.y + rightLen; j++) {
+                if (seaMap[i][j] != Const.ROAD) {
+                    pointSet.add(new Point(i, j));
+                }
+            }
+        }
+        return pointSet;
+    }
+
+    private  HashSet<Point> getRectanglePointsHorizon(Point core) {
+        // 水平方向扩散
+        // 垂直方向增长的区域
+        int left = -1;
+        int right = 1;
+        int leftLen = unreachableFps;
+        int rightLen = unreachableFps;
+        Point core1 = new Point(core.x, core.y);
+        Point core2 = new Point(core.x, core.y);
+
+        // 从core开始计算每个的最大上宽和最大下宽
+        while (isValid(core1.x, core1.y) && seaMap[core1.x][core1.y] != Const.ROAD) {
+            Point leftPoint = new Point(core1.x, core1.y  + left);
+            Point rightPoint = new Point(core1.x + right, core1.y + right);
+            leftLen = Math.min(leftLen, getHorizonLen(leftPoint, core1, left));
+            rightLen = Math.min(rightLen, getHorizonLen(rightPoint, core1, right));
+            core1.x -= 1;
+        }
+        // 求出右边的宽度
+        while (isValid(core2.x, core2.y) && seaMap[core2.x][core2.y] != Const.ROAD) {
+            Point leftPoint = new Point(core2.x , core2.y + left);
+            Point rightPoint = new Point(core2.x, core2.y + right);
+            leftLen = Math.min(leftLen, getHorizonLen(leftPoint, core2, left));
+            rightLen = Math.min(rightLen, getHorizonLen(rightPoint, core2, right));
+            core2.x += 1;
+        }
+        int upLen = Math.abs(core1.x - core.x) - 1;
+        int downLen = Math.abs(core2.x - core.x) - 1;;
+
+        // 将整个矩形中的点加入到hashset
+        HashSet<Point> pointSet = new HashSet<>();
+        for (int i = core.x - upLen; i <= core.x + downLen; i++) {
+            for (int j = core.y - leftLen; j <= core.y + rightLen; j++) {
+                if (seaMap[i][j] != Const.ROAD) {
+                    pointSet.add(new Point(i, j));
+                }
+            }
+        }
+        return pointSet;
+    }
+
+    private int getVerticalLen(Point point, Point core, int direction) {
+        while (isValid(point.x, point.y) && seaMap[point.x][point.y] != Const.ROAD) {
+            point.x += direction;
+        }
+        return Math.abs(point.x - core.x) - 1;
+    }
+
+    private int getHorizonLen(Point point, Point core, int direction) {
+        while (isValid(point.x, point.y) && seaMap[point.x][point.y] != Const.ROAD) {
+            point.y += direction;
+        }
+        return Math.abs(point.y - core.y) - 1;
     }
 
     /**

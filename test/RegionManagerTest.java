@@ -1,4 +1,5 @@
 import com.huawei.codecraft.core.Berth;
+import com.huawei.codecraft.core.DeliveryPoint;
 import com.huawei.codecraft.util.Point;
 import com.huawei.codecraft.way.Mapinfo;
 import com.huawei.codecraft.zone.Region;
@@ -11,6 +12,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 
@@ -54,6 +56,7 @@ public class RegionManagerTest {
                 inputmap[i] = lines.get(i).toCharArray();
             }
             Mapinfo.init(inputmap);
+            Mapinfo.initSeaMap();
             initBerth(); // 单元测试需要自己手动输入berth信息
             regionManager = new RegionManager();
             regionManager.testCreateInitialRegions();
@@ -148,6 +151,21 @@ public class RegionManagerTest {
         System.out.println("*********************************************");
     }
 
+    @Test
+    public void testInitRectangleArea() {
+        System.out.println("*************testAllocateBerthingPoints**************");
+        long startTime = System.nanoTime();  // Start timing
+        init();
+
+        // 测试函数
+        regionManager.testInitRectangleArea();
+
+        printRegionDetails();
+        long endTime = System.nanoTime();  // End timing
+        System.out.println("region init Time taken: " + (endTime - startTime) + " ns");
+        System.out.println("*********************************************");
+    }
+
     /**********************************************************************************
      * 单元测试打印接口，用于打印最后结果的正确性。
      * *********************************************************************************
@@ -157,22 +175,20 @@ public class RegionManagerTest {
     public void printRegionDetails() {
         System.out.println("Total regions: " + regions.size());
         for (Region region : regions) {
-            System.out.println("Region ID: " + region.getId());
+//            System.out.println("Region ID: " + region.getId());
             System.out.println("  Berths in region: " + region.getBerths().size());
             for (Berth berth : region.getBerths()) {
-                System.out.println("    Berth at: " + berth.pos + "total points:" + berth.points);
-                System.out.println("berthing points numbers: " + berth.boatInBerthArea.size());
+//                System.out.println("    Berth at: " + berth.pos + "total points:" + berth.points);
+//                System.out.println("berthing points numbers: " + berth.boatInBerthArea.size());
+                for (HashSet<Point>  set : berth.rectangleAreaPoints) {
+                    System.out.println("rectangleArea size: " + set.size());
+                }
             }
-            System.out.println("  Accessible points in region: " + region.getAccessiblePoints().size());
-            System.out.println(" neighborRegion: ");
-            for (Region neighborRegion : region.getNeighborRegions()) {
-                System.out.println(neighborRegion.id);
+        }
+        for (DeliveryPoint deliveryPoint : deliveryPoints) {
+            for (HashSet<Point>  set : deliveryPoint.deliveryRectangleAreaPoints) {
+                System.out.println("rectangleArea size: " + set.size());
             }
-//            System.out.println("  Assigned robots in region: " + region.getAssignedRobots().size());
-//            System.out.println("  Path lengths and their frequencies: ");
-//            for (Map.Entry<Integer, Integer> entry : region.getPathLenToNumMap().entrySet()) {
-//                System.out.println("    Path length: " + entry.getKey() + ", Number of points: " + entry.getValue());
-//            }
         }
     }
 

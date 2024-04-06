@@ -1,5 +1,6 @@
 package com.huawei.codecraft.way;
 
+import com.huawei.codecraft.Const;
 import com.huawei.codecraft.util.Point;
 
 import java.util.*;
@@ -7,7 +8,6 @@ import java.util.*;
 import static com.huawei.codecraft.Const.*;
 import static com.huawei.codecraft.Util.*;
 import static com.huawei.codecraft.way.Mapinfo.isValid;
-import static com.huawei.codecraft.way.Mapinfo.map;
 import static com.huawei.codecraft.way.Mapinfo.seaMap;
 
 /**
@@ -16,9 +16,12 @@ import static com.huawei.codecraft.way.Mapinfo.seaMap;
  * Description: 寻路的具体接口实现
  */
 public class PathImpl implements Path {
-    private static final int[][] directions = {{1, 0}, {-1, 0}, {0, -1}, {0, 1}};
+    private static final int[][] directions = {{0, 1}, {0, -1}, {-1, 0}, {1, 0}}; // 右、左、上、下
     private static final int clockwise = 0; // 顺时针
     private static final int counterClockwise = 1;  // 逆时针
+    private static final int robot = 0;  // 机器人
+    private static final int boat = 1;  // 船
+    private static final int special = 2;  // 特殊点特殊处理
     public  static final int shipLen = 3;
     public static Point[] ship = new Point[shipLen];
     private static final int[][][] turnTimes = {
@@ -124,9 +127,9 @@ public class PathImpl implements Path {
     public ArrayList<Point> getPathWithBarrier(Point p1, Point p2, HashSet<Point> barriers) {
         barriers.remove(p1);
         ArrayList<Point> blocks = new ArrayList<>(barriers);
-        changeMapinfo(blocks);
+        changeMapinfo(blocks, robot);
         ArrayList<Point> path =  getPath(p1, p2);
-        restoreMapinfo(blocks);
+        restoreMapinfo(blocks, robot);
         return path;
     }
 
@@ -134,12 +137,12 @@ public class PathImpl implements Path {
     public ArrayList<Point> getPathWithBarrierWithLimit(Point pos, Point target, HashSet<Point> barriers, int maxLen) {
         barriers.remove(pos);
         ArrayList<Point> blocks = new ArrayList<>(barriers);
-        changeMapinfo(blocks);
+        changeMapinfo(blocks, robot);
         if (maxLen < 2) {
             printErr("too short length");
         }
         ArrayList<Point> path =  getPathWithLimit(pos, target, maxLen - 2);
-        restoreMapinfo(blocks);
+        restoreMapinfo(blocks, robot);
         return path;
     }
 
@@ -170,7 +173,7 @@ public class PathImpl implements Path {
         queue.add(startPos);
 
         // 遍历之前将地图临时修改为障碍物，防止对位遍历
-        changeMapinfo(barriers);
+        changeMapinfo(barriers, robot);
 
         // 遍历可能的避让方向
         while (!queue.isEmpty()) {
@@ -193,7 +196,7 @@ public class PathImpl implements Path {
         }
 
         // 恢复地图信息
-        restoreMapinfo(barriers);
+        restoreMapinfo(barriers, robot);
 
         if (path == null) {
             printLog("No valid hide point found");
@@ -202,23 +205,276 @@ public class PathImpl implements Path {
         return path;
     }
 
-    @Override
     // TODO：暂时不考虑主干路减速的存在，之后寻路时再优化
+    // 陆地寻路，直接按照曼哈顿距离进行搜索即可
+    // 优先走水平，再走垂直，这样来回路径默认错开
+    @Override
     public ArrayList<Point> getBoatPath(Point core, int direction, Point dest) {
+        Point newDest;
+        if (pointToBerth.containsKey(dest)) {
+             newDest = offsetDestination(dest);
+        }
+        else {
+             newDest = dest;
+        }
+        ArrayList<Point> initialPath = getInitialBoatPath(core, newDest);
+        assert initialPath != null;
+        ArrayList<Point> straightPath =  getStraightPath(initialPath);
+//        return  straightPath;
+        return getFinalPath(core, direction, newDest, straightPath);
+    }
+
+    private ArrayList<Point> getFinalPath(Point core, int direction, Point dest, ArrayList<Point> straightPath) {
+        ArrayList<Point> finalPath = new ArrayList<>();
+        // A*拉直的路径，船不能完整按照该路径走，只能根据方向走
+        Point startPoint = straightPath.get(0);
+        initShip(startPoint);
+        refreshShip(startPoint, direction);
+        finalPath.add(startPoint);
+        int pathDir = getDirection(straightPath.get(0), straightPath.get(1));
+        // 如果起始方向不一致，需要从当前方向重新A*寻路然后重新拉直，否则路径可能会出问题
+        if (pathDir != direction) {
+            turnDirection(direction, pathDir, straightPath.get(1), finalPath);
+            direction = pathDir;
+            ArrayList<Point> initialPath = getInitialBoatPath(ship[0], dest);
+            assert initialPath != null;
+            straightPath = getStraightPath(initialPath);
+        }
+        for (int i = 2; i < straightPath.size(); i++) {
+            pathDir = getDirection(straightPath.get(i - 1), straightPath.get(i));
+            // A*开始转向的时候，船不一定能转，需要做特殊处理
+            if (pathDir != direction) {
+                while (shipBehindPathPoint(direction, straightPath.get(i))) {
+                   pushForward(direction, finalPath);
+                }
+                int rotation = getRotation(direction, pathDir);
+                // 如果A*给的点不能够现在转，那么就走到能转时为止
+                while (!canTurnDir(direction, rotation)) {
+                    pushForward(direction, finalPath);
+                }
+                turnDirection(direction, pathDir, straightPath.get(i), finalPath);
+                direction = pathDir;
+            }
+            else {
+                // 正常走直线的时候，A*要比轮船快 2 格
+                if (!shipBehindPathPoint(direction, straightPath.get(i))) {
+                    i += 2;
+                }
+                pushForward(direction, finalPath);
+            }
+        }
+        // 结尾处理
+        while (shipBehindPathPoint(direction, straightPath.get(straightPath.size() - 1))) {
+            pushForward(direction, finalPath);
+        }
+        finalPath.add(ship[1]);
+        finalPath.add(ship[2]);
+        return finalPath;
+    }
+
+    private ArrayList<Point> getStraightPath(ArrayList<Point> initialPath) {
+        ArrayList<Point> straightPath = new ArrayList<>();
+
+        // 路径拉直之前的特殊处理
+        changeMapinfo(Mapinfo.specialPoint, special);
+        // 创建 HashMap 来存储 initialPath 的点的索引
+        HashMap<Point, Integer> pointToIndexMap = new HashMap<>();
+        for (int i = 0; i < initialPath.size(); i++) {
+            pointToIndexMap.put(initialPath.get(i), i);
+        }
+
+        int preDir = getDirection(initialPath.get(0), initialPath.get(1));
+
+        Point endPoint = initialPath.get(initialPath.size() - 1);
+        straightPath.add(new Point(initialPath.get(0)));
+        for (int i = 1; i < initialPath.size() - 1; i++) {
+            int nextDir = getDirection(initialPath.get(i), initialPath.get(i + 1));
+            if (preDir != nextDir) {
+                // 不一样逻辑则需要特殊处理，看能不能继续走preDir方向
+                Point nextPoint = new Point(initialPath.get(i));
+                while (canMove(preDir, nextDir, nextPoint, endPoint, pointToIndexMap)) {
+                    straightPath.add(new Point(nextPoint)); // 将该点加入到路径去
+                }
+
+                nextPoint = new Point(straightPath.get(straightPath.size() - 1));
+                // 退出的时候，需要让路径一直加入到A*得到的路径点
+                while(!pointToIndexMap.containsKey(nextPoint)) {
+                    getNextPoint(nextDir, nextPoint);
+                    straightPath.add(new Point(nextPoint)); // 将该点加入到路径去
+                }
+                i = pointToIndexMap.get(nextPoint);
+            }
+            if (!initialPath.get(i).equals(straightPath.get(straightPath.size() - 1))) {
+                straightPath.add(new Point(initialPath.get(i)));
+            }
+            // 更新前一个方向
+            preDir = nextDir;
+        }
+        // 终点特殊处理
+        if (!initialPath.get(initialPath.size() - 1).equals(straightPath.get(straightPath.size() - 1))) {
+            straightPath.add(new Point(initialPath.get(initialPath.size() - 1)));
+        }
+        restoreMapinfo(Mapinfo.specialPoint, special);
+        return straightPath;
+    }
+
+    private Point offsetDestination(Point dest) {
+        if (seaMap[dest.x - 1][dest.y] == ROAD) { // 上方是路
+            return new Point(dest.x + 1, dest.y);
+        }
+        else if (seaMap[dest.x + 1][dest.y] == ROAD) { // 下方是路
+            return new Point(dest.x - 1, dest.y);
+        }
+        else if (seaMap[dest.x][dest.y - 1] == ROAD) { // 左方是路
+            return new Point(dest.x, dest.y + 1);
+        }
+        else { // 右方是路
+            return new Point(dest.x, dest.y - 1);
+        }
+    }
+
+    private boolean canTurnDir(int direction, int rotation) {
+        if (rotation == clockwise) {
+            return canClockwiseTurn(direction);
+        }
+        else {
+            return canCounterClockwiseTurn(direction);
+        }
+    }
+
+    private int getRotation(int direction, int pathDir) {
+        if (direction == LEFT) {
+            return pathDir == UP ? clockwise : counterClockwise;
+        }
+        else if (direction == RIGHT) {
+            return pathDir == DOWN ? clockwise : counterClockwise;
+        }
+        else if (direction == UP) {
+            return pathDir == RIGHT ? clockwise : counterClockwise;
+        }
+        else {
+            return pathDir == LEFT ? clockwise : counterClockwise;
+        }
+    }
+
+    private boolean shipBehindPathPoint(int direction, Point p) {
+        // 下一个点不能是墙
+        if (direction == LEFT) {
+            return  isValid(ship[2].x, ship[2].y - 1) && Mapinfo.seaMap[ship[2].x][ship[2].y - 1] != ROAD &&
+                    ship[2].y > p.y;
+        }
+        else if (direction == RIGHT) {
+            return isValid(ship[2].x, ship[2].y) && Mapinfo.seaMap[ship[2].x][ship[2].y + 1] != ROAD &&
+                    ship[2].y < p.y;
+        }
+        else if (direction == UP) {
+            return isValid(ship[2].x - 1, ship[2].y) && Mapinfo.seaMap[ship[2].x - 1][ship[2].y] != ROAD &&
+                    ship[2].x > p.x;
+        }
+        else {
+            return isValid(ship[2].x + 1, ship[2].y ) && Mapinfo.seaMap[ship[2].x + 1][ship[2].y] != ROAD &&
+                    ship[2].x < p.x;
+        }
+    }
+
+    private void getNextPoint(int nextDir, Point nextPoint) {
+        if (nextDir == LEFT) {
+            nextPoint.y -= 1;
+        }
+        else if (nextDir == RIGHT) {
+            nextPoint.y += 1;
+        }
+        else if (nextDir == UP) {
+            nextPoint.x -= 1;
+        }
+        else {
+            nextPoint.x += 1;
+        }
+    }
+
+    private boolean canMove(int preDir, int nextDir, Point nextPoint,  Point endPoint, HashMap<Point, Integer> pointToIndexMap) {
+        getNextPoint(preDir, nextPoint);
+        return isValid(nextPoint.x, nextPoint.y) && seaMap[nextPoint.x][nextPoint.y] != ROAD && haveIntersectedPoint(nextDir, nextPoint, endPoint, pointToIndexMap);
+    }
+
+    // 没有交接点
+    private boolean haveIntersectedPoint(int nextDir, Point startPoint, Point endPoint, HashMap<Point, Integer> pointToIndexMap) {
+        Point p = new Point(startPoint);
+        if (nextDir == LEFT) {
+            while (isValid(p.x, p.y) && p.y >= endPoint.y && seaMap[p.x][p.y] != ROAD) {
+                p.y -= 1;
+                if (pointToIndexMap.containsKey(p)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+        else if (nextDir == RIGHT) {
+            while (isValid(p.x, p.y) && p.y <= endPoint.y && seaMap[p.x][p.y] != ROAD) {
+                p.y += 1;
+                if (pointToIndexMap.containsKey(p)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+        else if (nextDir == UP) {
+            while (isValid(p.x, p.y) && p.x >= endPoint.x && seaMap[p.x][p.y] != ROAD) {
+                p.x -= 1;
+                if (pointToIndexMap.containsKey(p)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+        else {
+            while (isValid(p.x, p.y) && p.x <= endPoint.x && seaMap[p.x][p.y] != ROAD) {
+                p.x += 1;
+                if (pointToIndexMap.containsKey(p)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+    }
+
+    private int getDirection(Point p1, Point p2) {
+        if (p1.x == p2.x) { // 水平方向移动
+            if (p1.y < p2.y) {
+                return RIGHT;
+            }
+            else {
+                return LEFT;
+            }
+        }
+        else {
+            if (p1.x < p2.x) {
+                return DOWN;
+            }
+            else {
+                return UP;
+            }
+        }
+    }
+
+    private ArrayList<Point> getBoatPath2(Point core, int direction, Point dest) {
         ArrayList<Point> path = new ArrayList<>();
-        // 陆地寻路，直接按照 manhadun 距离进行搜索即可
-        // 优先走水平，再走垂直，这样来回路径默认错开
-        int times = 0;
+
+        // 船只设置核心点和核心点前两个点
         initShip(core);
         refreshShip(core, direction);
+
+        // 起始点加入路径
         path.add(new Point(core));
+
+        int times = 0;
         // TODO：一般来说地图搜索不可能超过1000次，暂时先这样，后续多测测看会不会死循环
-        while (!ship[2].equals(dest) && times < 1000) {
+        while (!ship[2].equals(dest) && times < 500) {
             times += 1;
             // 实时判断水平和垂直走向
             int horizon = judgeHorizon(ship[0], dest);
             int vertical = judgeVertical(ship[0], dest);
-            if (canMoveHorizon(horizon, direction, dest)) { // 走水平
+            if (canMoveHorizon(horizon, direction, dest)) { // 永远水平优先
                 if (direction != horizon) {   // 方向改为水平
                     turnDirection(direction, horizon, dest, path);
                     direction = horizon;
@@ -277,36 +533,36 @@ public class PathImpl implements Path {
             if (destDirection == LEFT) { //目标方向向左，当前方向 x不可以小于 dest.x
                 return isValid(ship[2].x, ship[2].y - 1) &&  seaMap[ship[2].x][ship[2].y - 1] != ROAD &&
                         isValid(ship[2].x - 1, ship[2].y - 1) && (seaMap[ship[2].x - 1][ship[2].y - 1] != ROAD)
-                        && ship[2].y > dest.y ;
+                        && ship[2].y != dest.y ;
             }
             else {
                 return isValid(ship[2].x, ship[2].y + 1) && seaMap[ship[2].x][ship[2].y + 1] != ROAD &&
                         isValid(ship[2].x + 1, ship[2].y + 1) && seaMap[ship[2].x + 1][ship[2].y + 1] != ROAD &&
-                        ship[2].y < dest.y;
+                        ship[2].y != dest.y;
             }
         }
         // 不同向需要旋转才可以
         if (direction == UP) {
             if (destDirection == LEFT) {
-                return canCounterClockwiseTurn(direction) && ship[2].y > dest.y;
+                return canCounterClockwiseTurn(direction) && ship[2].y != dest.y;
             }
             else {
-                return canClockwiseTurn(direction) && ship[2].y < dest.y;
+                return canClockwiseTurn(direction) && ship[2].y != dest.y;
             }
         }
         else {
             if (destDirection == LEFT) {
-                return canClockwiseTurn(direction) && ship[2].y > dest.y;
+                return canClockwiseTurn(direction) && ship[2].y != dest.y;
             }
             else {
-                return canCounterClockwiseTurn(direction)  && ship[2].y < dest.y;
+                return canCounterClockwiseTurn(direction)  && ship[2].y != dest.y;
             }
         }
     }
 
     private void turnDirection(int direction, int newDirection, Point dest,ArrayList<Point> path) {
-        // 判断逆时针和顺时针的次数，哪个少转哪个，如果都一样就看哪个能转
-        if (turnTimes[direction][clockwise][newDirection] <= turnTimes[direction][counterClockwise][newDirection]) {
+        // 判断逆时针和顺时针的次数，哪个少转哪个，如果都一样优先逆时针转动
+        if (turnTimes[direction][clockwise][newDirection] < turnTimes[direction][counterClockwise][newDirection]) {
             if (canClockwiseTurn(direction)) {
                 turnClockwise(direction, newDirection, path);
             }
@@ -326,27 +582,49 @@ public class PathImpl implements Path {
 
     private boolean canClockwiseTurn(int direction) {
         // 顺时针，坐标会沿着角落进行轮转，判断角坐标是否存在不可达点
-        for (int i = 0; i <= 3; i++) {
-            int x = ship[0].x + clockwiseCoordinate[direction][i][0];
-            int y = ship[0].y + clockwiseCoordinate[direction][i][1];
-            if (!isValid(x, y) || seaMap[x][y] == ROAD) {
-                return false;
-            }
-        }
-        return true;
+        int nextDirection = clockwiseRotation.get(direction);
+        int x = ship[2].x;
+        int y = ship[2].y;
+        Point tempCore = new Point(x, y);
+        return canTurn(tempCore, nextDirection);
     }
 
     private boolean canCounterClockwiseTurn(int direction) {
-        // 逆时针，判断核心点上面
-        // 顺时针，坐标会沿着角落进行轮转，判断角坐标是否存在不可达点
-        for (int i = 0; i <= 3; i++) {
-            int x = ship[0].x + counterClockwiseCoordinate[direction][i][0];
-            int y = ship[0].y + counterClockwiseCoordinate[direction][i][1];
-            if (!isValid(x, y) || seaMap[x][y] == ROAD) {
-                return false;
-            }
+        // 逆时针，核心点则沿着对角转
+        int nextDirection = counterClockwiseRotation.get(direction);
+        int x = ship[0].x + counterClockwiseCoordinate[direction][nextDirection][0];
+        int y = ship[0].y + counterClockwiseCoordinate[direction][nextDirection][1];
+        Point tempCore = new Point(x, y);
+        // 判断头的两个位置即可
+        return canTurn(tempCore, nextDirection);
+    }
+
+    private boolean canTurn(Point tempCore, int nextDirection) {
+        // 头和尾巴都要判断
+        if (nextDirection == LEFT) {
+            return isValid(tempCore.x, tempCore.y - 2) && seaMap[tempCore.x][tempCore.y - 2] != ROAD &&
+                    isValid(tempCore.x - 1, tempCore.y - 2) && seaMap[tempCore.x - 1][tempCore.y - 2] != ROAD &&
+                    isValid(tempCore.x, tempCore.y) && seaMap[tempCore.x][tempCore.y] != ROAD &&
+                    isValid(tempCore.x - 1, tempCore.y) && seaMap[tempCore.x - 1][tempCore.y] != ROAD;
         }
-        return true;
+        else if (nextDirection == RIGHT){
+            return isValid(tempCore.x, tempCore.y + 2) && seaMap[tempCore.x][tempCore.y + 2] != ROAD &&
+                    isValid(tempCore.x + 1, tempCore.y + 2) && seaMap[tempCore.x + 1][tempCore.y + 2] != ROAD &&
+                    isValid(tempCore.x, tempCore.y) && seaMap[tempCore.x][tempCore.y] != ROAD &&
+                    isValid(tempCore.x + 1, tempCore.y) && seaMap[tempCore.x + 1][tempCore.y] != ROAD;
+        }
+        else if (nextDirection == UP) {
+            return isValid(tempCore.x - 2, tempCore.y) && seaMap[tempCore.x - 2][tempCore.y] != ROAD &&
+                    isValid(tempCore.x - 2, tempCore.y + 1) && seaMap[tempCore.x - 2][tempCore.y + 1] != ROAD &&
+                    isValid(tempCore.x, tempCore.y) && seaMap[tempCore.x][tempCore.y] != ROAD &&
+                    isValid(tempCore.x, tempCore.y + 1) && seaMap[tempCore.x][tempCore.y + 1] != ROAD;
+        }
+        else {
+            return isValid(tempCore.x + 2, tempCore.y) && seaMap[tempCore.x + 2][tempCore.y] != ROAD &&
+                    isValid(tempCore.x + 2, tempCore.y - 1) && seaMap[tempCore.x + 2][tempCore.y - 1] != ROAD &&
+                    isValid(tempCore.x, tempCore.y) && seaMap[tempCore.x][tempCore.y] != ROAD &&
+                    isValid(tempCore.x, tempCore.y - 1) && seaMap[tempCore.x][tempCore.y - 1] != ROAD;
+        }
     }
 
     private void  turnClockwise(int direction, int newDirection, ArrayList<Point> path) {
@@ -355,7 +633,6 @@ public class PathImpl implements Path {
             direction = clockwiseRotation.get(direction);
             ship[0].x = ship[2].x;
             ship[0].y = ship[2].y;
-
             // 更新ship得前驱节点
             refreshShip(ship[0], direction);
             path.add(new Point(ship[0]));
@@ -367,11 +644,19 @@ public class PathImpl implements Path {
             int tempDirection = counterClockwiseRotation.get(direction);    // 获取下一个方向
             // 逆时针旋转，则需要特殊得处理
             if (ship[2].x == dest.x || ship[2].y == dest.y) {
-                path.add(new Point(ship[1]));
-
+                int x = ship[0].x;
+                int y = ship[0].y;
                 // 以 ship 1 位置进行逆时针旋转刚好使得 x y 对齐
                 ship[0].x = ship[1].x + counterClockwiseCoordinate[direction][tempDirection][0];
                 ship[0].y = ship[1].y + counterClockwiseCoordinate[direction][tempDirection][1];
+                if (canCounterClockwiseTurn(direction)) {
+                    path.add(new Point(ship[1]));
+                }
+                else {
+                    // 保持不变
+                    ship[0].x = x + counterClockwiseCoordinate[direction][tempDirection][0];;
+                    ship[0].y = y + counterClockwiseCoordinate[direction][tempDirection][1];;
+                }
             }
             else {
                 ship[0].x = ship[0].x + counterClockwiseCoordinate[direction][tempDirection][0];
@@ -379,7 +664,6 @@ public class PathImpl implements Path {
             }
             // 更新ship得前驱节点
             refreshShip(ship[0], tempDirection);
-
             path.add(new Point(ship[0]));
             direction = tempDirection;
         }
@@ -421,25 +705,43 @@ public class PathImpl implements Path {
     }
     
     private boolean isHidePoint(Point point) {
-        return map[point.x][point.y] == MAINROAD || map[point.x][point.y] == MAINBOTH;
+        return Mapinfo.map[point.x][point.y] == Const.MAINROAD || Mapinfo.map[point.x][point.y] == Const.MAINBOTH;
     }
 
     // 修改地图信息以添加障碍物
-    private void changeMapinfo(ArrayList<Point> barriers) {
-        for (Point barrier : barriers) {
-            if (map[barrier.x][barrier.y] == ROAD) { // 将陆地暂时变为障碍物
-                map[barrier.x][barrier.y] = OBSTACLE;  // 标记障碍物
+    // flag 表示是船还是机器人封路，船为1，机器人为0
+    private void changeMapinfo(ArrayList<Point> barriers, int flag) {
+        if (flag == robot) {
+            for (Point barrier : barriers) {
+                if (Mapinfo.map[barrier.x][barrier.y] == Const.ROAD) { // 将陆地暂时变为障碍物
+                    Mapinfo.map[barrier.x][barrier.y] = Const.OBSTACLE;  // 标记障碍物
+                }
+            }
+        }
+        else if (flag == special){
+            for (Point barrier : barriers) {
+                if (Mapinfo.seaMap[barrier.x][barrier.y] == Const.MAINBOTH) { // 将海暂时变为陆地
+                    Mapinfo.seaMap[barrier.x][barrier.y] = Const.ROAD;  // 标记为陆地
+                }
             }
         }
     }
 
     // 恢复地图信息
-    private void restoreMapinfo(ArrayList<Point> barriers) {
-        for (Point barrier : barriers) {
-           if (map[barrier.x][barrier.y] == OBSTACLE) {
-               map[barrier.x][barrier.y] = ROAD;  // 恢复为陆地
-           }
-//            printLog("restore pos" + barrier + " land");
+    private void restoreMapinfo(ArrayList<Point> barriers, int flag) {
+        if (flag == robot) {
+            for (Point barrier : barriers) {
+                if (Mapinfo.map[barrier.x][barrier.y] == Const.OBSTACLE) {
+                    Mapinfo.map[barrier.x][barrier.y] = Const.ROAD;  // 恢复为陆地
+                }
+            }
+        }
+        else if (flag == special) {
+            for (Point barrier : barriers) {
+                if (Mapinfo.seaMap[barrier.x][barrier.y] == Const.ROAD) {
+                    Mapinfo.seaMap[barrier.x][barrier.y] = Const.MAINBOTH;  // 恢复为主干道
+                }
+            }
         }
     }
 
@@ -449,7 +751,11 @@ public class PathImpl implements Path {
     }
 
     private static boolean isAccessible(int x, int y) {
-        return isValid(x, y) && map[x][y] >= MAINBOTH;
+        return isValid(x, y) && Mapinfo.map[x][y] >= Const.MAINBOTH;
+    }
+
+    private static boolean notAccessible(int x, int y) {
+        return !isValid(x, y) || Mapinfo.seaMap[x][y] ==  Const.ROAD;
     }
 
     private static ArrayList<Point> constructPath(Pos end) {
@@ -459,6 +765,52 @@ public class PathImpl implements Path {
         }
         Collections.reverse(path);
         return path;
+    }
+
+    private  ArrayList<Point> getInitialBoatPath(Point p1, Point p2) {
+        if (notAccessible(p1.x, p1.y) || notAccessible(p2.x, p2.y)) {
+            printLog("point is impossible");
+            return null;
+        }
+
+        PriorityQueue<Pos> openSet = new PriorityQueue<>(Comparator.comparingInt(Pos::f));
+        Map<Point, Pos> visitedNodes = new HashMap<>();
+
+        // 起点特殊处理
+        Pos start = new Pos(p1, null, 0, estimateHeuristic(p1, p2));
+        openSet.add(start);
+        visitedNodes.put(p1, start);
+
+        // 找路之前修改地图
+        changeMapinfo(Mapinfo.specialPoint, special);
+
+        while (!openSet.isEmpty()) {
+            Pos current = openSet.poll();
+            if (current.pos.equals(p2)) {
+                // 恢复地图
+                restoreMapinfo(Mapinfo.specialPoint, special);
+                return constructPath(current);
+            }
+
+            for (int[] direction : directions) {
+                Point newPoint = new Point(current.pos.x + direction[0], current.pos.y + direction[1]);
+
+                if (notAccessible(newPoint.x, newPoint.y)) {
+                    continue;
+                }
+
+                int newG = current.g + 1;  // 每一步代价为1
+                if (!visitedNodes.containsKey(newPoint) || newG < visitedNodes.get(newPoint).g) {
+                    int newH = estimateHeuristic(newPoint, p2);
+                    Pos next = new Pos(newPoint, current, newG, newH);
+                    openSet.add(next);
+                    visitedNodes.put(newPoint, next);
+                }
+            }
+        }
+        restoreMapinfo(Mapinfo.specialPoint, special);
+        printLog("No way");
+        return null;
     }
 }
 

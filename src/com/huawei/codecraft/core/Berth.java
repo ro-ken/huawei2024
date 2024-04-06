@@ -23,7 +23,8 @@ public class Berth {
     public PriorityQueue<Pair<Good>> domainGoodsByValue = new PriorityQueue<>();  // 需要被运输的货物,按照单位价值排序
     public Deque<Good> domainGoodsByTime = new LinkedList<>();      // 需要被运输的货物,按照时间先后排序
     public Set<Boat> bookBoats = new HashSet<>();
-    public HashSet<Point> boatInBerthArea = new HashSet<>();    // 靠泊区  todo 需要初始化
+    public HashSet<Point> boatInBerthArea = new HashSet<>();    // 靠泊区
+    public List<HashSet<Point>> rectangleAreaPoints = new ArrayList<>();    // 泊位拥有的最大矩形区域
     public Deque<Good> existGoods = new LinkedList<>();     // 泊口存在的货物
     public int existValue=0;           // 泊口货物总价值
     public Map<Point,List<Point>> mapPath = new HashMap<>();   //  地图所有点到该泊位的路径信息
