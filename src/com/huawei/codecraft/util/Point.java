@@ -69,4 +69,34 @@ public class Point {
     public int clacGridDis(Point oth) {
         return Math.abs(this.x-oth.x)+Math.abs(this.y-oth.y);
     }
+
+    public boolean inBerthCenter() {
+        // 改点是否在泊口中心，是则能作为泊口的代表点，要求，三面是泊口，一面是陆地
+        int b=0,l=0;//泊口和陆地数
+        if (Const.map[x-1][y] == 'B'){
+            b++;
+        }else if (Const.map[x-1][y] == '.'|| Const.map[x-1][y] == '#'){
+            l++;
+        }else return false;
+
+        if (Const.map[x+1][y] == 'B'){
+            b++;
+        }else if (Const.map[x+1][y] == '.'|| Const.map[x-1][y] == '#'){
+            l++;
+        }else return false;
+
+        if (Const.map[x][y-1] == 'B'){
+            b++;
+        }else if (Const.map[x][y-1] == '.'|| Const.map[x-1][y] == '#'){
+            l++;
+        }else return false;
+
+        if (Const.map[x][y+1] == 'B'){
+            b++;
+        }else if (Const.map[x][y+1] == '.'|| Const.map[x-1][y] == '#'){
+            l++;
+        }else return false;
+
+        return b == 3 && l==1;
+    }
 }

@@ -14,18 +14,14 @@ public class Good {
     public static final int maxSurvive = 20*50;
     // 价值
     public int value;
-    private Robot bookRobot ;  // 被预定的机器
+    public double fpsValue;
+
 
 
     public Good(int x,int y, int value,int curFrame) {
         this.pos = new Point(x,y);
         this.value = value;
         deadFrame = curFrame + maxSurvive-1;
-    }
-
-    // 未被预定
-    public boolean isNotBook() {
-        return bookRobot == null;
     }
 
     @Override
@@ -36,11 +32,6 @@ public class Good {
                 '}';
     }
 
-    // 预定该货物
-    public void setBook(Robot robot) {
-        bookRobot = robot;
-    }
-
     // 该物品是否存在，
     public boolean isExist() {
         return deadFrame >= Const.frameId;
@@ -48,5 +39,9 @@ public class Good {
 
     public int leftFps() {
         return deadFrame - Const.frameId;
+    }
+
+    public void setFpsValue(int dis) {
+        fpsValue = (double) value /dis;  // 单位时间价值
     }
 }

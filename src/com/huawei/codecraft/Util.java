@@ -2,7 +2,10 @@ package com.huawei.codecraft;
 import com.huawei.codecraft.core.Berth;
 import com.huawei.codecraft.core.Boat;
 import com.huawei.codecraft.core.Robot;
+import com.huawei.codecraft.util.BerthArea;
 import com.huawei.codecraft.util.Point;
+import com.huawei.codecraft.util.RegionValue;
+import com.huawei.codecraft.util.Twins;
 import com.huawei.codecraft.zone.Region;
 import com.huawei.codecraft.zone.RegionManager;
 
@@ -13,19 +16,17 @@ import java.util.ArrayList;
 import java.util.Scanner;
 
 import static com.huawei.codecraft.Const.*;
-import static com.huawei.codecraft.Main.*;
 
 // 工具类
 public class Util {
     public static final boolean test = true;    // 是否可写入
-    public static  Scanner inStream = new Scanner(System.in) ;
+    public static  Scanner inStream = new Scanner(System.in);
     public static final PrintStream outStream = new PrintStream(new BufferedOutputStream(System.out));
     public static PrintStream log = null;
 
     public static void initLog() throws FileNotFoundException {
         if (test){
             log = new PrintStream("./debug.txt");
-//            System.setOut(log);//把创建的打印输出流赋给系统。即系统下次向 ps输出
         }
     }
 
@@ -58,18 +59,72 @@ public class Util {
     }
 
     public static void printLastInfo() throws InterruptedException {
-        Thread.sleep(20);
-        System.err.println("------运货信息：------");
-        printLog("------运货信息：------");
-        System.err.println("总计生成货物："+ countGoodNum+"总计价值："+countGoodValue+"单位价值："+countGoodValue/countGoodNum);
-        printLog("总计生成货物："+ countGoodNum+"总计价值："+countGoodValue+"单位价值："+countGoodValue/countGoodNum);
-        System.err.println("搬运码头货物："+ totalCarrySize+"总计价值："+ totalCarryValue+"单位价值："+totalCarryValue/totalCarrySize);
-        printLog("搬运码头货物："+ totalCarrySize+"总计价值："+ totalCarryValue+"单位价值："+totalCarryValue/totalCarrySize);
-//        System.err.println("成功运输货物："+ totalSellSize+"总计价值："+totalSellValue+"单位价值："+totalSellValue/totalSellSize);
-        System.err.println("-------------------");
-        printLog("-------------------");
-        System.err.println("总共跳帧："+dumpFrame);
-        printLog("总共跳帧："+dumpFrame);
+        Thread.sleep(30);
+        printBoth("------结果分析：------");
+        printBoth("机器人数："+robot_num +"，花费："+robot_num*2000+"，轮船数："+boat_num+"，花费："+boat_num*8000+"，计算得分:"+(25000+totalSellValue-robot_num*2000-boat_num*8000));
+        printBoth("------运货信息：------");
+        printBoth("总计生成货物："+ countGoodNum+"，总计价值："+countGoodValue+"，单位价值："+countGoodValue/countGoodNum);
+        printBoth("搬运码头货物："+ totalCarrySize+"，总计价值："+ totalCarryValue+"，单位价值："+totalCarryValue/(totalCarrySize+0.01));
+        printBoth("成功运输货物："+ totalSellSize+"，总计价值："+totalSellValue+"，单位价值："+totalSellValue/(totalSellSize+0.01));
+        printBoth("----------------泊口平均运货-------------------");
+        for (Berth berth : berths) {
+            if (berth.myAreas.isEmpty()) continue;
+            BerthArea area = berth.myAreas.get(berth.myAreas.size() - 1);
+            float expNum = (float) area.getExpGoodNum();
+            if (berth.myAreas.size()>1){
+                expNum += (float) berth.staticValue.get(berth.myAreas.size()-1).getGoodNum();
+            }
+            float expMinValue = (float) area.getExpMinValue();
+            int expDis = berth.myAreas.get(berth.myAreas.size()-1).getExpMaxStep();
+            printBoth(berth+"期望运货："+expNum+",\t期望价值："+(float)avgGoodValue*expNum+",\t单位价值："+avgGoodValue+"，\t期望距离"+expDis+",\t期望最低价值："+expMinValue);
+            printBoth(berth+"实际产生："+area.totalGoodNum/15.0f+",\t实际价值："+area.totalGoodValue/15.0f+",\t单位价值："+area.totalGoodValue*1.0f/area.totalGoodNum+"，\t周期等待:"+area.waitTime/15.0f);
+            printBoth(berth+"实际运货："+berth.totalCarrySize/15.0f+",\t周期价值：" + berth.totalCarryValue/15.0f+",\t单位价值：" + berth.totalCarryValue*1.0f/berth.totalCarrySize+"，\t取货距离:"+berth.totalDis*1.0f/berth.totalCarrySize);
+
+            printBoth("----");
+        }
+        printBoth("-------------------");
+        printBoth("总共跳帧："+dumpFrame);
+        printBoth("------机器人详细信息见日志：------");
+//        printRobotArea();
+        printBerthArea();
+//        printLog("平均价值：");
+//        printLog(avg);
+    }
+
+    public static void printRobotArea() {
+        // 机器人泊口信息
+        for (Robot robot : robots) {
+            printLog(robot);
+            for (BerthArea area : robot.areas) {
+                printLog(area);
+            }
+            printLog("----");
+        }
+    }
+    public static void printBerthArea() {
+        // 机器人泊口信息
+        printLog("打印泊口area信息:");
+        for (Berth berth : berths) {
+            for (BerthArea myArea : berth.myAreas) {
+                printLog(myArea);
+            }
+            printLog("----");
+        }
+    }
+    public static void printBerthRegion() {
+        // 机器人泊口信息
+        for (Berth berth : berths) {
+            printLog("打印泊口region信息："+berth);
+            for (RegionValue value : berth.staticValue.values()) {
+                printLog(value);
+            }
+            printLog("----");
+        }
+    }
+
+    private static void printBoth(Object info) {
+        System.err.println(info);
+        printLog(info);
     }
 
     public static void robotRight(int id){
@@ -136,13 +191,13 @@ public class Util {
         boat_num++;
     }
 
-    public static void buyRobot(Point pos) {
+    public static Robot buyRobot(Point pos) {
         if (money < 2000){
-            return;
+            return null;
         }
         for (Robot robot : robots) {
             if (robot.pos.equals(pos)){
-                return; // 该点有其他机器人
+                return null; // 该点有其他机器人
             }
         }
         robotBuy(pos);
@@ -151,6 +206,26 @@ public class Util {
         robot.pickRegion();
         robots.add(robot);
         robot_num++;
+        return robot;
+    }
+
+    public static void processMap() {
+        // 后期为节省初始化时间可和mapInfo合并
+        for (int i = 0; i < mapWidth; i++) {
+            for (int j = 0; j < mapWidth; j++) {
+                char ch = map[i][j];
+                Point t = new Point(i, j);
+                if (ch == 'R') {     // 机器人租赁点
+                    robotBuyPos.add(t);
+                } else if (ch == 'S') {   // 船舶租赁点
+                    boatBuyPos.add(t);
+                } else if (ch == 'T') {   // 交货点
+                    boatDeliveries.add(t);
+                } else if (ch == '.') {
+                    totalLandPoint ++;
+                }
+            }
+        }
     }
 
     //
@@ -259,5 +334,13 @@ public class Util {
             dumpFrame +=frameId -lastFrameId-1;
         }
         lastFrameId = frameId;
+    }
+
+    public static void printBerthAreaTwins(Twins<BerthArea, BerthArea> tp) {
+        Util.printDebug("最优化结果:"+tp.getObj1());
+        Util.printDebug("最优化结果:"+tp.getObj2());
+        Util.printDebug("累计物品数："+(tp.getObj1().getExpGoodNum()+tp.getObj2().getExpGoodNum())+"距离："+tp.getObj1().berth.getPathFps(tp.getObj2().berth.pos));
+        Util.printDebug("累计和："+(tp.getObj1().berth.getPathFps(tp.getObj2().berth.pos)*2 + tp.getObj1().getWorkTime() + tp.getObj2().getWorkTime()));
+        Util.printDebug("---");
     }
 }

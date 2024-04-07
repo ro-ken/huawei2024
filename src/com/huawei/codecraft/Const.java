@@ -7,10 +7,7 @@ import com.huawei.codecraft.way.PathImpl;
 import com.huawei.codecraft.zone.RegionManager;
 import com.huawei.codecraft.zone.Zone;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
+import java.util.*;
 
 // 全局变量类
 public class Const {
@@ -33,13 +30,15 @@ public class Const {
     public static ArrayList<Point> boatDeliveries = new ArrayList<>();       // 轮船交货点
     public static HashSet<Robot> workRobots = new HashSet<>();// 每帧可以工作的机器人
     public static HashSet<Point> invalidPoints = new HashSet<>();   // 每帧的无效点
+
     /*****************************物品相关参数*****************************/
     public static ArrayList<Good> frameGoods= new ArrayList<>();    // 每一帧新产生的货物
     public static final int noLimitedSize = 1000000;        // 无限容量信息
     public static double expGoodNum = 2450;     // 期望总物品数，官方回答：15/100 * 15000
+    public static int totalLandPoint;   // 统计陆地点数，用于算每点概率
     public static int countGoodNum = 0;     //已经生成的物品总数，到时候算平均价值
     public static double countGoodValue = 0;   //已经生成的物品总价值
-    public static double avgGoodValue;      // 货物的平均价值，每帧更新
+    public static double avgGoodValue = 67;      // 货物的平均价值，每帧更新,设一个初始值，todo 后面可调
     /*****************************机器人和轮船对应的方向*****************************/
     public static final int RIGHT = 0;
     public static final int LEFT = 1;
@@ -68,4 +67,13 @@ public class Const {
     public static double upperQuantile = 0.06;         // 上分位点，每增加0.02，期望聚合泊位数增加2
     public static int maxThreshold = 40;              // 设定的最大阈值, 超过这个就不合并
     public static double minPointsPercent = 0.045;    // 设定的最小点数百分比，区域拥有泊位少于0.045，则直接不合并
+    /*****************************打印相关参数*****************************/
+    public static int totalSellValue = 0;
+    public static int totalSellSize = 0;
+    public static int totalCarryValue = 0;
+    public static int totalCarrySize = 0;
+    public static int lastFrameId = 0;
+    public static int dumpFrame = 0;    // 跳帧记录
+    static Map<Integer,Integer> avg = new TreeMap<>();
+
 }

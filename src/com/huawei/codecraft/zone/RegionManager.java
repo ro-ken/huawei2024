@@ -447,13 +447,24 @@ public class RegionManager {
             // 获取点到最近泊位的路径长度
             List<Point> shortestPath = closestBerth.mapPath.get(point);
             // 更新路径长度的统计信息
-            if (shortestPath != null) {
+            if (shortestPath != null ) {
+                // 泊口不会产生货物，不算进去
                 int pathLength = shortestPath.size() - 1; // 减1以排除起始点本身
                 closestRegion.pathLenToNumMap.merge(pathLength, 1, Integer::sum);
                 closestBerth.pathLenToNumMap.merge(pathLength, 1, Integer::sum);
             }
-
         }
+        // 泊口不产生物品，这些点要去除
+        for (Region region : regions) {
+            region.pathLenToNumMap.merge(1, -3, Integer::sum);
+            region.pathLenToNumMap.merge(2, -2, Integer::sum);
+        }
+        for (Berth berth : berths) {
+            berth.pathLenToNumMap.merge(1, -3, Integer::sum);
+            berth.pathLenToNumMap.merge(2, -2, Integer::sum);
+        }
+
+
     }
 
     /**
@@ -672,10 +683,16 @@ public class RegionManager {
      */
     private void calcRegionValue() {
         for (Berth berth : berths) {
+            int count=0;
+            for (Integer i : berth.pathLenToNumMap.keySet()) {
+                count +=berth.pathLenToNumMap.get(i);
+            }
+            Util.printLog(berth.pathLenToNumMap);
             berth.staticValue = calcStaticValue(berth.pathLenToNumMap,berth.points);
         }
 
         for (Region region : regions) {
+            Util.printLog(region.pathLenToNumMap);
             region.staticValue = calcStaticValue(region.pathLenToNumMap,region.accessiblePoints.size());
         }
 
@@ -689,10 +706,12 @@ public class RegionManager {
         // 第一优先级：面积够的 > 面积不够的；第二优先级，平均距离少的 > 平均距离远的
         Map<Integer, RegionValue> staticValue = new HashMap<>();
         double dis = 0;   // t为理想机器人搬运货物走的总fps
-        double p = getPointProb()/totalFrame * Good.maxSurvive;     // Good.maxSurvive 周期内每个点产生的概率  ，计算出概率p = 0.0052;
+        double p = getPointProb()/totalFrame * Good.maxSurvive;     // 每点全局概率：0.125左右，周期内每个点产生的概率0.008;
         int total = Good.maxSurvive;   //往返fps，只有一半的时间是在去的路上
         int robotNum = 1;
         double totalNum = 0;
+//        Util.printLog("周期概率"+p);
+//        Util.printLog("pathLenToNumMap"+pathLenToNumMap);
         for (int i = 1; i < 1000; i++) {
             if (pathLenToNumMap.containsKey(i)){
                 int num = pathLenToNumMap.get(i);
@@ -700,19 +719,15 @@ public class RegionManager {
                 dis += i * realNum * 2;     //往返fps，只有一半的时间是在去的路上
                 totalNum += realNum;
                 if (dis > total){ // 时间到了，不能在运
-                    totalNum -= (dis - total)/2/i;  //加多了，减回去几个
-                    staticValue.put(robotNum,new RegionValue(robotNum,true,i,totalNum));
-                    if (robotNum == 15){
-                        break;  // 一个区域三个机器人最多了
-                    }
+                    double more = (dis - total)/2/i;  //加多了，减回去几个
+                    totalNum -= more;  //加多了，减回去几个
+//                    Util.printLog("robotNum"+robotNum+",index="+i+",dis"+dis+",num="+num + ",more="+more/p);
+                    staticValue.put(robotNum,new RegionValue(robotNum,true,i,totalNum, (int) ((realNum-more)/p)));
                     robotNum ++;
-                    total += total; // 2个机器人搬运距离翻倍
+                    total += Good.maxSurvive; // 2个机器人搬运距离翻倍
                 }
             }else {
-                while (robotNum <=15){
-                    staticValue.put(robotNum,new RegionValue(robotNum,false,unreachableFps, area * p));
-                    robotNum ++;
-                }
+                staticValue.put(robotNum,new RegionValue(robotNum,false,i, area * p,0));
                 break;
             }
         }
@@ -722,12 +737,15 @@ public class RegionManager {
     public static double getPointProb() {
         // 计算每个点生成的概率
         // 计算所有空地面积
-        int area = 1;
-        for (Zone zone : zones) {
-            area +=zone.accessPoints.size();
-        }
-        // 每个点的期望 = 所有物品 / 总点数
-        return expGoodNum / area;
+//        int area = 1;
+//        for (Zone zone : zones) {
+//            area +=zone.accessPoints.size();
+//        }
+//        // 每个点的期望 = 所有物品 / 总点数
+//        Util.printLog("可用区域点数："+area);
+//        Util.printLog("实际区域点数："+totalLandPoint);
+//        Util.printLog("每点概率："+expGoodNum / area);
+        return expGoodNum / totalLandPoint;
     }
 
     /**

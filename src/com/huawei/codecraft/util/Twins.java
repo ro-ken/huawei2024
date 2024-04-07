@@ -14,7 +14,7 @@ public class Twins <T1,T2>{
     public String toString() {
         return "Twins{" +
                 "obj1=" + obj1 +
-                ", obj2=" + obj2 +
+                "\nobj2=" + obj2 +
                 '}';
     }
 

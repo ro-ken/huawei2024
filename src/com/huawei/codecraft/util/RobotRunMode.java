@@ -84,7 +84,7 @@ public class RobotRunMode {
 
     // master 释放 slave
     private void releaseSlave(Robot robot) {
-        Util.printLog("masterRelease:"+this+robot);
+//        Util.printLog("masterRelease:"+this.master+robot);
         slaveSet.remove(robot);
         if (slaveSet.isEmpty()){
             if (master == null){

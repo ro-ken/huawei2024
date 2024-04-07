@@ -4,10 +4,7 @@ import com.huawei.codecraft.Util;
 import com.huawei.codecraft.core.Berth;
 import com.huawei.codecraft.core.Good;
 import com.huawei.codecraft.core.Robot;
-import com.huawei.codecraft.util.Pair;
-import com.huawei.codecraft.util.Point;
-import com.huawei.codecraft.util.RegionValue;
-import com.huawei.codecraft.util.Twins;
+import com.huawei.codecraft.util.*;
 
 import java.util.*;
 
@@ -29,10 +26,15 @@ public class Region {
     public Map<Integer, RegionValue> staticValue ;     // 区域静态价值
     public  int staticAssignNum = 0;        // 静态分配给区域的机器人个数
     public final ArrayList<Region> neighborRegions;     // 距离当前region最近的region
-    public PriorityQueue<Pair<Good>> regionGoodsByValue = new PriorityQueue<>();  // 需要被运输的货物,按照单位价值排序
+    public PriorityQueue<Good> regionGoodsByValue = new PriorityQueue<>(new Comparator<Good>() {
+        @Override
+        public int compare(Good o1, Good o2) {
+            // 需要被运输的货物,按照单位价值排序
+            return Double.compare(o2.fpsValue,o1.fpsValue);
+        }
+    });
     public Deque<Good> regionGoodsByTime = new LinkedList<>();      // 需要被运输的货物,按照时间先后排序
     public TreeMap<Integer,Integer> disToNum = new TreeMap<>();     // 物品离泊口距离到数量的映射，距离泊口多少米的地方出现了几次
-    public int totalGoodNum;
 
     /**
      * 构造函数
@@ -129,9 +131,6 @@ public class Region {
     }
 
 
-
-
-
     public int getClosestBerthPathFps(Point pos) {
         int min = unreachableFps;
         // 获取离该区域最近泊口的距离
@@ -151,15 +150,29 @@ public class Region {
             Util.printErr("addNewGood berth == null");
             return;
         }
-        int dis = berth.mapPath.get(newGood.pos).size();
+        int dis = berth.getPathFps(newGood.pos);
         disToNum.merge(dis, 1, Integer::sum);   // 统计自身区域的物品数
-        // 计算物品的价值
-        Pair<Good> pair = berth.calcGoodValue(newGood);
+        newGood.setFpsValue(dis*2);
+
+
+
         // 下面是原子操作，不能分开
-        berth.domainGoodsByTime.add(newGood);
-        berth.domainGoodsByValue.add(pair);
         regionGoodsByTime.add(newGood);
-        regionGoodsByValue.add(pair);
+        regionGoodsByValue.add(newGood);
+        berth.domainGoodsByTime.add(newGood);
+        berth.domainGoodsByValue.add(newGood);
+        for (BerthArea myArea : berth.myAreas) {
+            if (newGood.fpsValue>myArea.getExpMinValue()){
+                myArea.areaGoodsByTime.add(newGood);
+            }
+
+            // todo 以下记录打印测试
+            if (dis<=myArea.getExpMaxStep()){
+                myArea.totalGoodNum ++;
+                myArea.totalGoodValue += newGood.value;
+            }
+
+        }
     }
 
     public Twins<Berth,Good> getLeastGood() {
@@ -230,10 +243,9 @@ public class Region {
         int realTime = 0;   // 已存在
         int realValue = 0;
         // 计算区域已存在价值，只统计价值大于期望的点认为是有价值的
-        for (Pair<Good> pair : regionGoodsByValue) {
-            if (pair.getValue() > expValue){
+        for (Good good : regionGoodsByValue) {
+            if (good.fpsValue > expValue){
                 // 注意这两者价值计算是否统一
-                Good good = pair.getKey();  // 后续可将无用的good去掉
                 Berth berth = RegionManager.pointBerthMap.get(good.pos);
                 if (berth.canCarryGood(good)){
                     realTime += berth.getPathFps(good.pos) * 2;
@@ -270,17 +282,16 @@ public class Region {
     public boolean haveHigherValueGoodThanExp(int robotNum) {
         // 本区域是否拥有指定机器人期望价值的物品
         while (!regionGoodsByValue.isEmpty()){
-            Pair<Good> pair = regionGoodsByValue.peek();
-            Good good = pair.getKey();
+            Good good = regionGoodsByValue.peek();
             Berth berth = RegionManager.pointBerthMap.get(good.pos);
             if (berth.canCarryGood(good)){
-                if (pair.getValue() > regionExpFpsValue(robotNum)){
+                if (good.fpsValue > regionExpFpsValue(robotNum)){
                     return true;
                 }else {
                     return false;
                 }
             }else {
-                berth.removeDomainGood(pair);
+                berth.removeDomainGood(good);
             }
         }
         return false;
@@ -297,17 +308,17 @@ public class Region {
         }
         // 获取第一个超过平均物品价值的时间
         // 如果区域太小，不知道exp Step，那所有都认为是高价值的，取第一个即可
-        if (staticValue.get(1).getExpStep() == unreachableFps){
+        if (!staticValue.get(1).isAreaRich()){
             return new Twins<>(regionGoodsByTime.peek().leftFps(),regionGoodsByTime.size());
         }else {
             double expValue = staticValue.get(1).getFpsValue() * 0.8;   // 本区域的价值应该是要高于机器人待的区域的，所以回去条件放宽一些
             int minFps = unreachableFps;
             int goodNum = 0;
-            for (Pair<Good> pair : regionGoodsByValue) {
-                if (pair.getValue() < expValue){
+            for (Good good: regionGoodsByValue) {
+                if (good.fpsValue < expValue){
                     break;  // 获取所有有价值的货物
                 }
-                int t = pair.getKey().leftFps();
+                int t = good.leftFps();
                 goodNum += 1;
                 if (t < minFps){
                     minFps = t;
@@ -315,5 +326,13 @@ public class Region {
             }
             return new Twins<>(minFps,goodNum);
         }
+    }
+
+    public RegionValue getRegionValueByNum(int num) {
+        if (staticValue.containsKey(num)){
+            return staticValue.get(num);
+        }
+        // key按照 1,2,3,4 排序，取末尾的
+        return staticValue.get(staticValue.size());
     }
 }
