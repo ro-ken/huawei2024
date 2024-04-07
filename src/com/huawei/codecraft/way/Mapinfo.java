@@ -4,7 +4,6 @@ import com.huawei.codecraft.Const;
 import com.huawei.codecraft.core.DeliveryPoint;
 import com.huawei.codecraft.util.Point;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 
 import static com.huawei.codecraft.Const.deliveryPoints;
@@ -20,7 +19,6 @@ public class Mapinfo {
     public static int[][] originalMap = new int[mapWidth][mapWidth];    // 原始得地图map
     public static int[][] seaMap = new int[mapWidth][mapWidth];          // 经过预处理为船行走的 map，经过了预处理
     public static HashMap<Point, DeliveryPoint> pointToDeliveryPoint = new HashMap<>(); // 根据点找对应的交货点
-    public static ArrayList<Point> specialPoint = new ArrayList<>();
     // 私有化构造函数防止外部实例化
     private Mapinfo() {
     }
@@ -82,23 +80,6 @@ public class Mapinfo {
                 }
                 else {
                     seaMap[i][j] = map[i][j];
-                }
-            }
-        }
-        // 对于seaMap在做一个特殊处理，将立交桥左右包起来，保证A*找到的点是一个有效点
-        // TODO，暂时不做边界测试，因为海路交通肯定是连接海陆的，不应该在边界放
-        for (int i = 0; i < mapWidth; i++) {
-            for (int j = 0; j < mapWidth; j++) {
-                if (originalMap[i][j] == 'c') {
-                    if (originalMap[i - 1][j] == '.' && originalMap[i + 1][j] == 'c') {
-                        specialPoint.add(new Point(i, j));
-                    } else if (originalMap[i - 1][j] == 'c' && originalMap[i + 1][j] == '.') {
-                        specialPoint.add(new Point(i, j));
-                    } else if (originalMap[i][j - 1] == 'c' && originalMap[i][j + 1] == '.') {
-                        specialPoint.add(new Point(i, j));
-                    } else if (originalMap[i][j - 1] == '.' && originalMap[i][j + 1] == 'c') {
-                        specialPoint.add(new Point(i, j));
-                    }
                 }
             }
         }

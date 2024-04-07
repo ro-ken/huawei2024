@@ -24,6 +24,7 @@ public class PathImpl implements Path {
     private static final int special = 2;  // 特殊点特殊处理
     public  static final int shipLen = 3;
     public static Point[] ship = new Point[shipLen];
+    public static HashMap<Point, Integer> specialPoint = new HashMap<>();
     private static final int[][][] turnTimes = {
             {{4, 2 , 3, 1},{4, 2, 1, 3}}, // turnTimes[][0] 代表顺时针转换次数，turnTimes[][1]代表逆时针转换次数
             {{2, 4 , 1, 3},{2, 4, 3, 1}},
@@ -211,6 +212,7 @@ public class PathImpl implements Path {
     @Override
     public ArrayList<Point> getBoatPath(Point core, int direction, Point dest) {
         Point newDest;
+        // 泊位终点尽可能不靠墙
         if (pointToBerth.containsKey(dest)) {
              newDest = offsetDestination(dest);
         }
@@ -232,13 +234,27 @@ public class PathImpl implements Path {
         refreshShip(startPoint, direction);
         finalPath.add(startPoint);
         int pathDir = getDirection(straightPath.get(0), straightPath.get(1));
-        // 如果起始方向不一致，需要从当前方向重新A*寻路然后重新拉直，否则路径可能会出问题
+        // 如果起始方向不一致，或者路径不可靠，需要从当前方向重新A*寻路然后重新拉直，否则路径可能会出问题
         if (pathDir != direction) {
             turnDirection(direction, pathDir, straightPath.get(1), finalPath);
             direction = pathDir;
             ArrayList<Point> initialPath = getInitialBoatPath(ship[0], dest);
             assert initialPath != null;
             straightPath = getStraightPath(initialPath);
+        }
+        // 最后需要路径是可靠的
+        if (!pathIsReliable(straightPath)) {
+            ArrayList<Point> initialPath = getInitialBoatPath(ship[0], dest);
+            assert initialPath != null;
+            // 找路之前修改地图,获取特殊点，需要将其改为障碍
+            ArrayList<Point> specialPointList = new ArrayList<>(specialPoint.keySet());
+            changeMapinfo(specialPointList, special);
+
+            straightPath = getStraightPath(initialPath);
+
+            // 恢复地图上的点
+            restoreMapinfo(specialPointList, special);
+            specialPoint.clear(); // 清空，保证下次使用正常
         }
         for (int i = 2; i < straightPath.size(); i++) {
             pathDir = getDirection(straightPath.get(i - 1), straightPath.get(i));
@@ -275,8 +291,6 @@ public class PathImpl implements Path {
     private ArrayList<Point> getStraightPath(ArrayList<Point> initialPath) {
         ArrayList<Point> straightPath = new ArrayList<>();
 
-        // 路径拉直之前的特殊处理
-        changeMapinfo(Mapinfo.specialPoint, special);
         // 创建 HashMap 来存储 initialPath 的点的索引
         HashMap<Point, Integer> pointToIndexMap = new HashMap<>();
         for (int i = 0; i < initialPath.size(); i++) {
@@ -314,8 +328,47 @@ public class PathImpl implements Path {
         if (!initialPath.get(initialPath.size() - 1).equals(straightPath.get(straightPath.size() - 1))) {
             straightPath.add(new Point(initialPath.get(initialPath.size() - 1)));
         }
-        restoreMapinfo(Mapinfo.specialPoint, special);
         return straightPath;
+    }
+
+    // 检查路径是不是有效路径
+    private  boolean pathIsReliable(ArrayList<Point> straightPath) {
+        boolean flag = true;
+        for (int i = 1; i < straightPath.size(); i++) {
+            Point p1 = straightPath.get(i - 1);
+            Point p2 = straightPath.get(i);
+            int pathDir = getDirection(p1, p2);
+            // 获取路径方向之后就需要检查，因为路径是核心点的方向，所以检查核心点右侧是否会有问题
+            if (pathDir == LEFT) {
+                // 左，核心点在下方
+                if (!isValid(p2.x - 1, p2.y) || seaMap[p2.x - 1][p2.y] == ROAD) {
+                    specialPoint.put(p2, seaMap[p2.x][p2.y]);
+                    flag = false;
+                }
+            }
+            else if (pathDir == RIGHT) {
+                // 右，核心点在上方
+                if (!isValid(p2.x + 1, p2.y) || seaMap[p2.x + 1][p2.y] == ROAD) {
+                    specialPoint.put(p2, seaMap[p2.x][p2.y]);
+                    flag = false;
+                }
+            }
+            else if (pathDir == UP) {
+                // 上，核心点在左方
+                if (!isValid(p2.x, p2.y + 1) || seaMap[p2.x][p2.y + 1] == ROAD) {
+                    specialPoint.put(p2, seaMap[p2.x][p2.y]);
+                    flag = false;
+                }
+            }
+            else {
+                // 下，核心点在右方
+                if (!isValid(p2.x, p2.y - 1) || seaMap[p2.x][p2.y - 1] == ROAD) {
+                    specialPoint.put(p2, seaMap[p2.x][p2.y]);
+                    flag = false;
+                }
+            }
+        }
+        return flag;
     }
 
     private Point offsetDestination(Point dest) {
@@ -394,7 +447,8 @@ public class PathImpl implements Path {
 
     private boolean canMove(int preDir, int nextDir, Point nextPoint,  Point endPoint, HashMap<Point, Integer> pointToIndexMap) {
         getNextPoint(preDir, nextPoint);
-        return isValid(nextPoint.x, nextPoint.y) && seaMap[nextPoint.x][nextPoint.y] != ROAD && haveIntersectedPoint(nextDir, nextPoint, endPoint, pointToIndexMap);
+        return isValid(nextPoint.x, nextPoint.y) && seaMap[nextPoint.x][nextPoint.y] != ROAD
+                && haveIntersectedPoint(nextDir, nextPoint, endPoint, pointToIndexMap);
     }
 
     // 没有交接点
@@ -738,8 +792,8 @@ public class PathImpl implements Path {
         }
         else if (flag == special) {
             for (Point barrier : barriers) {
-                if (Mapinfo.seaMap[barrier.x][barrier.y] == Const.ROAD) {
-                    Mapinfo.seaMap[barrier.x][barrier.y] = Const.MAINBOTH;  // 恢复为主干道
+                if (specialPoint.containsKey(barrier)) {
+                    Mapinfo.seaMap[barrier.x][barrier.y] = specialPoint.get(barrier);  // 恢复为原来的地图
                 }
             }
         }
@@ -767,6 +821,13 @@ public class PathImpl implements Path {
         return path;
     }
 
+    private int getPointG(int x, int y) {
+        if (seaMap[x][y] == MAINBOTH || seaMap[x][y] == MAINSEA) {
+            return 2;
+        }
+        return 1;
+    }
+
     private  ArrayList<Point> getInitialBoatPath(Point p1, Point p2) {
         if (notAccessible(p1.x, p1.y) || notAccessible(p2.x, p2.y)) {
             printLog("point is impossible");
@@ -780,15 +841,16 @@ public class PathImpl implements Path {
         Pos start = new Pos(p1, null, 0, estimateHeuristic(p1, p2));
         openSet.add(start);
         visitedNodes.put(p1, start);
-
+        // 获取特殊点，需要将其改为障碍
+        ArrayList<Point> specialPointList = new ArrayList<>(specialPoint.keySet());
         // 找路之前修改地图
-        changeMapinfo(Mapinfo.specialPoint, special);
+        changeMapinfo(specialPointList, special);
 
         while (!openSet.isEmpty()) {
             Pos current = openSet.poll();
             if (current.pos.equals(p2)) {
                 // 恢复地图
-                restoreMapinfo(Mapinfo.specialPoint, special);
+                restoreMapinfo(specialPointList, special);
                 return constructPath(current);
             }
 
@@ -799,7 +861,7 @@ public class PathImpl implements Path {
                     continue;
                 }
 
-                int newG = current.g + 1;  // 每一步代价为1
+                int newG = current.g + getPointG(newPoint.x, newPoint.y);  // 每一步代价为1
                 if (!visitedNodes.containsKey(newPoint) || newG < visitedNodes.get(newPoint).g) {
                     int newH = estimateHeuristic(newPoint, p2);
                     Pos next = new Pos(newPoint, current, newG, newH);
@@ -808,7 +870,7 @@ public class PathImpl implements Path {
                 }
             }
         }
-        restoreMapinfo(Mapinfo.specialPoint, special);
+        restoreMapinfo(specialPointList, special);
         printLog("No way");
         return null;
     }
