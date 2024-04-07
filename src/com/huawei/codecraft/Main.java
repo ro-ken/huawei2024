@@ -28,9 +28,14 @@ import static com.huawei.codecraft.Util.*;
  */
 public class Main {
     public static int testRobot = 100;    // 测试机器人
+    public static int assignRobotNum = 0;   // 手动分配机器人数量，小于等于0 则程序自动分配
+    public static int assignBoatNum = 1;   // 分配轮船数量
+    public static double minAddNumPerRobot = 5.0;   // 若为自动分配，每个周期(20s)买一个机器人最少需要搬运多少物品，否则不买
+    public static double minValueCoef = 0.2;    // 本泊口最高价值低于最低这个系数乘以期望时，启用贪心算法
+    public static boolean limitArea = false;   // 是否限制机器人的工作区域，测试时打开
     public static boolean globalGreedy = true;  // 若本区域没物品，全局贪心，局部贪心
-    public static boolean dynamicRegion = false;      // 是否动态分区
-    public static boolean areaSched = false;
+    public static boolean dynamicRegion = true;      // 是否动态分区
+    public static boolean areaSched = true;
 
 
     public static void main(String[] args) throws FileNotFoundException, InterruptedException {
@@ -68,11 +73,9 @@ public class Main {
         }
         regionManager = new RegionManager();
         regionManager.init();
-        for (Berth berth : berths) {
-            berth.init();
-
-        }
+        Berth.init();
         printBerthRegion();
+        printBerthArea();
     }
 
 
@@ -93,7 +96,6 @@ public class Main {
         }
         // 统一处理移动信息
         Robot.handleRobotMove();
-
     }
 
     // 每一帧开始的初始化工作
@@ -111,70 +113,23 @@ public class Main {
             boat.frameMoved = false;
         }
 
-        if (robot_num < 12) {
-            if (areaSched) {
-
-                if (robot_num<5){
-                    Robot.buyRobot();
-                    return;
-                }
-                ArrayList<BerthArea> list = new ArrayList<>();
-                Twins<BerthArea,BerthArea> tp;
-                Robot robot = Util.buyRobot(robotBuyPos.get(0));
-//
-                if (berths.get(3).myAreas.isEmpty()){
-                    BerthArea area = berths.get(3).getLeftBestArea();
-                    list.add(area);
-                }else {
-                    if (berths.get(0).myAreas.size()<2){
-                        tp = Berth.getTwinsBerthArea(berths.get(0),berths.get(1));
-                        Util.printLog(111);
-                    }else {
-                        tp = Berth.getTwinsBerthArea(berths.get(4),berths.get(5));
-                        Util.printLog(333);
-                    }
-                    list.add(tp.getObj1());
-                    list.add(tp.getObj2());
-                }
-
-
-
-
-//                BerthArea area = null;
-//                if (berths.get(0).myAreas.size()<2){
-//                    area = berths.get(0).getLeftBestArea();
-//                } else if (berths.get(1).myAreas.size() < 2) {
-//                    area = berths.get(1).getLeftBestArea();
-//                } else if (berths.get(2).myAreas.size() < 2) {
-//                    area = berths.get(2).getLeftBestArea();
-//                }else if (berths.get(3).myAreas.size() < 2) {
-//                    area = berths.get(3).getLeftBestArea();
-//                }else if (berths.get(4).myAreas.size() < 2) {
-//                    area = berths.get(4).getLeftBestArea();
-//                }else if (berths.get(5).myAreas.size() < 2) {
-//                    area = berths.get(5).getLeftBestArea();
-//                }
-//
-//                list.add(area);
-
-
-
-                if (robot != null) {
-                    for (BerthArea area1 : list) {
-                        area1.enable(robot);
-                    }
-                    robot.setAreas(list);
-                    Util.printLog(robot+"分配成功"+list);
-                    Util.printBerthArea();
-                }
-            } else {
-                Point pos = robotBuyPos.get(0);
-                buyRobot(pos);
-            }
-        }
-        if (boat_num < 1) {
+        if (boat_num < assignBoatNum) {
             buyBoat(boatBuyPos.get(0));
         }
+
+        if (areaSched) {
+            buyRobotArea();
+        }else {
+            while (robots.size() < assignRobotNum) {
+                int index = robots.size()%robotBuyPos.size();
+                boolean success = buyRobot(robotBuyPos.get(index));
+                if (!success){
+                    break;
+                }
+            }
+        }
+
+
 
 //        if (avg.size() < 1000 && frameId % 10 == 0) {
 //            avg.put(frameId, (int) avgGoodValue);
@@ -220,8 +175,6 @@ public class Main {
         String okk = inStream.nextLine();
     }
 
-
-
     public static void input() {
         frameId = inStream.nextInt();
         money = inStream.nextInt();
@@ -245,6 +198,7 @@ public class Main {
             robots.get(id).carry = inStream.nextInt();
             robots.get(id).pos.x = inStream.nextInt();
             robots.get(id).pos.y = inStream.nextInt();
+            Util.printLog(robots.get(id)+":"+i);
         }
         boat_num = inStream.nextInt();
         if (boat_num != boats.size()) {

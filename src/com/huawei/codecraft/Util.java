@@ -150,6 +150,7 @@ public class Util {
         outStream.printf("pull %d\n", id);
     }
     public static void robotBuy(Point pos){
+        printLog("尝试在"+pos+"处购买一个机器人");
         outStream.printf("lbot %d %d\n", pos.x,pos.y);
     }
     public static void boatBuy(Point pos){
@@ -191,22 +192,27 @@ public class Util {
         boat_num++;
     }
 
-    public static Robot buyRobot(Point pos) {
-        if (money < 2000){
-            return null;
+    public static void buyRobotArea() {
+        // robot前期工作以做完
+        while (money >= 2000 && !preAssignRobot.isEmpty()){
+            Robot robot = preAssignRobot.remove(0);
+            robotBuy(robot.pos);
+            money -= 2000;
+            robot.pickRegion();
+            robots.add(robot);
         }
-        for (Robot robot : robots) {
-            if (robot.pos.equals(pos)){
-                return null; // 该点有其他机器人
-            }
+    }
+    public static boolean buyRobot(Point pos) {
+        if (money < 2000){
+            return false;
         }
         robotBuy(pos);
+
         money -= 2000;
-        Robot robot = new Robot(robot_num,pos);
+        Robot robot = new Robot(robots.size(),pos);
         robot.pickRegion();
         robots.add(robot);
-        robot_num++;
-        return robot;
+        return true;
     }
 
     public static void processMap() {
@@ -342,5 +348,49 @@ public class Util {
         Util.printDebug("累计物品数："+(tp.getObj1().getExpGoodNum()+tp.getObj2().getExpGoodNum())+"距离："+tp.getObj1().berth.getPathFps(tp.getObj2().berth.pos));
         Util.printDebug("累计和："+(tp.getObj1().berth.getPathFps(tp.getObj2().berth.pos)*2 + tp.getObj1().getWorkTime() + tp.getObj2().getWorkTime()));
         Util.printDebug("---");
+    }
+
+    public static void menuBuy() {
+        //                ArrayList<BerthArea> list = new ArrayList<>();
+//                Twins<BerthArea,BerthArea> tp;
+//                Robot robot = Util.buyRobot(robotBuyPos.get(0));
+////
+//                if (berths.get(3).myAreas.isEmpty()){
+//                    BerthArea area = berths.get(3).getLeftBestArea();
+//                    list.add(area);
+//                }else {
+//                    if (berths.get(0).myAreas.size()<2){
+//                        tp = Berth.getTwinsBerthArea(berths.get(0),berths.get(1));
+//                        Util.printLog(111);
+//                    }else {
+//                        tp = Berth.getTwinsBerthArea(berths.get(4),berths.get(5));
+//                        Util.printLog(333);
+//                    }
+//                    list.add(tp.getObj1());
+//                    list.add(tp.getObj2());
+//                }
+
+//                BerthArea area = null;
+//                if (berths.get(0).myAreas.size()<2){
+//                    area = berths.get(0).getLeftBestArea();
+//                } else if (berths.get(1).myAreas.size() < 2) {
+//                    area = berths.get(1).getLeftBestArea();
+//                } else if (berths.get(2).myAreas.size() < 2) {
+//                    area = berths.get(2).getLeftBestArea();
+//                }else if (berths.get(3).myAreas.size() < 2) {
+//                    area = berths.get(3).getLeftBestArea();
+//                }else if (berths.get(4).myAreas.size() < 2) {
+//                    area = berths.get(4).getLeftBestArea();
+//                }else if (berths.get(5).myAreas.size() < 2) {
+//                    area = berths.get(5).getLeftBestArea();
+//                }
+//
+//                list.add(area);
+
+//                if (robot != null) {
+//                    robot.setAreas(list);
+//                    Util.printLog(robot+"分配成功"+list);
+//                    Util.printBerthArea();
+//                }
     }
 }

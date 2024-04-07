@@ -155,13 +155,136 @@ public class Berth {
             fps2 *= total/count;
         }
         if (fps1 == 0 || fps2 == 0){
-            Util.printErr("区域无需合并！");
             return null;
         }
         area1.setCombineValue(goodNum1,maxStep1, (int) fps1);
         area2.setCombineValue(goodNum2,maxStep2, (int) fps2);
         return new Twins<>(area1,area2);
     }
+
+    public static void init() {
+        // 初始化邻居
+        for (Berth berth : berths) {
+            berth.initNeighbors();
+        }
+        // 根据机器人数量初始化区域
+        if (Main.assignRobotNum <=0){
+            // 未分配，手动计算分配数量
+            clacAssignRobotNum();
+        }
+        Util.printLog("机器人预计购买数量为："+Main.assignRobotNum);
+        assignRobotArea();
+    }
+
+    private static void assignRobotArea() {
+        // 根据机器人数量分配机器人区域
+        for (int i = 0; i < Main.assignRobotNum; i++) {
+            // 首先分配到最大的区域
+            BerthArea area = getBestSingleBerthArea();
+            // 选择最近的购买点
+            Point buyPos = area.berth.pickClosestRobotBuyPos();
+            // ID 后面在修改
+            Robot robot = new Robot(i,buyPos);
+            robot.areas.add(area);
+            area.enable(robot);
+            preAssignRobot.add(robot);
+        }
+        // 根据首轮分配结果再次分配
+        // 主要分配机器人area不够的区域，看能否调用其他区域的area
+        ArrayList<Berth> berthList = new ArrayList<>(berths);
+        while (berthList.size()>=2){
+            Berth send = pickBiggestRedundantAreaBerth(berthList);
+            if (send == null){
+                break;
+            }
+            // 看邻居哪个机器人拿到这块地收益最大
+            Berth take = null;
+            double max = 0;
+            Twins<BerthArea,BerthArea> maxTp = null;
+//            Util.printLog("最大的区域为："+send);
+            for (int i = 0; i < 2; i++) {
+                Berth neighbor = send.neighbors.get(i);
+                if (!berthList.contains(neighbor) || neighbor.myAreas.isEmpty() || !neighbor.myAreas.get(neighbor.myAreas.size()-1).single){
+                    // 以上三种情况的区域不参与争夺
+//                    Util.printLog("邻居："+neighbor+"不参与分配");
+                    continue;
+                }
+                BerthArea neighborLastArea =  neighbor.myAreas.remove(neighbor.myAreas.size() - 1);
+                Twins<BerthArea,BerthArea> tp = getTwinsBerthArea(send,neighbor);
+//                Util.printLog("邻居："+neighbor+"tp："+tp);
+                if (tp != null){
+                    double expGood = tp.getObj1().getExpGoodNum() + tp.getObj2().getExpGoodNum();
+                    Util.printLog("tp期望物品数："+expGood+"原area物品数："+neighborLastArea.getExpGoodNum());
+                    if (expGood> neighborLastArea.getExpGoodNum() && expGood > max){
+                        max = expGood;
+                        maxTp = tp;
+                        take = neighbor;
+                    }
+                }
+                neighbor.myAreas.add(neighborLastArea); // 先加回去
+            }
+            if (maxTp != null){
+                // 有其他区域要这块多于区域，重新分配机器人
+                BerthArea tmp = take.myAreas.remove(take.myAreas.size() - 1);
+                tmp.robot.areas.clear();
+                ArrayList<BerthArea> berthAreas = new ArrayList<>();
+                berthAreas.add(maxTp.getObj1());
+                berthAreas.add(maxTp.getObj2());
+                tmp.robot.setAreas(berthAreas); // 重新赋能
+                // 此机器人不能在参与区域争夺
+                Util.printLog("成功合并！"+berthAreas);
+            }
+            berthList.remove(send);
+        }
+    }
+
+    private static Berth pickBiggestRedundantAreaBerth(ArrayList<Berth> berthList) {
+        // 挑选最多冗余区域的泊口，没有则返回null
+        // 即下一级level的GoodNum最大的
+        Berth res = null;
+        double goodNum = 0;
+        for (Berth berth : berthList) {
+            if (berth.staticValue.get(berth.myAreas.size()+1)!=null){
+                double more = berth.staticValue.get(berth.myAreas.size()+1).getGoodNum() - berth.staticValue.get(berth.myAreas.size()).getGoodNum();
+                if (more>goodNum){
+                    goodNum = more;
+                    res = berth;
+                }
+            }
+        }
+        return res;
+    }
+
+    private static void clacAssignRobotNum() {
+        // 计算需要分配多少机器人
+        Main.assignRobotNum= 0;
+        for (Berth berth : berths) {
+            double last = 0;
+            for (Integer key : berth.staticValue.keySet()) {
+                double curNum = berth.staticValue.get(key).getGoodNum();
+                if (curNum-last>Main.minAddNumPerRobot){
+                    Main.assignRobotNum ++;
+                    last = curNum;
+                }else {
+                    break;
+                }
+            }
+        }
+    }
+
+    public Point pickClosestRobotBuyPos() {
+        // 找里berth最近的出生点
+        Point tar = robotBuyPos.get(0);
+        int min = unreachableFps;
+        for (Point pos : robotBuyPos) {
+            if (getPathFps(pos) < min){
+                min = getPathFps(pos);
+                tar = pos;
+            }
+        }
+        return tar;
+    }
+
 
     private boolean noMoreArea() {
         if (myAreas.isEmpty()){
@@ -270,7 +393,7 @@ public class Berth {
         // 计算能否去取该货物，默认机器人在泊口
         int dis = getPathFps(good.pos);
         // todo 到时候避让得根据所剩余时间计算  可调参
-        if (dis <= good.leftFps() - 3){
+        if (dis <= good.leftFps() - 2){
             // 加几帧弹性时间，怕绕路
             return true;
         }
@@ -311,7 +434,7 @@ public class Berth {
         return existGoods.size() + bookGoodSize >= this.capacity;
     }
 
-    public void init() {
+    public void initNeighbors() {
         // 初始化泊口邻居
         ArrayList<Berth> copy = new ArrayList<>(berths);
         copy.remove(this);
@@ -330,10 +453,9 @@ public class Berth {
         }
     }
 
-    public int getMaxStep() {
+    public int getAreaMaxStep() {
         BerthArea area = myAreas.get(myAreas.size() - 1);
         return area.getExpMaxStep();
-//        return 0;
     }
 
     public void setPos() {
@@ -347,6 +469,27 @@ public class Berth {
                 }
             }
         }
+    }
+
+    public int getRobotToBerthMinFps() {
+        int min = unreachableFps;
+        // 所有机器人正常工作，判断最快一个机器人到达泊口的时间，
+        for (BerthArea area : myAreas) {
+            if (area.robot.noTask() || area.robot.bookBerth != this){
+                // 不算已经在泊口的
+                continue;
+            }
+            int fps;
+            if (area.robot.isCarry()){
+                fps = area.robot.route.leftPathLen();
+            }else {
+                fps = area.robot.route.leftPathLen() + getPathFps(area.robot.bookGood.pos);
+            }
+            if (fps<min){
+                min = fps;
+            }
+        }
+        return min;
     }
 }
 

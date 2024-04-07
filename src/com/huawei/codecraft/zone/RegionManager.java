@@ -683,16 +683,10 @@ public class RegionManager {
      */
     private void calcRegionValue() {
         for (Berth berth : berths) {
-            int count=0;
-            for (Integer i : berth.pathLenToNumMap.keySet()) {
-                count +=berth.pathLenToNumMap.get(i);
-            }
-            Util.printLog(berth.pathLenToNumMap);
             berth.staticValue = calcStaticValue(berth.pathLenToNumMap,berth.points);
         }
 
         for (Region region : regions) {
-            Util.printLog(region.pathLenToNumMap);
             region.staticValue = calcStaticValue(region.pathLenToNumMap,region.accessiblePoints.size());
         }
 

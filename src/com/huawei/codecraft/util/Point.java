@@ -71,7 +71,7 @@ public class Point {
     }
 
     public boolean inBerthCenter() {
-        // 改点是否在泊口中心，是则能作为泊口的代表点，要求，三面是泊口，一面是陆地
+        // 该点是否在泊口中心，是则能作为泊口的代表点，要求，三面是泊口，一面是陆地
         int b=0,l=0;//泊口和陆地数
         if (Const.map[x-1][y] == 'B'){
             b++;

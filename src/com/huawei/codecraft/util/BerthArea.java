@@ -112,8 +112,8 @@ public class BerthArea {
         this.expMaxStep = expMaxStep;
         this.workFps = workFps;
         this.single = false;
-        this.rich = false;
         this.expMaxStepNum = 0;
+        this.rich = expMaxStep < berth.staticValue.get(berth.staticValue.size()).getExpStep()-2;
     }
 
     public void enable(Robot robot) {

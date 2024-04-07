@@ -22,6 +22,7 @@ public class Const {
     // 存放地图字符
     public static char[][] map = new char[mapWidth][mapWidth];
     public static ArrayList<Robot> robots = new ArrayList<>();
+    public static ArrayList<Robot> preAssignRobot = new ArrayList<>();  // 预分配机器人序列
     public static ArrayList<Berth> berths = new ArrayList<>();
     public static ArrayList<Boat> boats = new ArrayList<>();
     public static ArrayList<DeliveryPoint> deliveryPoints = new ArrayList<>();      // 交货点
@@ -34,7 +35,7 @@ public class Const {
     /*****************************物品相关参数*****************************/
     public static ArrayList<Good> frameGoods= new ArrayList<>();    // 每一帧新产生的货物
     public static final int noLimitedSize = 1000000;        // 无限容量信息
-    public static double expGoodNum = 2450;     // 期望总物品数，官方回答：15/100 * 15000
+    public static double expGoodNum = 2470;     // 期望总物品数，官方回答：15/100 * 15000 = 2250
     public static int totalLandPoint;   // 统计陆地点数，用于算每点概率
     public static int countGoodNum = 0;     //已经生成的物品总数，到时候算平均价值
     public static double countGoodValue = 0;   //已经生成的物品总价值
