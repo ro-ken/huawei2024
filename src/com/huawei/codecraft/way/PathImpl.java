@@ -226,6 +226,10 @@ public class PathImpl implements Path {
         return getFinalPath(core, direction, newDest, straightPath);
     }
 
+    private ArrayList<Point> correctPath(ArrayList<Point> finalPathPath) {
+        return null;
+    }
+
     private ArrayList<Point> getFinalPath(Point core, int direction, Point dest, ArrayList<Point> straightPath) {
         ArrayList<Point> finalPath = new ArrayList<>();
         // A*拉直的路径，船不能完整按照该路径走，只能根据方向走
@@ -251,7 +255,6 @@ public class PathImpl implements Path {
             changeMapinfo(specialPointList, special);
 
             straightPath = getStraightPath(initialPath);
-
             // 恢复地图上的点
             restoreMapinfo(specialPointList, special);
             specialPoint.clear(); // 清空，保证下次使用正常
@@ -445,6 +448,7 @@ public class PathImpl implements Path {
         }
     }
 
+    // TODO，暂时先这样，拉直时不考虑主航道
     private boolean canMove(int preDir, int nextDir, Point nextPoint,  Point endPoint, HashMap<Point, Integer> pointToIndexMap) {
         getNextPoint(preDir, nextPoint);
         return isValid(nextPoint.x, nextPoint.y) && seaMap[nextPoint.x][nextPoint.y] != ROAD
@@ -774,9 +778,7 @@ public class PathImpl implements Path {
         }
         else if (flag == special){
             for (Point barrier : barriers) {
-                if (Mapinfo.seaMap[barrier.x][barrier.y] == Const.MAINBOTH) { // 将海暂时变为陆地
-                    Mapinfo.seaMap[barrier.x][barrier.y] = Const.ROAD;  // 标记为陆地
-                }
+                Mapinfo.seaMap[barrier.x][barrier.y] = Const.ROAD;  // 标记为陆地
             }
         }
     }
