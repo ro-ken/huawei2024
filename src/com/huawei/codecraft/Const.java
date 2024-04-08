@@ -2,6 +2,7 @@ package com.huawei.codecraft;
 
 import com.huawei.codecraft.core.*;
 import com.huawei.codecraft.util.Point;
+import com.huawei.codecraft.util.Twins;
 import com.huawei.codecraft.way.Path;
 import com.huawei.codecraft.way.PathImpl;
 import com.huawei.codecraft.zone.RegionManager;
@@ -58,7 +59,10 @@ public class Const {
     public static Path path = new PathImpl(); // 修改Path实现
     public static int NoLimit = -1;              // 无长度限制的寻路算法
     public static final int unreachableFps = 1000000;       // 不可达的时间
-    public static Map<Point,Map<Point,ArrayList<Point>>> hotPointPath = new HashMap<>();    // 热路径点
+    // 陆地热路径点，key为初始点，value为<目的地，路径>
+    public static Map<Point,Map<Point,ArrayList<Point>>> landHotPath = new HashMap<>();
+    // 海洋热路径点，key为<初始点，方向>，value为<目的地，<路径，路径长度>>
+    public static Map<Twins<Point,Integer>,Map<Point,Twins<ArrayList<Point>,Integer>>> seaHotPath = new HashMap<>();
     /*****************************区域相关参数*****************************/
     public static final int defaultMap = 0;
     public static  int mapSeq;
