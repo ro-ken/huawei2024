@@ -1,6 +1,7 @@
 package com.huawei.codecraft.core;
 
 import com.huawei.codecraft.Const;
+import com.huawei.codecraft.Main;
 import com.huawei.codecraft.Util;
 import com.huawei.codecraft.util.BoatLastTask;
 import com.huawei.codecraft.util.BoatStatus;
@@ -25,6 +26,7 @@ public class Boat {
     Point next;
     public int startFrame;
     public int goodSize;
+    public int totalCarryValue;
     BoatRoute route;
     BoatLastTask task ;
     public boolean frameMoved;  // 只能动一次
@@ -95,7 +97,7 @@ public class Boat {
             // 驶向泊口状态
             if (isArriveBerthArea()){
                 Util.printLog(this+"boat arrive："+bookBerth);
-                Util.boatBerth(id);     // 如果还输入了其他指令，该指令将无效
+                Util.boatBerth(id);
                 frameMoved = true;
                 status = BoatStatus.LOAD;
             }
@@ -117,10 +119,21 @@ public class Boat {
             }
         }else if(status == BoatStatus.GO){
             if (firstGo){
+                if (carry != goodSize){
+
+                    Util.printErr("货对不上：系统货量"+carry+"计算装货："+goodSize);
+                }
                 changeRoad(boatDeliveries.get(0));
                 firstGo = false;
             }
             if (isArriveDelivery()){
+                Util.printDebug("到达交货点,last money"+ Main.lastMoney2 + ",money:"+money+"，ship，价值："+totalCarryValue);
+                if (money - Main.lastMoney2 != totalCarryValue){
+                    Util.printErr("账对不上,少了："+(totalCarryValue-(money-Main.lastMoney2))+"运货量"+ goodSize);
+                }else {
+                    Util.printDebug("金额正确");
+                }
+
                 resetBoat();        // 重置船
                 // 需要判断是否进入最后周期
                 status = BoatStatus.FREE;
@@ -224,6 +237,7 @@ public class Boat {
 
     private void resetBoat() {
         goodSize = 0;
+        totalCarryValue = 0;
     }
 
     private void changeBerthAndShip(Berth next) {
@@ -329,7 +343,7 @@ public class Boat {
         int left = capacity - goodSize;
         int loadGoods = Math.min(countGoods(),bookBerth.existGoods.size()); // 容量无限下这段时间装载量
         int realLoad = Math.min(left,loadGoods);    // 实际装载量
-        Util.printLog("船的装载："+goodSize+"/"+capacity+"，单次装载量："+realLoad + "，泊口货物："+bookBerth.existGoods.size()+"，装载时间："+(Const.frameId - startFrame + 1));
+        Util.printLog("船的装载："+goodSize+"/"+capacity+"，单次装载量："+realLoad + "，泊口货物："+bookBerth.existGoods.size()+"，装载时间："+(Const.frameId - startFrame));
         return realLoad;
     }
 
@@ -338,7 +352,7 @@ public class Boat {
         int realLoad = getRealLoad();
         // 互相清算货物
         goodSize += realLoad;
-        bookBerth.removeGoods(realLoad);
+        totalCarryValue += bookBerth.removeGoods(realLoad);
         for (Berth berth : Const.berths) {
             Util.printLog(berth+"堆积货物"+berth.existGoods.size()+"堆积价值"+berth.existValue);
         }
@@ -356,7 +370,7 @@ public class Boat {
 
     // 计算已经装了多少货物
     private int countGoods() {
-        int fps = Const.frameId - startFrame + 1;// 当前帧也可以装，后续可以检查
+        int fps = Const.frameId - startFrame;// 当前帧也可以装，后续可以检查
         int count = fps * bookBerth.loading_speed;
         return count;
     }
@@ -373,10 +387,12 @@ public class Boat {
                 "id=" + id +
                 ", rsts=" + readsts +
                 ", pos=" + pos +
-                ", dire=" + direction +
+//                ", dire=" + direction +
                 ", status=" + status +
                 ", next=" + next +
                 ", target=" + route.target +
+                ", carry=" + carry +
+                ", calcarry=" + goodSize +
                 '}';
     }
 
