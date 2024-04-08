@@ -43,7 +43,7 @@ public class RegionManager {
         createInitialRegions();
         getFullPathsFromPoints2Berths();
         initGlobalPoint2ClosestBerthMap();
-        initRectangleArea();
+//        initRectangleArea();      // 暂时没用到
         splitRegions();
         allocateBerthingPoints(); // 分配泊位得靠泊点
         calcRegionValue(); // 给区域分配机器人
@@ -210,9 +210,46 @@ public class RegionManager {
     }
 
     /**
-     * @function 对初始的region进一步划分，通过泊位之间的距离计算出阈值，作为聚类的条件
+     * @function 新街口，一个泊位对应一个region
      */
     private void splitRegions() {
+        List<Region> newRegions = new ArrayList<>();
+        for (Region largeRegion : regions) {
+            // 获取泊位对应的所有点
+            Set<Point> points = largeRegion.getBerths().stream().map(berth -> berth.pos).collect(Collectors.toSet());
+
+            // 创建新的 Zone 对象并添加区域相关信息
+            Zone zone = new Zone(zones.size());
+            zone.accessPoints.addAll(largeRegion.getAccessiblePoints());
+            zone.berths.addAll(largeRegion.getBerths());
+
+            // 一个泊位一个region
+            for (Berth berth : largeRegion.berths) {
+                Region region = new Region(newRegions.size());
+                newRegions.add(region);
+                zone.addRegion(region);
+                region.addBerth(berth);
+                pointRegionMap.put(berth.pos, region);
+            }
+
+            zones.add(zone);  // 将 Zone 添加到全局列表
+
+            // 将大区域内剩余的点分配到最近的新区域
+            allocateRemainingPoints(largeRegion);
+
+            // 为新分割的 region 添加邻近的region
+            addNeighborRegion(newRegions);
+        }
+
+        // 更新区域集合
+        regions.clear();
+        regions.addAll(newRegions);
+    }
+
+    /**
+     * @function 对初始的region进一步划分，通过泊位之间的距离计算出阈值，作为聚类的条件，老接口，暂留
+     */
+    private void splitRegions1() {
         List<Region> newRegions = new ArrayList<>();
         for (Region largeRegion : regions) {
             // 获取泊位对应的所有点
@@ -223,7 +260,6 @@ public class RegionManager {
 
             // 计算泊位间的距离并确定阈值
             int threshold = calculateThreshold(largeRegion);
-            System.out.println("threshold:" + threshold);
             // 创建新的 Zone 对象并添加区域相关信息
             Zone zone = new Zone(zones.size());
             zone.accessPoints.addAll(largeRegion.getAccessiblePoints());
