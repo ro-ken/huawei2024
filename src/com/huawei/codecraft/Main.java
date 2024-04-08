@@ -199,7 +199,7 @@ public class Main {
             robots.get(id).carry = inStream.nextInt();
             robots.get(id).pos.x = inStream.nextInt();
             robots.get(id).pos.y = inStream.nextInt();
-            Util.printLog(robots.get(id)+":"+i);
+//            Util.printLog(robots.get(id)+":"+i);
         }
         boat_num = inStream.nextInt();
         if (boat_num != boats.size()) {
