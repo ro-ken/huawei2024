@@ -29,8 +29,6 @@ public class Main {
     public static int assignBoatNum = 1;   // 分配轮船数量
     public static double minAddNumPerRobot = 5.0;   // 若为自动分配，每个周期(20s)买一个机器人最少需要搬运多少物品，否则不买
     public static double minValueCoef = 0.2;    // 本泊口最高价值低于最低这个系数乘以期望时，启用贪心算法
-    public static int lastMoney = 0;
-    public static int lastMoney2 = 0;
     public static boolean limitArea = false;   // 是否限制机器人的工作区域，测试时打开
     public static boolean globalGreedy = true;  // 若本区域没物品，全局贪心，局部贪心
     public static boolean dynamicRegion = true;      // 是否动态分区
@@ -56,8 +54,6 @@ public class Main {
             long t1 = System.nanoTime();
             handleFrame();
             printOk();
-            lastMoney2 = lastMoney;
-            lastMoney =money;
             long end = System.nanoTime();
             printLog("单帧花费时间:" + (end - sta) / 1000 + "us" + ",frameInit时间:" + (t1 - sta) / 1000 + "us,handleFrame时间:" + (end - t1) / 1000 + "us");
         }
@@ -75,6 +71,7 @@ public class Main {
         regionManager = new RegionManager();
         regionManager.init();
         Berth.init();
+        Boat.init();
         printBerthRegion();
         printBerthArea();
     }

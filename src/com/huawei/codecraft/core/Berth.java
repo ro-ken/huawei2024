@@ -16,6 +16,8 @@ public class Berth {
     public int id;
     public Point pos = new Point();
     public Point core = new Point();  // 泊位核心点
+    public int direction;   // 泊位核心点方向
+    public int direction2;  // 朝海洋方向
     public int transport_time;
     public int loading_speed;
     public Region region;  // 该泊口属于的区域，在区域初始化赋值
@@ -174,6 +176,32 @@ public class Berth {
         }
         Util.printLog("机器人预计购买数量为："+Main.assignRobotNum);
         assignRobotArea();
+
+        preheatSeaPath();
+    }
+
+    private static void preheatSeaPath() {
+        // 对海上路径进行预热
+        for (Berth berth : berths) {
+            for (Berth oth : berths) {
+                if (berth != oth){
+                    Boat.getSeaPathFps(berth.core,berth.direction,oth.core);
+                    Boat.getSeaPathFps(berth.core,berth.direction2,oth.core);
+                }
+            }
+            for (Point delivery : boatDeliveries) {
+                Boat.getSeaPathFps(berth.core,berth.direction,delivery);
+                Boat.getSeaPathFps(berth.core,berth.direction2,delivery);
+            }
+        }
+        // 虚拟点到泊口路径预热
+        for (int i = 0; i < 4; i++) {
+            for (Point delivery : boatDeliveries) {
+                for (Berth berth : berths) {
+                    Boat.getSeaPathFps(delivery,i,berth.core);
+                }
+            }
+        }
     }
 
     private static void assignRobotArea() {
@@ -472,6 +500,36 @@ public class Berth {
                 }
             }
         }
+        // 初始化泊口方向
+        if (map[core.x+1][core.y]=='K'){
+            direction = UP;  //
+            if (map[core.x][core.y-1]=='K'){
+                direction2 = LEFT;
+            }else {
+                direction2 = RIGHT;
+            }
+        } else if (map[core.x-1][core.y] == 'K') {
+            direction = DOWN;
+            if (map[core.x][core.y+1]=='K'){
+                direction2 = RIGHT;
+            }else {
+                direction2 = LEFT;
+            }
+        } else if (map[core.x][core.y+1] == 'K') {
+            direction = LEFT;
+            if (map[core.x+1][core.y]=='K'){
+                direction2 = DOWN;
+            }else {
+                direction2 = UP;
+            }
+        } else {
+            direction = RIGHT;
+            if (map[core.x-1][core.y]=='K'){
+                direction2 = UP;
+            }else {
+                direction2 = DOWN;
+            }
+        }
     }
 
     public int getRobotToBerthMinFps() {
@@ -492,6 +550,21 @@ public class Berth {
                 min = fps;
             }
         }
+        return min;
+    }
+
+    public int getClosestDeliveryFps() {
+        // 得到离泊口最近交货点的距离
+        int min = unreachableFps;
+//        Point res = boatDeliveries.get(0);
+        for (Point delivery : boatDeliveries) {
+            int fps = Boat.getSeaPathFps(core, direction, delivery);
+            if (fps < min){
+                min = fps;
+//                res = delivery;
+            }
+        }
+
         return min;
     }
 }

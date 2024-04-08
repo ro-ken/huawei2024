@@ -31,6 +31,7 @@ public class BoatRoute {
         setWay(path);
     }
 
+    // 对外设路径接口
     public void setNewWay(Point pos){
         if (pos.equals(boat.pos)){
             // 原地待命
@@ -70,17 +71,6 @@ public class BoatRoute {
                 next = way.get(index++);   // 是自己的点，去下一个点
             }
             return next;
-        }
-    }
-    public Point getLastPoint() {
-        // 去上一个点
-        index = Math.max(0,index-2);
-        return way.get(Math.max(0,index-1));
-    }
-
-    public void stayCurPoint() {
-        if (index >=2 && boat.pos.equals(way.get(index-2))){
-            index --;
         }
     }
 

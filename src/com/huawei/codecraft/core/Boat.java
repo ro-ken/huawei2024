@@ -6,6 +6,7 @@ import com.huawei.codecraft.Util;
 import com.huawei.codecraft.util.BoatLastTask;
 import com.huawei.codecraft.util.BoatStatus;
 import com.huawei.codecraft.util.Point;
+import com.huawei.codecraft.util.Twins;
 
 
 import java.util.*;
@@ -30,7 +31,7 @@ public class Boat {
     BoatRoute route;
     BoatLastTask task ;
     public boolean frameMoved;  // 只能动一次
-    private boolean firstGo = true;
+    private boolean firstGo = false;
 
     public Boat(int id,Point p) {
         this.id = id;
@@ -42,6 +43,11 @@ public class Boat {
         for (Boat boat : boats) {
             boat.printMove();
         }
+    }
+
+    public static void init() {
+        // 对海洋热路径预热
+
     }
 
     private void printMove() {
@@ -83,18 +89,138 @@ public class Boat {
         if (status != BoatStatus.FREE){
             handleBoatTask();
         }
-        if (status == BoatStatus.FREE){
-            // 没有任务
-            bookBerth = selectHighValueBerth();
+        if (status == BoatStatus.FREE && !frameMoved){
+            // 没有任务 ， 且没有输出指令
+            goToBerthOrDelivery();
+        }
+    }
+
+    private void goToBerthOrDelivery() {
+        Berth tarBerth = null;
+        if (goodSize == 0){
+            // 没有货物，选择货物最多的泊口
+            tarBerth = selectMostGoodNumBerth();
+        }else {
+            // 有货，判断是去虚拟点还是泊口
+            if (leftCapacity() >= 3){
+                // 可以去泊口装货
+                ArrayList<Berth> berthList = getSizeHighThanMe();
+                if(berthList.isEmpty()){
+                    tarBerth = selectMostGoodNumBerth();
+                }else {
+                    // 选择pos -> berth -> 交货点 最近的berth
+                    int min = unreachableFps;
+                    tarBerth = berthList.get(0);
+                    for (Berth berth : berthList) {
+                        int dis = Boat.getSeaPathFps(pos,direction,berth.core);
+                        dis += berth.getClosestDeliveryFps();
+                        if (dis < min){
+                            min = dis;
+                            tarBerth = berth;
+                        }
+                    }
+                }
+            }
+        }
+
+        Berth most = selectMostGoodNumBerth();
+        Twins<Point, Integer> delivery = selectClosestDeliveryToBerth(most);
+        if (tarBerth != null && goodSize != 0){
+            int dis = getSeaPathFps(pos,direction,tarBerth.core);
+            if (dis > delivery.getObj2() * 0.8){
+                // 距离太长，还不如先去交货点
+                tarBerth = null;
+            }
+        }
+
+        if (tarBerth != null ){
+            bookBerth = tarBerth;
             Util.printLog("boat下一个泊口"+bookBerth);
             status = BoatStatus.SHIP;
             changeRoad(bookBerth.pos);
+        }else {
+            // 去交货点
+            status = BoatStatus.GO;
+            changeRoad(delivery.getObj1());
         }
+    }
+
+    private Twins<Point,Integer> selectClosestDeliveryToBerth(Berth berth) {
+        // dis = pos -> delivery -> berth；选择一个最近的交货点让这段距离最小
+        Point tar = boatDeliveries.get(0);
+        int min = unreachableFps;
+        for (Point delivery : boatDeliveries) {
+            int dis = getSeaPathFps(pos,direction,delivery);
+            dis += getSeaPathFps(berth.core,berth.direction,delivery);
+            if (dis<min){
+                min = dis;
+                tar = delivery;
+            }
+        }
+        return new Twins<>(tar,min);
+    }
+
+    public static int getSeaPathFps(Point pos, int direction, Point target) {
+        if (pos.equals(target)){
+            return 0;
+        }
+
+        Twins<Point,Integer> key = new Twins<>(pos,direction);
+        if (seaHotPath.containsKey(key) && seaHotPath.get(key).containsKey(target)){
+            return seaHotPath.get(key).get(target).getObj2();
+        }else {
+            // 没有先创建
+            if (!seaHotPath.containsKey(key)){
+                seaHotPath.put(key,new HashMap<>());
+            }
+            Map<Point, Twins<ArrayList<Point>, Integer>> map = seaHotPath.get(key);
+            Util.printLog("src:"+pos +"方向:"+direction+"dest:"+target);
+            Twins<ArrayList<Point>, Integer> value = path.getBoatPathAndFps(pos, direction, target);
+            if (value == null){
+                Util.printErr("海上寻路出现问题！");
+                return unreachableFps;
+            }
+            map.put(target,value);
+            seaHotPath.put(key,map);
+            return value.getObj2();
+        }
+    }
+
+    private Berth selectMostGoodNumBerth() {
+        int max = 0;
+        Berth tar = berths.get(0);
+        // 选择物品数量最多的泊口
+        for (Berth berth : berths) {
+            if (berth.existGoods.size()>max){
+                max = berth.existGoods.size();
+                tar = berth;
+            }
+        }
+        return tar;
+    }
+
+    private ArrayList<Berth> getSizeHighThanMe() {
+        //获取泊口物品数大于我的点，去这些点能装货一样，只比较远近
+        ArrayList<Berth> res = new ArrayList<>();
+        for (Berth berth : berths) {
+            if (berth.existGoods.size() >= leftCapacity()){
+                res.add(berth);
+            }
+        }
+        return res;
+    }
+
+    private int leftCapacity() {
+        return capacity-goodSize;
     }
 
     private void handleBoatTask() {
         if (status == BoatStatus.SHIP){
             // 驶向泊口状态
+//            if (firstGo){
+//                changeRoad(boatDeliveries.get(0));
+//                firstGo = false;
+//            }
             if (isArriveBerthArea()){
                 Util.printLog(this+"boat arrive："+bookBerth);
                 Util.boatBerth(id);
@@ -102,38 +228,25 @@ public class Boat {
                 status = BoatStatus.LOAD;
             }
         }else if (status == BoatStatus.LOAD){
-            Util.printLog("装货ing");
             if (startFrame == 0){
                 startFrame = frameId;
             }
             if (isLoadFinish()){
-                Util.printLog("startFrame"+startFrame);
-                Util.printLog("搬运结束");
+                Util.printLog("搬运结束：startFrame"+startFrame);
                 clacGoods();//结算货物
-                goToDelivery();
+//                goToDelivery();
                 Util.boatDept(id);
                 frameMoved = true;
-                status = BoatStatus.GO;
+                status = BoatStatus.FREE; // 让轮船重新做选择
                 firstGo = true;
                 startFrame = 0;
             }
         }else if(status == BoatStatus.GO){
-            if (firstGo){
-                if (carry != goodSize){
-
-                    Util.printErr("货对不上：系统货量"+carry+"计算装货："+goodSize);
-                }
-                changeRoad(boatDeliveries.get(0));
-                firstGo = false;
-            }
+//            if (firstGo){
+//                changeRoad(boatDeliveries.get(0));
+//                firstGo = false;
+//            }
             if (isArriveDelivery()){
-                Util.printDebug("到达交货点,last money"+ Main.lastMoney2 + ",money:"+money+"，ship，价值："+totalCarryValue);
-                if (money - Main.lastMoney2 != totalCarryValue){
-                    Util.printErr("账对不上,少了："+(totalCarryValue-(money-Main.lastMoney2))+"运货量"+ goodSize);
-                }else {
-                    Util.printDebug("金额正确");
-                }
-
                 resetBoat();        // 重置船
                 // 需要判断是否进入最后周期
                 status = BoatStatus.FREE;
