@@ -2,6 +2,7 @@ package com.huawei.codecraft.way;
 
 import com.huawei.codecraft.Const;
 import com.huawei.codecraft.util.Point;
+import com.huawei.codecraft.util.Twins;
 
 import java.util.*;
 
@@ -226,6 +227,26 @@ public class PathImpl implements Path {
         return getFinalPath(core, direction, newDest, straightPath);
     }
 
+    private int getPathLen(ArrayList<Point> finalPath) {
+        int len = 0;
+        for (Point p : finalPath) {
+            if (seaMap[p.x][p.y] == MAINBOTH || seaMap[p.x][p.y] == MAINSEA) {
+                len += 2;
+            }
+            else {
+                len += 1;
+            }
+        }
+        return len;
+    }
+
+    @Override
+    public Twins<ArrayList<Point>, Integer> getBoatPathAndFps(Point core, int direction, Point dest) {
+        ArrayList<Point> finalPath = getBoatPath(core, direction, dest);
+        int pathLen = getPathLen(finalPath);
+        return new Twins<>(finalPath, pathLen);
+    }
+
     private ArrayList<Point> correctPath(ArrayList<Point> finalPathPath) {
         return null;
     }
@@ -248,12 +269,11 @@ public class PathImpl implements Path {
         }
         // 最后需要路径是可靠的
         if (!pathIsReliable(straightPath)) {
+            // 找路之前修改地图,获取特殊点，需要将其改为障碍
             ArrayList<Point> initialPath = getInitialBoatPath(ship[0], dest);
             assert initialPath != null;
-            // 找路之前修改地图,获取特殊点，需要将其改为障碍
             ArrayList<Point> specialPointList = new ArrayList<>(specialPoint.keySet());
             changeMapinfo(specialPointList, special);
-
             straightPath = getStraightPath(initialPath);
             // 恢复地图上的点
             restoreMapinfo(specialPointList, special);
