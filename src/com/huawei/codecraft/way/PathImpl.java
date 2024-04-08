@@ -8,6 +8,7 @@ import java.util.*;
 
 import static com.huawei.codecraft.Const.*;
 import static com.huawei.codecraft.Util.*;
+import static com.huawei.codecraft.Util.printLog;
 import static com.huawei.codecraft.way.Mapinfo.isValid;
 import static com.huawei.codecraft.way.Mapinfo.seaMap;
 
@@ -26,6 +27,8 @@ public class PathImpl implements Path {
     public  static final int shipLen = 3;
     public static Point[] ship = new Point[shipLen];
     public static HashMap<Point, Integer> specialPoint = new HashMap<>();
+    public static ArrayList<Point> blockPoints = new ArrayList<>();
+    public static HashMap<Point, Integer> blockPointsMap = new HashMap<>();
     private static final int[][][] turnTimes = {
             {{4, 2 , 3, 1},{4, 2, 1, 3}}, // turnTimes[][0] 代表顺时针转换次数，turnTimes[][1]代表逆时针转换次数
             {{2, 4 , 1, 3},{2, 4, 3, 1}},
@@ -212,6 +215,9 @@ public class PathImpl implements Path {
     // 优先走水平，再走垂直，这样来回路径默认错开
     @Override
     public ArrayList<Point> getBoatPath(Point core, int direction, Point dest) {
+        if (core.equals(dest)) {
+            return new ArrayList<>();
+        }
         Point newDest;
         // 泊位终点尽可能不靠墙
         if (pointToBerth.containsKey(dest)) {
@@ -251,6 +257,38 @@ public class PathImpl implements Path {
         return null;
     }
 
+    private ArrayList<Point> getRoundPoints(int direction) {
+        if (direction == LEFT || direction == RIGHT) {
+            blockPoints.add(new Point(ship[0].x - 1, ship[0].y));
+            blockPoints.add(new Point(ship[0].x + 1, ship[0].y));
+            blockPoints.add(new Point(ship[1].x - 1, ship[1].y));
+            blockPoints.add(new Point(ship[1].x + 1, ship[1].y));
+        }
+        else  {
+            blockPoints.add(new Point(ship[0].x, ship[0].y - 1));
+            blockPoints.add(new Point(ship[0].x, ship[0].y + 1));
+            blockPoints.add(new Point(ship[1].x, ship[1].y - 1));
+            blockPoints.add(new Point(ship[1].x, ship[1].y + 1));
+        }
+        return blockPoints;
+    }
+
+    private void blockShipRound(int direction) {
+        ArrayList<Point> blockPoints = getRoundPoints(direction);
+        for (Point point : blockPoints) {
+            blockPointsMap.put(point, seaMap[point.x][point.y]);
+            seaMap[point.x][point.y] = ROAD;
+        }
+    }
+
+    private void restoreShipRound() {
+        for (Point point : blockPoints) {
+            seaMap[point.x][point.y] = blockPointsMap.get(point);
+        }
+        blockPointsMap.clear();
+        blockPoints.clear();
+    }
+
     private ArrayList<Point> getFinalPath(Point core, int direction, Point dest, ArrayList<Point> straightPath) {
         ArrayList<Point> finalPath = new ArrayList<>();
         // A*拉直的路径，船不能完整按照该路径走，只能根据方向走
@@ -258,19 +296,27 @@ public class PathImpl implements Path {
         initShip(startPoint);
         refreshShip(startPoint, direction);
         finalPath.add(startPoint);
+        // 一旦A* 确定了方向，下次A* 起始必须为这个方向
         int pathDir = getDirection(straightPath.get(0), straightPath.get(1));
+
         // 如果起始方向不一致，或者路径不可靠，需要从当前方向重新A*寻路然后重新拉直，否则路径可能会出问题
         if (pathDir != direction) {
             turnDirection(direction, pathDir, straightPath.get(1), finalPath);
             direction = pathDir;
+            // 将起点周围4个点围起来，防止出现方向不一致
+            blockShipRound(pathDir);
             ArrayList<Point> initialPath = getInitialBoatPath(ship[0], dest);
+            restoreShipRound();
             assert initialPath != null;
             straightPath = getStraightPath(initialPath);
         }
-        // 最后需要路径是可靠的
+
+        // 需要路径是可靠的
         if (!pathIsReliable(straightPath)) {
             // 找路之前修改地图,获取特殊点，需要将其改为障碍
+            blockShipRound(pathDir);
             ArrayList<Point> initialPath = getInitialBoatPath(ship[0], dest);
+            restoreShipRound();
             assert initialPath != null;
             ArrayList<Point> specialPointList = new ArrayList<>(specialPoint.keySet());
             changeMapinfo(specialPointList, special);
@@ -279,13 +325,17 @@ public class PathImpl implements Path {
             restoreMapinfo(specialPointList, special);
             specialPoint.clear(); // 清空，保证下次使用正常
         }
+
+        // 拼接最后的路径
         for (int i = 2; i < straightPath.size(); i++) {
             pathDir = getDirection(straightPath.get(i - 1), straightPath.get(i));
             // A*开始转向的时候，船不一定能转，需要做特殊处理
             if (pathDir != direction) {
+                // 连续转向不补
                 while (shipBehindPathPoint(direction, straightPath.get(i))) {
-                   pushForward(direction, finalPath);
+                    pushForward(direction, finalPath);
                 }
+                // 走直线时，如果船慢了，要补上
                 int rotation = getRotation(direction, pathDir);
                 // 如果A*给的点不能够现在转，那么就走到能转时为止
                 while (!canTurnDir(direction, rotation)) {
@@ -295,9 +345,10 @@ public class PathImpl implements Path {
                 direction = pathDir;
             }
             else {
-                // 正常走直线的时候，A*要比轮船快 2 格
+                // 正常走直线的时候，A*要比轮船快 2 格, 连续转向不补
                 if (!shipBehindPathPoint(direction, straightPath.get(i))) {
-                    i += 2;
+                    // i增加之后，pathdir需要及时更新
+                    i += 1;
                 }
                 pushForward(direction, finalPath);
             }
@@ -814,9 +865,7 @@ public class PathImpl implements Path {
         }
         else if (flag == special) {
             for (Point barrier : barriers) {
-                if (specialPoint.containsKey(barrier)) {
-                    Mapinfo.seaMap[barrier.x][barrier.y] = specialPoint.get(barrier);  // 恢复为原来的地图
-                }
+                Mapinfo.seaMap[barrier.x][barrier.y] = specialPoint.get(barrier);  // 恢复为原来的地图
             }
         }
     }
@@ -841,13 +890,6 @@ public class PathImpl implements Path {
         }
         Collections.reverse(path);
         return path;
-    }
-
-    private int getPointG(int x, int y) {
-        if (seaMap[x][y] == MAINBOTH || seaMap[x][y] == MAINSEA) {
-            return 2;
-        }
-        return 1;
     }
 
     private  ArrayList<Point> getInitialBoatPath(Point p1, Point p2) {
@@ -883,7 +925,7 @@ public class PathImpl implements Path {
                     continue;
                 }
 
-                int newG = current.g + getPointG(newPoint.x, newPoint.y);  // 每一步代价为1
+                int newG = current.g + 1;  // 每一步代价为1
                 if (!visitedNodes.containsKey(newPoint) || newG < visitedNodes.get(newPoint).g) {
                     int newH = estimateHeuristic(newPoint, p2);
                     Pos next = new Pos(newPoint, current, newG, newH);
