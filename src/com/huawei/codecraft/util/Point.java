@@ -44,6 +44,28 @@ public class Point {
         return Mapinfo.map[pos.x][pos.y] == 0 || Mapinfo.map[pos.x][pos.y] == 1;
     }
 
+    public static boolean isPos2(int x, int y) {
+        // 判断该点是否是泊口靠近陆地的边缘点
+        if (Const.map[x][y] != 'B'){
+            return false;
+        }
+        // 只要有一边不是泊口或靠泊区就行
+        if (Const.map[x-1][y] != 'B' && Const.map[x-1][y] != 'K'){
+            return true;
+        }
+        if (Const.map[x+1][y] != 'B' && Const.map[x+1][y] != 'K'){
+            return true;
+        }
+        if (Const.map[x][y-1] != 'B' && Const.map[x][y-1] != 'K'){
+            return true;
+        }
+        if (Const.map[x][y+1] != 'B' && Const.map[x][y+1] != 'K'){
+            return true;
+        }
+
+        return false;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
