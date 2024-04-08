@@ -33,7 +33,7 @@ public class PathImpl implements Path {
             {{4, 2 , 3, 1},{4, 2, 1, 3}}, // turnTimes[][0] 代表顺时针转换次数，turnTimes[][1]代表逆时针转换次数
             {{2, 4 , 1, 3},{2, 4, 3, 1}},
             {{1, 3 , 4, 2},{3, 1, 4, 2}},
-            {{3, 1 , 2, 4},{1, 3, 2, 4}}
+            {{3, 1, 2, 4},{1, 3, 2, 4}}
     };
 
     private static final Map<Integer, Integer> clockwiseRotation = new HashMap<>(); // 轮转方向顺时针映射
@@ -220,17 +220,53 @@ public class PathImpl implements Path {
         }
         Point newDest;
         // 泊位终点尽可能不靠墙
-        if (pointToBerth.containsKey(dest)) {
-             newDest = offsetDestination(dest);
+        newDest = offsetDestination(dest);
+        System.out.println(newDest);
+        int vertical = judgeVertical(core, dest);
+        int horizon = judgeHorizon(core, dest);
+        int dir;
+        // 朝向就是移动方向，一定朝外
+        if (direction == vertical || direction == horizon) {
+            dir = direction;
         }
         else {
-             newDest = dest;
+            dir = getBestDir(core, vertical, horizon);
+            System.out.println("best" + dir);
         }
-        ArrayList<Point> initialPath = getInitialBoatPath(core, newDest);
-        assert initialPath != null;
-        ArrayList<Point> straightPath =  getStraightPath(initialPath);
-//        return  straightPath;
-        return getFinalPath(core, direction, newDest, straightPath);
+
+        // 水平优先
+        return getFinalPath(core, direction, newDest, dir);
+    }
+
+    private int getBestDir(Point core, int vetical, int horizon) {
+        // 朝向vertical方向上的空地
+        int verCnt = 0, horCnt = 0;
+        int x = core.x, y = core.y;
+        if (horizon == LEFT) {
+            while (isValid(x, y) && verCnt < 6 && seaMap[x][y] != ROAD) {
+                verCnt++;
+                y -= 1;
+            }
+        }
+        else {
+            while (isValid(x, y) && verCnt < 6 && seaMap[x][y] != ROAD) {
+                verCnt++;
+                y += 1;
+            }
+        }
+        if (vetical == UP) {
+            while (isValid(x, y) && verCnt < 6 && seaMap[x][y] != ROAD) {
+                horCnt++;
+                x -= 1;
+            }
+        }
+        else {
+            while (isValid(x, y) && verCnt < 6 && seaMap[x][y] != ROAD) {
+                horCnt++;
+                x += 1;
+            }
+        }
+        return vetical <= horCnt ? vetical : horizon;
     }
 
     private int getPathLen(ArrayList<Point> finalPath) {
@@ -263,12 +299,24 @@ public class PathImpl implements Path {
             blockPoints.add(new Point(ship[0].x + 1, ship[0].y));
             blockPoints.add(new Point(ship[1].x - 1, ship[1].y));
             blockPoints.add(new Point(ship[1].x + 1, ship[1].y));
+            if (direction == LEFT) {
+                blockPoints.add(new Point(ship[0].x, ship[0].y + 1));
+            }
+            else {
+                blockPoints.add(new Point(ship[0].x, ship[0].y - 1));
+            }
         }
         else  {
             blockPoints.add(new Point(ship[0].x, ship[0].y - 1));
             blockPoints.add(new Point(ship[0].x, ship[0].y + 1));
             blockPoints.add(new Point(ship[1].x, ship[1].y - 1));
             blockPoints.add(new Point(ship[1].x, ship[1].y + 1));
+            if (direction == UP) {
+                blockPoints.add(new Point(ship[0].x + 1, ship[0].y));
+            }
+            else {
+                blockPoints.add(new Point(ship[0].x - 1, ship[0].y));
+            }
         }
         return blockPoints;
     }
@@ -289,33 +337,28 @@ public class PathImpl implements Path {
         blockPoints.clear();
     }
 
-    private ArrayList<Point> getFinalPath(Point core, int direction, Point dest, ArrayList<Point> straightPath) {
+    // 从船当前方向去找，这个方向一定向外的
+    private ArrayList<Point> getFinalPath(Point core, int direction, Point dest, int bestDir) {
         ArrayList<Point> finalPath = new ArrayList<>();
         // A*拉直的路径，船不能完整按照该路径走，只能根据方向走
-        Point startPoint = straightPath.get(0);
-        initShip(startPoint);
-        refreshShip(startPoint, direction);
-        finalPath.add(startPoint);
-        // 一旦A* 确定了方向，下次A* 起始必须为这个方向
-        int pathDir = getDirection(straightPath.get(0), straightPath.get(1));
-
-        // 如果起始方向不一致，或者路径不可靠，需要从当前方向重新A*寻路然后重新拉直，否则路径可能会出问题
-        if (pathDir != direction) {
-            turnDirection(direction, pathDir, straightPath.get(1), finalPath);
-            direction = pathDir;
-            // 将起点周围4个点围起来，防止出现方向不一致
-            blockShipRound(pathDir);
-            ArrayList<Point> initialPath = getInitialBoatPath(ship[0], dest);
-            restoreShipRound();
-            assert initialPath != null;
-            straightPath = getStraightPath(initialPath);
+        initShip(core);
+        refreshShip(core, direction);
+        finalPath.add(new Point(core));
+        if (direction != bestDir) {
+            turnDirection(direction, bestDir, dest, finalPath);
+            direction = bestDir;
         }
-
+        // 将起点周围4个点围起来，防止出现方向不一致
+        blockShipRound(direction);
+        ArrayList<Point> initialPath = getInitialBoatPath(ship[0], dest);
+        restoreShipRound();
+        assert initialPath != null;
+        ArrayList<Point> straightPath = getStraightPath(initialPath);
         // 需要路径是可靠的
         if (!pathIsReliable(straightPath)) {
             // 找路之前修改地图,获取特殊点，需要将其改为障碍
-            blockShipRound(pathDir);
-            ArrayList<Point> initialPath = getInitialBoatPath(ship[0], dest);
+            blockShipRound(direction);
+            initialPath = getInitialBoatPath(ship[0], dest);
             restoreShipRound();
             assert initialPath != null;
             ArrayList<Point> specialPointList = new ArrayList<>(specialPoint.keySet());
@@ -325,17 +368,14 @@ public class PathImpl implements Path {
             restoreMapinfo(specialPointList, special);
             specialPoint.clear(); // 清空，保证下次使用正常
         }
-
         // 拼接最后的路径
-        for (int i = 2; i < straightPath.size(); i++) {
-            pathDir = getDirection(straightPath.get(i - 1), straightPath.get(i));
+        for (int i = 3; i < straightPath.size(); i++) {
+            int pathDir = getDirection(straightPath.get(i - 1), straightPath.get(i));
             // A*开始转向的时候，船不一定能转，需要做特殊处理
             if (pathDir != direction) {
-                // 连续转向不补
                 while (shipBehindPathPoint(direction, straightPath.get(i))) {
                     pushForward(direction, finalPath);
                 }
-                // 走直线时，如果船慢了，要补上
                 int rotation = getRotation(direction, pathDir);
                 // 如果A*给的点不能够现在转，那么就走到能转时为止
                 while (!canTurnDir(direction, rotation)) {
@@ -375,7 +415,7 @@ public class PathImpl implements Path {
 
         Point endPoint = initialPath.get(initialPath.size() - 1);
         straightPath.add(new Point(initialPath.get(0)));
-        for (int i = 1; i < initialPath.size() - 1; i++) {
+        for (int i = 2; i < initialPath.size() - 1; i++) {
             int nextDir = getDirection(initialPath.get(i), initialPath.get(i + 1));
             if (preDir != nextDir) {
                 // 不一样逻辑则需要特殊处理，看能不能继续走preDir方向
@@ -408,7 +448,7 @@ public class PathImpl implements Path {
     // 检查路径是不是有效路径
     private  boolean pathIsReliable(ArrayList<Point> straightPath) {
         boolean flag = true;
-        for (int i = 1; i < straightPath.size(); i++) {
+        for (int i = 1; i < straightPath.size() - 2; i++) {
             Point p1 = straightPath.get(i - 1);
             Point p2 = straightPath.get(i);
             int pathDir = getDirection(p1, p2);
@@ -455,8 +495,11 @@ public class PathImpl implements Path {
         else if (seaMap[dest.x][dest.y - 1] == ROAD) { // 左方是路
             return new Point(dest.x, dest.y + 1);
         }
-        else { // 右方是路
+        else if (seaMap[dest.x][dest.y + 1] == ROAD){ // 右方是路
             return new Point(dest.x, dest.y - 1);
+        }
+        else {
+            return dest;
         }
     }
 
