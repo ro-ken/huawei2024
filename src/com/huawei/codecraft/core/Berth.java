@@ -501,21 +501,21 @@ public class Berth {
             }
         }
         // 初始化泊口方向
-        if (map[core.x+1][core.y]=='K'){
+        if (map[core.x+1][core.y]=='K' && map[core.x][core.y+1]=='B'){
             direction = UP;  //
             if (map[core.x][core.y-1]=='K'){
                 direction2 = LEFT;
             }else {
                 direction2 = RIGHT;
             }
-        } else if (map[core.x-1][core.y] == 'K') {
+        } else if (map[core.x-1][core.y] == 'K' && map[core.x][core.y-1] == 'B') {
             direction = DOWN;
             if (map[core.x][core.y+1]=='K'){
                 direction2 = RIGHT;
             }else {
                 direction2 = LEFT;
             }
-        } else if (map[core.x][core.y+1] == 'K') {
+        } else if (map[core.x][core.y+1] == 'K' && map[core.x-1][core.y] == 'B') {
             direction = LEFT;
             if (map[core.x+1][core.y]=='K'){
                 direction2 = DOWN;
@@ -530,6 +530,11 @@ public class Berth {
                 direction2 = DOWN;
             }
         }
+
+        for (Berth berth : berths) {
+            Util.printDebug(berth+"d1:"+direction+",d2:"+direction2);
+        }
+
     }
 
     public int getRobotToBerthMinFps() {
