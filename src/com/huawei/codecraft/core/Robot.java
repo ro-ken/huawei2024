@@ -205,6 +205,11 @@ public class Robot {
             }
         } else {
             if (arriveBerth()) {
+
+                if (pos.clacGridDis(bookBerth.pos)>5){
+                    Util.printErr("泊口不对....");
+                }
+
                 // 2、如果到达了泊口，卸货，任务结束
                 unloadGood(); //卸货
                 turnOffTask();
@@ -338,6 +343,7 @@ public class Robot {
     }
 
     private void unloadGood() {
+        Util.printLog("到达泊口,卸货:"+this+bookGood);
         Util.robotPull(id);
         carry = 0;
         bookBerth.addBerthGood(bookGood);
@@ -371,7 +377,7 @@ public class Robot {
                 if (!Point.isMainRoad(robot.pos)){
                     invalidPoints.add(robot.pos);   // 不能动，无效机器人
                 }
-            }else if (Point.isMainRoad(robot.next)){
+            }else if (Point.isMainRoad(robot.next) && Point.isMainRoad(robot.pos)){
                 workRobots.remove(robot);
                 robot.printMove();
             }else {

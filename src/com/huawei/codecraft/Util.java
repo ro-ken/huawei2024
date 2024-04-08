@@ -60,13 +60,23 @@ public class Util {
 
     public static void printLastInfo() throws InterruptedException {
         Thread.sleep(30);
+
+        int boatValue = 0;
+        int boatNum = 0;
+        for (Boat boat : boats) {
+            boatValue += boat.totalCarryValue;
+            boatNum += boat.goodSize;
+        }
+
+
         printBoth("------结果分析：------");
-        printBoth("机器人数："+robot_num +"，花费："+robot_num*2000+"，轮船数："+boat_num+"，花费："+boat_num*8000+"，计算得分:"+(25000+totalSellValue-robot_num*2000-boat_num*8000));
+        printBoth("机器人数："+robot_num +"，花费："+robot_num*2000+"，轮船数："+boat_num+"，花费："+boat_num*8000+"，计算得分:"+(25000+totalSellValue-robot_num*2000-boat_num*8000-boatValue));
         printBoth("------运货信息：------");
         printBoth("总计生成货物："+ countGoodNum+"，总计价值："+countGoodValue+"，单位价值："+countGoodValue/countGoodNum);
         printBoth("搬运码头货物："+ totalCarrySize+"，总计价值："+ totalCarryValue+"，单位价值："+totalCarryValue/(totalCarrySize+0.01));
         printBoth("成功运输货物："+ totalSellSize+"，总计价值："+totalSellValue+"，单位价值："+totalSellValue/(totalSellSize+0.01));
-        printBoth("----------------泊口平均运货-------------------");
+        printBoth("轮船剩余货物：" + boatNum + "剩余价值："+boatValue);
+        printLog("----------------泊口平均运货-------------------");
         for (Berth berth : berths) {
             if (berth.myAreas.isEmpty()) continue;
             BerthArea area = berth.myAreas.get(berth.myAreas.size() - 1);
@@ -76,11 +86,11 @@ public class Util {
             }
             float expMinValue = (float) area.getExpMinValue();
             int expDis = berth.myAreas.get(berth.myAreas.size()-1).getExpMaxStep();
-            printBoth(berth+"期望运货："+expNum+",\t期望价值："+(float)avgGoodValue*expNum+",\t单位价值："+avgGoodValue+"，\t期望距离"+expDis+",\t期望最低价值："+expMinValue);
-            printBoth(berth+"实际产生："+area.totalGoodNum/15.0f+",\t实际价值："+area.totalGoodValue/15.0f+",\t单位价值："+area.totalGoodValue*1.0f/area.totalGoodNum+"，\t周期等待:"+area.waitTime/15.0f);
-            printBoth(berth+"实际运货："+berth.totalCarrySize/15.0f+",\t周期价值：" + berth.totalCarryValue/15.0f+",\t单位价值：" + berth.totalCarryValue*1.0f/berth.totalCarrySize+"，\t取货距离:"+berth.totalDis*1.0f/berth.totalCarrySize);
+            printLog(berth+"期望运货："+expNum+",\t期望价值："+(float)avgGoodValue*expNum+",\t单位价值："+avgGoodValue+"，\t期望距离"+expDis+",\t期望最低价值："+expMinValue);
+            printLog(berth+"实际产生："+area.totalGoodNum/15.0f+",\t实际价值："+area.totalGoodValue/15.0f+",\t单位价值："+area.totalGoodValue*1.0f/area.totalGoodNum+"，\t周期等待:"+area.waitTime/15.0f);
+            printLog(berth+"实际运货："+berth.totalCarrySize/15.0f+",\t周期价值：" + berth.totalCarryValue/15.0f+",\t单位价值：" + berth.totalCarryValue*1.0f/berth.totalCarrySize+"，\t取货距离:"+berth.totalDis*1.0f/berth.totalCarrySize);
 
-            printBoth("----");
+            printLog("----");
         }
         printBoth("-------------------");
         printBoth("总共跳帧："+dumpFrame);

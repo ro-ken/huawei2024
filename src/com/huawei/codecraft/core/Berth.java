@@ -367,7 +367,7 @@ public class Berth {
         existGoods.add(good);
         existValue += good.value;
     }
-    public void removeGood(){
+    public int removeGood(){
         Good good = existGoods.pop();
         existValue -= good.value;
         Const.totalSellValue += good.value;
@@ -376,13 +376,16 @@ public class Berth {
             existValue = 0;
             Util.printLog("ERROR! existValue <0");
         }
+        return good.value;
     }
 
     // 移出货物
-    public void removeGoods(int size) {
+    public int removeGoods(int size) {
+        int value = 0;
         for (int i = 0; i < size; i++) {
-            removeGood();
+            value +=removeGood();
         }
+        return value;
     }
 
     public void addBoat(Boat boat) {
