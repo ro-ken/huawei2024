@@ -218,10 +218,10 @@ public class PathImpl implements Path {
         if (core.equals(dest)) {
             return new ArrayList<>();
         }
+
         Point newDest;
         // 泊位终点尽可能不靠墙
         newDest = offsetDestination(dest);
-        System.out.println(newDest);
         int vertical = judgeVertical(core, dest);
         int horizon = judgeHorizon(core, dest);
         int dir;
@@ -231,42 +231,43 @@ public class PathImpl implements Path {
         }
         else {
             dir = getBestDir(core, vertical, horizon);
-            System.out.println("best" + dir);
         }
 
         // 水平优先
         return getFinalPath(core, direction, newDest, dir);
     }
 
-    private int getBestDir(Point core, int vetical, int horizon) {
+    private int getBestDir(Point core, int vertical, int horizon) {
         // 朝向vertical方向上的空地
         int verCnt = 0, horCnt = 0;
         int x = core.x, y = core.y;
         if (horizon == LEFT) {
-            while (isValid(x, y) && verCnt < 6 && seaMap[x][y] != ROAD) {
-                verCnt++;
+            while (isValid(x, y) && horCnt < 6 && seaMap[x][y] != ROAD) {
+                horCnt++;
                 y -= 1;
             }
         }
         else {
-            while (isValid(x, y) && verCnt < 6 && seaMap[x][y] != ROAD) {
-                verCnt++;
+            while (isValid(x, y) && horCnt < 6 && seaMap[x][y] != ROAD) {
+                horCnt++;
                 y += 1;
             }
         }
-        if (vetical == UP) {
+        x = core.x;
+        y = core.y;
+        if (vertical == UP) {
             while (isValid(x, y) && verCnt < 6 && seaMap[x][y] != ROAD) {
-                horCnt++;
+                verCnt++;
                 x -= 1;
             }
         }
         else {
             while (isValid(x, y) && verCnt < 6 && seaMap[x][y] != ROAD) {
-                horCnt++;
+                verCnt++;
                 x += 1;
             }
         }
-        return vetical <= horCnt ? vetical : horizon;
+        return verCnt > horCnt ? vertical : horizon;
     }
 
     private int getPathLen(ArrayList<Point> finalPath) {
@@ -324,14 +325,18 @@ public class PathImpl implements Path {
     private void blockShipRound(int direction) {
         ArrayList<Point> blockPoints = getRoundPoints(direction);
         for (Point point : blockPoints) {
-            blockPointsMap.put(point, seaMap[point.x][point.y]);
-            seaMap[point.x][point.y] = ROAD;
+            if (isValid(point.x, point.y)) {
+                blockPointsMap.put(point, seaMap[point.x][point.y]);
+                seaMap[point.x][point.y] = ROAD;
+            }
         }
     }
 
     private void restoreShipRound() {
         for (Point point : blockPoints) {
-            seaMap[point.x][point.y] = blockPointsMap.get(point);
+            if (isValid(point.x, point.y)) {
+                seaMap[point.x][point.y] = blockPointsMap.get(point);
+            }
         }
         blockPointsMap.clear();
         blockPoints.clear();
@@ -354,6 +359,7 @@ public class PathImpl implements Path {
         restoreShipRound();
         assert initialPath != null;
         ArrayList<Point> straightPath = getStraightPath(initialPath);
+
         // 需要路径是可靠的
         if (!pathIsReliable(straightPath)) {
             // 找路之前修改地图,获取特殊点，需要将其改为障碍
