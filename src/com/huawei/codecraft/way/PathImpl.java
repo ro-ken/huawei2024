@@ -371,14 +371,11 @@ public class PathImpl implements Path {
             restoreMapinfo(specialPointList, special);
             specialPoint.clear(); // 清空，保证下次使用正常
         }
-        System.out.println("init:" + initialPath.size());
-        System.out.println("straight:" + straightPath.size());
-        System.out.println(straightPath);
         int turnFlag = -1; // 旋转标志，0 顺，1逆，-1 zhi zou
+        int preTrunFlag = -1;
         // 拼接最后的路径
         for (int i = 2; i < straightPath.size() - 1; i++) {
             int nextDir = getDirection(straightPath.get(i), straightPath.get(i + 1));
-            // 船位置要和 i 保持一致
             if (direction == nextDir && shipBehindPathPoint(nextDir, straightPath.get(i))) {
                 pushForward(direction, finalPath);
             }
@@ -388,8 +385,13 @@ public class PathImpl implements Path {
                 // 如果A*给的点不能够现在转，那么就走到能转时为止
                 // 最多走两次才能转，不然就是路径寻找有问题
                 int times = 0;
+                // 船位置要和 i 保持一致
                 while (!canTurnDir(direction, turnFlag) && times < 2) {
+                    pushForward(direction, finalPath);
                     times++;
+                }
+                // TODO： 这个在有的时候可能会出现不知情的落后，暂时先这样吧
+                if (shipBehindPathPoint(direction, straightPath.get(i))) {
                     pushForward(direction, finalPath);
                 }
                 turnDirection(direction, nextDir, straightPath.get(i), finalPath);
@@ -399,23 +401,35 @@ public class PathImpl implements Path {
                 // 顺时针单独处理,顺时针会导致前进 1 格
                 if (turnFlag == 0) {
                     int nextI = i + 1;
-                    if (nextI < straightPath.size() - 1 &&  getDirection(straightPath.get(nextI), straightPath.get(nextI + 1)) == nextDir) {
+                    int newNextDir;
+                    if (nextI < straightPath.size() - 1) {
+                        newNextDir  =  getDirection(straightPath.get(nextI), straightPath.get(nextI + 1));
+                    }
+                    else {
+                        newNextDir = nextDir;
+                    }
+                    if (newNextDir == nextDir && preTrunFlag == -1) {
                         i += 1;
                     }
-                    turnFlag = -1;
+                    else if (newNextDir != nextDir && preTrunFlag == 1) {
+                        turnDirection(direction, newNextDir, straightPath.get(nextI), finalPath);
+                        direction = newNextDir;
+                    }
                 }
                 else if (turnFlag == 1){
                     // 在这里处理转向标记，逆时针，船需要前进一个，顺时针，线路多1格
-                    turnFlag = -1;
                 }
-                else {
+               else {
                     pushForward(direction, finalPath);
                 }
+                preTrunFlag = turnFlag;
+                turnFlag = -1;
             }
         }
         // 结尾处理
         finalPath.add(new Point(ship[1]));
         finalPath.add(new Point(ship[2]));
+        //TODO: 按理应该不需要加这个点
         finalPath.add(straightPath.get(straightPath.size() - 1));
         return finalPath;
     }
@@ -768,9 +782,6 @@ public class PathImpl implements Path {
         // 判断逆时针和顺时针的次数，哪个少转哪个，如果都一样优先逆时针转动
         if (turnTimes[direction][clockwise][newDirection] < turnTimes[direction][counterClockwise][newDirection]) {
             if (canClockwiseTurn(direction)) {
-                System.out.println(ship[2]);
-                System.out.println(dest);
-                System.out.println("\n");
                 turnClockwise(direction, newDirection, path);
             }
             else {
@@ -779,9 +790,6 @@ public class PathImpl implements Path {
         }
         else {
             if (canCounterClockwiseTurn(direction)) {
-                System.out.println(ship[2]);
-                System.out.println(dest);
-                System.out.println("\n");
                 turnCounterClockwise(direction, newDirection, dest, path);
             }
             else {
@@ -855,7 +863,7 @@ public class PathImpl implements Path {
         while (direction != newDirection) {
             int tempDirection = counterClockwiseRotation.get(direction);    // 获取下一个方向
             // 逆时针旋转，则需要特殊得处理
-            if (ship[2].x == dest.x || ship[2].y == dest.y) {
+            if (ship[2].x == dest.x && ship[2].y == dest.y) {
                 int x = ship[0].x;
                 int y = ship[0].y;
                 // 以 ship 1 位置进行逆时针旋转刚好使得 x y 对齐
