@@ -71,6 +71,7 @@ public class Main {
         regionManager = new RegionManager();
         regionManager.init();
         Berth.init();
+        Boat.init();
         printBerthRegion();
         printBerthArea();
     }

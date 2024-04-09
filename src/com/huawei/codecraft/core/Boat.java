@@ -2,6 +2,7 @@ package com.huawei.codecraft.core;
 
 import com.huawei.codecraft.Const;
 import com.huawei.codecraft.Util;
+import com.huawei.codecraft.util.BoatPath;
 import com.huawei.codecraft.util.BoatStatus;
 import com.huawei.codecraft.util.Point;
 import com.huawei.codecraft.util.Twins;
@@ -27,6 +28,9 @@ public class Boat {
     public int goodSize;
     public int totalCarryValue;
     BoatRoute route;
+    BoatPath myPath;
+    // <轮船数，路径>，若为两艘轮船，里面路径每人一条
+    public static Map<Integer,BoatPath> totalPaths = new HashMap<>();
     public boolean frameMoved;  // 船体只能输入一条指令
 
     public Boat(int id,Point p) {
@@ -39,6 +43,126 @@ public class Boat {
         for (Boat boat : boats) {
             boat.printMove();
         }
+    }
+
+    public static void init() {
+        initBoatPath();
+    }
+
+    private static void initBoatPath() {
+        // 初始化，轮船路径,分别计算单、双路径
+        BoatPath single = getSinglePath();
+        totalPaths.put(1,single);
+        BoatPath both = getBothPath();
+        totalPaths.put(2,both);
+    }
+
+    private static BoatPath getBothPath() {
+
+        return null;
+    }
+
+    private static BoatPath getSinglePath() {
+        // 获取轮船的单路径，两种方式：贪心、穷举
+        BoatPath single = getSinglePathByGreedy();
+        Util.printLog("贪心分配："+single);
+        long t1 = System.nanoTime();
+        single = getSinglePathByEnum();
+        long t2 = System.nanoTime();
+        Util.printLog("暴力搜索："+(t2-t1)/1000+"us"+single);
+        return single;
+    }
+
+    private static BoatPath getSinglePathByGreedy() {
+        // 贪心获取所有路径
+        ArrayList<Berth> res = null;
+        int minFps = unreachableFps;
+        for (Point delivery : boatDeliveries) {
+            // 从每个交货点开始遍历
+            ArrayList<Berth> berthList = new ArrayList<>(berths);
+            ArrayList<Berth> tmpList = new ArrayList<>();
+            Point last = delivery;
+            int totalFps = 0;
+            while (!berthList.isEmpty()){
+                // 每次找最短的路径
+                int min = unreachableFps;
+                Berth tar = berthList.get(0);
+                for (Berth berth : berthList) {
+                    int dis = berth.getSeaPathFps(last);
+                    if (dis < min){
+                        min = dis;
+                        tar = berth;
+                    }
+                }
+                totalFps += min;
+                tmpList.add(tar);
+                berthList.remove(tar);
+                last = tar.core;
+            }
+            totalFps += tmpList.get(tmpList.size()-1).getClosestDeliveryFps();
+            if (totalFps < minFps){
+                minFps = totalFps;
+                res = tmpList;
+            }
+        }
+        return new BoatPath(res,minFps);
+    }
+
+    private static BoatPath getSinglePathByEnum() {
+        // 通过回溯求解最优路径
+        ArrayList<Berth> res = null;
+        int minFps = unreachableFps;
+        for (Point delivery : boatDeliveries) {
+            // 时间允许可第一个泊口也动态参与
+            ArrayList<Berth> berthList = new ArrayList<>(berths);
+            ArrayList<Berth> tmp = new ArrayList<>();
+            Berth tar = berthList.get(0);
+            int min = unreachableFps;
+            int totalFps = 0;
+            for (Berth berth : berthList) {
+                // 先选择一个最近的泊口为起始点
+                int fps = berth.getSeaPathFps(delivery);
+                if (fps < min){
+                    min = fps;
+                    tar = berth;
+                }
+            }
+            tmp.add(tar);
+            berthList.remove(tar);
+            totalFps += min;
+            Twins<ArrayList<Berth>,Integer> backRes = backtracking(berthList, tar);
+            totalFps += backRes.getObj2();
+            if (totalFps<minFps){
+                minFps = totalFps;
+                backRes.getObj1().add(0,tar);   // 把头加上去
+                res = backRes.getObj1();
+            }
+        }
+        return new BoatPath(res,minFps);
+    }
+
+    private static Twins<ArrayList<Berth>, Integer> backtracking(ArrayList<Berth> berthList, Berth src) {
+        // 计算起点为src ，终点为虚拟点，中间的为berthList的最短路径问题
+        if (berthList.isEmpty()){
+            int dis = src.getClosestDeliveryFps();
+            return new Twins<>(new ArrayList<>(),dis);
+        }
+
+        ArrayList<Berth> list = new ArrayList<>(berthList);
+        int minFps = unreachableFps;
+        ArrayList<Berth> tarList = null;
+        for (Berth berth : berthList) {
+            int dis = src.getSeaPathFps(berth.core);
+            list.remove(berth);
+            Twins<ArrayList<Berth>, Integer> twins = backtracking(list, berth);
+            list.add(berth);
+            if (dis + twins.getObj2() < minFps){
+                minFps = dis + twins.getObj2();
+                tarList = twins.getObj1();
+                tarList.add(0,berth);
+            }
+        }
+        return new Twins<>(tarList,minFps);
     }
 
     private void printMove() {
@@ -166,7 +290,7 @@ public class Boat {
                 seaHotPath.put(key,new HashMap<>());
             }
             Map<Point, Twins<ArrayList<Point>, Integer>> map = seaHotPath.get(key);
-            Util.printLog("src:"+pos +"方向:"+direction+"dest:"+target);
+            Util.printLog("海上未保存路径，先寻路：src:"+pos +"方向:"+direction+"dest:"+target);
             Twins<ArrayList<Point>, Integer> value = path.getBoatPathAndFps(pos, direction, target);
             if (value == null){
                 Util.printErr("海上寻路出现问题！");
@@ -238,6 +362,10 @@ public class Boat {
 
     // 换新的路
     public void changeRoad(Point target) {
+        if (target.clacGridDis(pos)<=3){
+            Util.printLog("距离太近，不寻路");
+            return;
+        }
         route.setNewWay(target);
         Util.printLog("boat 寻路："+route.way);
         if (!route.target.equals(target)) {

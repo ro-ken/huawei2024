@@ -581,7 +581,7 @@ public class Berth {
         int min = unreachableFps;
 //        Point res = boatDeliveries.get(0);
         for (Point delivery : boatDeliveries) {
-            int fps = Boat.getSeaPathFps(core, direction, delivery);
+            int fps = getSeaPathFps(delivery);
             if (fps < min){
                 min = fps;
 //                res = delivery;
@@ -589,6 +589,11 @@ public class Berth {
         }
 
         return min;
+    }
+
+    public int getSeaPathFps(Point dest) {
+        // 海上去dest的路径
+        return Boat.getSeaPathFps(core,direction,dest);
     }
 }
 
