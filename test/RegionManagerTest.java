@@ -26,14 +26,17 @@ public class RegionManagerTest {
             // map2
             {{93, 71}, {93, 147}, {102, 51}, {102, 91}, {102, 130}, {102, 168}},
             // map3
-            {{26, 105}, {95, 26}, {105, 173}, {173, 97}}
+            {{26, 105}, {95, 26}, {105, 173}, {173, 97}},
+            // map5
+            {{6, 190}, {26, 105}, {76, 97}, {95, 26}, {95, 126}, {105, 76}, {105, 173}, {124, 105}, {173, 97}, {193, 9}}
     };
     private static final String[] FILE_NAMES = {
             "test\\map1.txt",  // map1 0
             "test\\map2.txt",  // map2 1
-            "test\\map3.txt"  // map3 2
+            "test\\map3.txt",  // map3 2
+            "test\\map5.txt"  // map5 3
     };
-    private final int map = 2; // 测试地图,0对应map1
+    private final int map = 3; // 测试地图,0对应map1
     private final String fileName_suffix = FILE_NAMES[map].substring(8); // 地图名尾缀
     private RegionManager regionManager;
 

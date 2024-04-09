@@ -180,9 +180,9 @@ colors = ['lightcoral', 'orange', 'yellow', 'lawngreen', 'cyan', 'deepskyblue', 
 
 for i in range(len(path_x)):
     if i < 10:
-        plt.plot(path_y[i], path_x[i], linewidth=5, color=colors[i])  # 路径
+        plt.scatter(path_y[i], path_x[i], s=s1, color=colors[i])  # 路径
     else:
-        plt.plot(path_y[i], path_x[i], linewidth=5, color=RGB_to_Hex(rgbrandom()))  # 路径
+        plt.scatter(path_y[i], path_x[i], s=s1, color=RGB_to_Hex(rgbrandom()))  # 路径
 
 plt.grid(True, color='k')
 plt.xticks(np.arange(xmin, xmax, dx))  # x轴刻度
