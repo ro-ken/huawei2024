@@ -371,17 +371,23 @@ public class PathImpl implements Path {
             restoreMapinfo(specialPointList, special);
             specialPoint.clear(); // 清空，保证下次使用正常
         }
-
+        System.out.println("init:" + initialPath.size());
+        System.out.println("straight:" + straightPath.size());
+        System.out.println(straightPath);
         int turnFlag = -1; // 旋转标志，0 顺，1逆，-1 zhi zou
         // 拼接最后的路径
         for (int i = 2; i < straightPath.size() - 1; i++) {
             int nextDir = getDirection(straightPath.get(i), straightPath.get(i + 1));
+            // 船位置要和 i 保持一致
+            if (direction == nextDir && shipBehindPathPoint(nextDir, straightPath.get(i))) {
+                pushForward(direction, finalPath);
+            }
             // A*开始转向的时候，船不一定能转，需要做特殊处理
             if (nextDir != direction) {
                 turnFlag = getRotation(direction, nextDir);
                 // 如果A*给的点不能够现在转，那么就走到能转时为止
-                int times = 0;
                 // 最多走两次才能转，不然就是路径寻找有问题
+                int times = 0;
                 while (!canTurnDir(direction, turnFlag) && times < 2) {
                     times++;
                     pushForward(direction, finalPath);
@@ -392,11 +398,14 @@ public class PathImpl implements Path {
             else {
                 // 顺时针单独处理,顺时针会导致前进 1 格
                 if (turnFlag == 0) {
+                    int nextI = i + 1;
+                    if (nextI < straightPath.size() - 1 &&  getDirection(straightPath.get(nextI), straightPath.get(nextI + 1)) == nextDir) {
+                        i += 1;
+                    }
                     turnFlag = -1;
                 }
                 else if (turnFlag == 1){
                     // 在这里处理转向标记，逆时针，船需要前进一个，顺时针，线路多1格
-                    pushForward(direction, finalPath);
                     turnFlag = -1;
                 }
                 else {
@@ -761,6 +770,7 @@ public class PathImpl implements Path {
             if (canClockwiseTurn(direction)) {
                 System.out.println(ship[2]);
                 System.out.println(dest);
+                System.out.println("\n");
                 turnClockwise(direction, newDirection, path);
             }
             else {
@@ -769,6 +779,9 @@ public class PathImpl implements Path {
         }
         else {
             if (canCounterClockwiseTurn(direction)) {
+                System.out.println(ship[2]);
+                System.out.println(dest);
+                System.out.println("\n");
                 turnCounterClockwise(direction, newDirection, dest, path);
             }
             else {
