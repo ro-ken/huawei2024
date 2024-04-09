@@ -6,8 +6,7 @@ import com.huawei.codecraft.util.Point;
 
 import java.util.HashMap;
 
-import static com.huawei.codecraft.Const.deliveryPoints;
-import static com.huawei.codecraft.Const.mapWidth;
+import static com.huawei.codecraft.Const.*;
 
 /**
  * ClassName: Mapinfo
@@ -18,6 +17,7 @@ public class Mapinfo {
     public static int[][] map = new int[mapWidth][mapWidth];            // 经过处理得数字化map，方便寻路判断
     public static int[][] originalMap = new int[mapWidth][mapWidth];    // 原始得地图map
     public static int[][] seaMap = new int[mapWidth][mapWidth];          // 经过预处理为船行走的 map，经过了预处理
+    public static int[][] costMap = new int[mapWidth][mapWidth];          // 经过预处理为船行走的 map，经过了预处理
     public static HashMap<Point, DeliveryPoint> pointToDeliveryPoint = new HashMap<>(); // 根据点找对应的交货点
     // 私有化构造函数防止外部实例化
     private Mapinfo() {
@@ -72,6 +72,17 @@ public class Mapinfo {
         }
     }
 
+    private static boolean isNearMainSea(int x, int y) {
+        for (int[] dir : new int[][]{{0, 1}, {0, -1}, {-1, 0}, {1, 0}}) {
+            int newX = x + dir[0];
+            int newY = y + dir[1];
+            if (isValid(newX, newY) &&  originalMap[newX][newY] == '~') {
+                return true;
+            }
+        }
+        return false;
+    }
+
     public static void initSeaMap() {
         for (int i = 0; i < mapWidth; i++) {
             for (int j = 0; j < mapWidth; j++) {
@@ -80,6 +91,23 @@ public class Mapinfo {
                 }
                 else {
                     seaMap[i][j] = map[i][j];
+                }
+            }
+        }
+
+        for (int i = 0; i < mapWidth; i++) {
+            for (int j = 0; j < mapWidth; j++) {
+                if (seaMap[i][j] == ROAD) {
+                    costMap[i][j] = unreachableFps;
+                }
+                else  if (originalMap[i][j] == '~') {
+                    costMap[i][j] = 2;
+                }
+                else if (isNearMainSea(i, j)) {
+                    costMap[i][j] = 2;
+                }
+                else {
+                    costMap[i][j] = 1;
                 }
             }
         }
