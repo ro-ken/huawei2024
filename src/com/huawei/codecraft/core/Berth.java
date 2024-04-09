@@ -18,12 +18,15 @@ public class Berth {
     public Point pos2 = new Point();
     public Point pos3 = new Point();
     public Point core = new Point();  // 泊位核心点
+    private Point closestDelivery;
     public int direction;   // 泊位核心点方向
     public int direction2;  // 朝海洋方向
     public int transport_time;
     public int loading_speed;
+
     public Region region;  // 该泊口属于的区域，在区域初始化赋值
     public ArrayList<Berth> neighbors = new ArrayList<>();  // 该泊口的邻居，按照距离由近到远排序
+    public int neighborTotalFps = 0;    // 与邻居的总距离
     public PriorityQueue<Good> domainGoodsByValue = new PriorityQueue<>(new Comparator<Good>() {
         @Override
         public int compare(Good o1, Good o2) {
@@ -473,11 +476,13 @@ public class Berth {
         // 初始化泊口邻居
         ArrayList<Berth> copy = new ArrayList<>(berths);
         copy.remove(this);
+        neighborTotalFps = 0;
         while (!copy.isEmpty()){
             Berth tar = copy.get(0);
             int min = unreachableFps;
             for (Berth berth : copy) {
                 int fps = getPathFps(berth.pos);
+                neighborTotalFps += fps;
                 if (fps < min){
                     min = fps;
                     tar = berth;
@@ -578,22 +583,56 @@ public class Berth {
 
     public int getClosestDeliveryFps() {
         // 得到离泊口最近交货点的距离
-        int min = unreachableFps;
-//        Point res = boatDeliveries.get(0);
-        for (Point delivery : boatDeliveries) {
-            int fps = getSeaPathFps(delivery);
-            if (fps < min){
-                min = fps;
-//                res = delivery;
-            }
-        }
-
-        return min;
+        Point delivery = getClosestDelivery();
+        return getSeaPathFps(delivery);
     }
 
     public int getSeaPathFps(Point dest) {
         // 海上去dest的路径
         return Boat.getSeaPathFps(core,direction,dest);
+    }
+
+    public double calcPeriodGoodNum(int period) {
+        // 计算在period期间内泊口的期望物品数
+        double expNum = 0;
+        for (BerthArea area : myAreas) {
+            expNum += area.getExpGoodNum();
+        }
+        // 单位物品产数 * 周期
+        return expNum * period / Good.maxSurvive;
+    }
+
+    public Point getClosestDelivery() {
+        if (closestDelivery != null){
+            return closestDelivery;
+        }else {
+            // 得到离泊口最近交货点的距离
+            int min = unreachableFps;
+            Point res = boatDeliveries.get(0);
+            for (Point delivery : boatDeliveries) {
+                int fps = getSeaPathFps(delivery);
+                if (fps < min){
+                    min = fps;
+                    res = delivery;
+                }
+            }
+            closestDelivery = res;
+        }
+        return closestDelivery;
+    }
+
+    public Point getClosestBoatBuyPos() {
+        // 得到离泊口最近轮船购买点
+        int min = unreachableFps;
+        Point res = boatBuyPos.get(0);
+        for (Point pos : boatBuyPos) {
+            int fps = getSeaPathFps(pos);
+            if (fps < min){
+                min = fps;
+                res = pos;
+            }
+        }
+        return res;
     }
 }
 

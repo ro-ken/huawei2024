@@ -1244,8 +1244,8 @@ public class Robot {
     public boolean changeRoad(Point target) {
         route.setNewWay(target);
         if (!route.target.equals(target)) {
-            Util.printLog(this.pos + "->" + target + ":tar" + route.target);
-            Util.printErr("changeRoad 找不到路");
+            Util.printLog("机器人路径"+this.pos + "->" + target + ":tar" + route.target);
+            Util.printErr("changeRoad robot 找不到路");
             return false;
         }
         return true;

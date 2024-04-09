@@ -1,6 +1,7 @@
 package com.huawei.codecraft.core;
 
 import com.huawei.codecraft.Const;
+import com.huawei.codecraft.Main;
 import com.huawei.codecraft.Util;
 import com.huawei.codecraft.util.BoatPath;
 import com.huawei.codecraft.util.BoatStatus;
@@ -11,6 +12,9 @@ import com.huawei.codecraft.util.Twins;
 import java.util.*;
 
 import static com.huawei.codecraft.Const.*;
+import static com.huawei.codecraft.Const.berths;
+import static com.huawei.codecraft.util.BoatStatus.GO;
+import static com.huawei.codecraft.util.BoatStatus.LOAD;
 
 // 轮船
 public class Boat {
@@ -19,7 +23,7 @@ public class Boat {
 
     public Point pos;
     public int direction;   // 机器人当前朝向
-    BoatStatus status=BoatStatus.FREE;
+    public BoatStatus status=BoatStatus.FREE;
     public static int capacity;
     public int carry;    // 携带物品数量
     public Berth bookBerth;
@@ -31,12 +35,15 @@ public class Boat {
     BoatPath myPath;
     // <轮船数，路径>，若为两艘轮船，里面路径每人一条
     public static Map<Integer,BoatPath> totalPaths = new HashMap<>();
+    public static Twins<Twins<ArrayList<Berth>, Integer>,Twins<ArrayList<Berth>, Integer>> bothPath;    // todo 路径要提前排好序，后面直接用
     public boolean frameMoved;  // 船体只能输入一条指令
 
     public Boat(int id,Point p) {
         this.id = id;
         pos = new Point(p);
         route = new BoatRoute(this);
+//        myPath = totalPaths.get(1);     // 事先走单路径
+//        myPath.enable(this);
     }
 
     public static void handleBoatMove() {
@@ -53,13 +60,116 @@ public class Boat {
         // 初始化，轮船路径,分别计算单、双路径
         BoatPath single = getSinglePath();
         totalPaths.put(1,single);
-        BoatPath both = getBothPath();
-        totalPaths.put(2,both);
+        bothPath = getBothPath();
+        Util.printLog("下面为both的两条路径：");
+        Util.printLog(bothPath.getObj1());
+        Util.printLog(bothPath.getObj2());
+
+        double expGood = getPeriodGoodNum(single.myPath);
+        Util.printLog("单路径期望产速"+expGood);
+        if (Main.assignBoatNum <=0){
+            if (expGood > 50){
+                Main.assignBoatNum = 2;
+            }else {
+                Main.assignBoatNum = 1;
+            }
+        }
     }
 
-    private static BoatPath getBothPath() {
+    private static Twins<Twins<ArrayList<Berth>, Integer>,Twins<ArrayList<Berth>, Integer>> getBothPath() {
+        // 双轮船路径，每个轮船走自己的路径
+        // 对泊口分成两个区，每个区内的泊口产量均衡一些，路径长度也不要差太多
+        // 每个泊口先分给离自己最近的交货点，如果差的太多，在调整
+        ArrayList<Berth> list1 = new ArrayList<>();
+        ArrayList<Berth> list2 = new ArrayList<>();
+        if (boatDeliveries.size() == 2){
+            // 如果有两个交货点，每个泊口先分配给自己的交货点
+            for (Berth berth : berths) {
+                if (berth.getSeaPathFps(boatDeliveries.get(0))<berth.getSeaPathFps(boatDeliveries.get(1))){
+                    list1.add(berth);
+                }else {
+                    list2.add(berth);
+                }
+                // todo 需要调整
+//                adjustBerthList(list1,list2);
+            }
+        }else {
+            // 距离来分类
+            divisionBerthsByDis(list1,list2);
+        }
+        Twins<ArrayList<Berth>, Integer> pa1 = getSinglePathAndFpsByEnum(list1);
+        Twins<ArrayList<Berth>, Integer> pa2 = getSinglePathAndFpsByEnum(list2);
+        return new Twins<>(pa1,pa2);
+    }
 
-        return null;
+    private static void divisionBerthsByDis(ArrayList<Berth> list1, ArrayList<Berth> list2) {
+        // 根据距离对泊口进行分类
+        list1.clear();list2.clear();
+        Berth tarBerth = berths.get(0);
+        int max = 0;
+        for (Berth berth : berths) {
+            if (berth.neighborTotalFps > max){
+                max = berth.neighborTotalFps;
+                tarBerth = berth;
+            }
+        }
+        list1.add(tarBerth);
+        list2.addAll(tarBerth.neighbors);
+        adjustBerthList(list1,list2);
+    }
+
+    private static double getPeriodGoodNum(ArrayList<Berth> list) {
+        if (list.isEmpty()){
+            return 0;
+        }
+        // 计算列表中泊口的周期运货量，todo 时间允许可以换暴力搜索
+        Twins<ArrayList<Berth>, Integer> twins = getSinglePathAndFpsByGreedy(list);
+        int period = twins.getObj2();
+        double totalGoodNum = 0;
+        for (Berth berth : twins.getObj1()) {
+            totalGoodNum +=berth.calcPeriodGoodNum(period);
+        }
+        return totalGoodNum;
+    }
+
+    private static void adjustBerthList(ArrayList<Berth> list1, ArrayList<Berth> list2) {
+        // 调整两个泊口列表，让每个列表尽可能均衡
+        double goodNum1 = getPeriodGoodNum(list1);
+        double goodNum2 = getPeriodGoodNum(list2);
+        if (goodNum2 < goodNum1){
+            ArrayList<Berth> tmp = list1;
+            list1 = list2;
+            list2 = tmp;
+            double t = goodNum1;
+            goodNum1 = goodNum2;
+            goodNum2 = t;
+        }
+        while (goodNum1 < goodNum2){
+            // 当调整到不能在调整时退出
+            // 每次找一个最近的泊口
+            Berth change = list2.get(0);
+            int min = unreachableFps;
+            for (Berth b2 : list2) {
+                for (Berth b1 : list1) {
+                    int fps = b2.getSeaPathFps(b1.core);
+                    if (fps < min){
+                        min = fps;
+                        change = b2;
+                    }
+                }
+            }
+            // 计算转移前和转移后的周期货量大小
+            double maxNum = goodNum2;
+            list1.add(change);
+            list2.remove(change);
+            goodNum1 = getPeriodGoodNum(list1);
+            goodNum2 = getPeriodGoodNum(list2);
+            if (Math.max(goodNum1,goodNum2) >= maxNum){
+                list1.remove(change);
+                list2.add(change);
+                break;  // 负优化
+            }
+        }
     }
 
     private static BoatPath getSinglePath() {
@@ -74,6 +184,15 @@ public class Boat {
     }
 
     private static BoatPath getSinglePathByGreedy() {
+        Twins<ArrayList<Berth>,Integer> twins = getSinglePathAndFpsByGreedy(berths);
+        return new BoatPath(twins.getObj1(),twins.getObj2());
+    }
+
+    private static Twins<ArrayList<Berth>, Integer> getSinglePathAndFpsByGreedy(ArrayList<Berth> berths) {
+        Util.printDebug("getSinglePathAndFpsByGreedy"+berths);
+        if (berths.isEmpty()){
+            return new Twins<>(new ArrayList<>(),0);
+        }
         // 贪心获取所有路径
         ArrayList<Berth> res = null;
         int minFps = unreachableFps;
@@ -105,10 +224,18 @@ public class Boat {
                 res = tmpList;
             }
         }
-        return new BoatPath(res,minFps);
+        return new Twins<>(res,minFps);
     }
 
     private static BoatPath getSinglePathByEnum() {
+        Twins<ArrayList<Berth>,Integer> twins = getSinglePathAndFpsByEnum(berths);
+        return new BoatPath(twins.getObj1(),twins.getObj2());
+    }
+
+    public static Twins<ArrayList<Berth>, Integer> getSinglePathAndFpsByEnum(ArrayList<Berth> berths) {
+        if (berths.isEmpty()){
+            return new Twins<>(new ArrayList<>(),0);
+        }
         // 通过回溯求解最优路径
         ArrayList<Berth> res = null;
         int minFps = unreachableFps;
@@ -138,7 +265,7 @@ public class Boat {
                 res = backRes.getObj1();
             }
         }
-        return new BoatPath(res,minFps);
+        return new Twins<>(res,minFps);
     }
 
     private static Twins<ArrayList<Berth>, Integer> backtracking(ArrayList<Berth> berthList, Berth src) {
@@ -165,9 +292,67 @@ public class Boat {
         return new Twins<>(tarList,minFps);
     }
 
+    public static Boat buySecondBoat() {
+        // 买第二艘船,购买以后，两艘船根据自己的航线走
+        // 确定第一艘船位置，将该区域划分给他，第二艘船自动去第二个位置
+        int index = reAssignPathByBoatPos(boats.get(0));
+        Twins<ArrayList<Berth>, Integer> tw;
+        if (index == 1){
+            tw = bothPath.getObj2();
+        }else {
+            tw = bothPath.getObj1();
+        }
+        Berth berth = tw.getObj1().get(0);
+        Point pos = berth.getClosestBoatBuyPos();
+        Boat boat = new Boat(1,pos);
+        boat.setMyPath(tw);
+        return boat;
+    }
+
+    private static int reAssignPathByBoatPos(Boat boat) {
+        //
+        Berth berth = null;
+        if (boat.status == BoatStatus.SHIP || boat.status == LOAD){
+            berth = boat.bookBerth;
+        }else {
+            // 该船是去虚拟点
+            int min = unreachableFps;
+            berth = berths.get(0);
+            for (Berth ber : berths) {
+                int fps = ber.getSeaPathFps(boat.route.target);
+                if (fps<min){
+                    min = fps;
+                    berth = ber;
+                }
+            }
+        }
+        // 获取轮船路径
+        Twins<ArrayList<Berth>, Integer> path = null;
+        int res = -1;
+        if (bothPath.getObj1().getObj1().contains(berth)){
+            res = 1;
+            path = bothPath.getObj1();
+        }else if (bothPath.getObj2().getObj1().contains(berth)){
+            res = 2;
+            path = bothPath.getObj2();
+        }
+//        Util.printLog("path"+path );
+//        Util.printLog(berth);
+//        Util.printLog(bothPath.getObj1());
+//        Util.printLog(bothPath.getObj2());
+
+        boat.setMyPath(path);
+        return res;
+    }
+
+    private void setMyPath(Twins<ArrayList<Berth>, Integer> path) {
+        // 设置我的路径，后面要判断在什么状态
+        myPath = new BoatPath(path,this);
+    }
+
     private void printMove() {
         if (frameMoved) return;
-        if (status == BoatStatus.SHIP || status == BoatStatus.GO){
+        if (status == BoatStatus.SHIP || status == GO){
             int dis = next.clacGridDis(pos);
             Util.printLog("move:" + this);
             if (dis == 0)  {
@@ -193,9 +378,28 @@ public class Boat {
     }
 
     public void schedule() {
-        simpleSched();
-//        simpleSched();
+        if (boat_num == 1){
+            simpleSched();
+        }else {
+            pathSched();
+        }
     }
+
+    private void pathSched() {
+        // 按照规划的路径进行调度
+        if (inRecoverMode()){
+            return;     // 恢复状态不能操作
+        }
+        if (status != BoatStatus.FREE){
+            handleBoatTask();
+        }
+        if (status == BoatStatus.FREE && !frameMoved){
+            // 没有任务 ， 且没有输出指令
+            gotoBerthOrDeliveryByPath();
+        }
+    }
+
+
 
     private void simpleSched() {
         // 轮船简单调度，在各大泊口间轮转，满了卸货
@@ -208,6 +412,21 @@ public class Boat {
         if (status == BoatStatus.FREE && !frameMoved){
             // 没有任务 ， 且没有输出指令
             goToBerthOrDelivery();
+        }
+    }
+
+    private void gotoBerthOrDeliveryByPath() {
+        // 通过实现规划的路径决定该怎么走
+        Twins<Berth,Point> twins = myPath.getNextPlace();
+        if (twins.getObj1() == null){
+            Util.printLog("boat去交货点"+twins.getObj2());
+            status = GO;
+            changeRoad(twins.getObj2());
+        }else {
+            bookBerth = twins.getObj1();
+            Util.printLog("boat下一个泊口"+bookBerth);
+            status = BoatStatus.SHIP;
+            changeRoad(bookBerth.pos);
         }
     }
 
@@ -256,7 +475,7 @@ public class Boat {
             changeRoad(bookBerth.pos);
         }else {
             // 去交货点
-            status = BoatStatus.GO;
+            status = GO;
             changeRoad(delivery.getObj1());
         }
     }
@@ -326,7 +545,7 @@ public class Boat {
         return res;
     }
 
-    private int leftCapacity() {
+    public int leftCapacity() {
         return capacity-goodSize;
     }
 
@@ -351,7 +570,7 @@ public class Boat {
                 status = BoatStatus.FREE; // 让轮船重新做选择
                 startFrame = 0;
             }
-        }else if(status == BoatStatus.GO){
+        }else if(status == GO){
             if (isArriveDelivery()){
                 resetBoat();        // 重置船
                 // 需要判断是否进入最后周期
@@ -494,16 +713,6 @@ public class Boat {
         return bookBerth.boatInBerthArea.contains(pos);
     }
 
-//    private void findBerthAndShip() {
-//        resetBookBerth();
-//        // 寻找berth 并且驶向它
-//        Berth berth = pickTaskBerth();
-//        if (berth == null){
-//            return;
-//        }
-//        shipToBerth(berth);
-//    }
-
     private void resetBookBerth() {
         if (bookBerth != null){
             bookBerth.bookBoats.remove(this);
@@ -580,24 +789,4 @@ public class Boat {
                 ", carry=" + carry +
                 '}';
     }
-
-//    private Berth pickTaskBerth() {
-//        // 选择task里的泊位,去货物多的
-//
-//        // 选择task中价值最高的泊位
-//        Berth target = task.berths.get(0);
-//        int maxVal = target.existValue;
-//
-//        for (Berth berth : task.berths) {
-//            if (!berth.bookBoats.isEmpty()){
-//                continue;
-//            }
-//            if (berth.existValue>maxVal){
-//                maxVal = berth.existValue;
-//                target = berth;
-//            }
-//        }
-//        return target;
-//    }
-
 }

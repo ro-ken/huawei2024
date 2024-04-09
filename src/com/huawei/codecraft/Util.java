@@ -192,13 +192,20 @@ public class Util {
     public static void boatAnticlockwise(int boatId){
         boatRot(boatId,1);
     }
-    public static void buyBoat(Point pos) {
+    public static void buyBoat() {
         if (money < 8000){
             return;
         }
-        boatBuy(boatBuyPos.get(0));
+        Boat boat = null;
+        if (boat_num == 0){
+            boat = new Boat(0,boatBuyPos.get(0));
+            boatBuy(boatBuyPos.get(0));
+        }else {
+            boat = Boat.buySecondBoat();
+            boatBuy(boat.pos);
+        }
         money -= 8000;
-        boats.add(new Boat(boat_num,boatBuyPos.get(0)));
+        boats.add(boat);
         boat_num++;
     }
 

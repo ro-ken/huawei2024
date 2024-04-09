@@ -26,7 +26,7 @@ import static com.huawei.codecraft.Util.*;
 public class Main {
     public static int testRobot = 100;    // 测试机器人
     public static int assignRobotNum = 0;   // 手动分配机器人数量，小于等于0 则程序自动分配
-    public static int assignBoatNum = 1;   // 分配轮船数量
+    public static int assignBoatNum = 0;   // 分配轮船数量
     public static double minAddNumPerRobot = 5.0;   // 若为自动分配，每个周期(20s)买一个机器人最少需要搬运多少物品，否则不买
     public static double minValueCoef = 0.2;    // 本泊口最高价值低于最低这个系数乘以期望时，启用贪心算法
     public static boolean limitArea = false;   // 是否限制机器人的工作区域，测试时打开
@@ -36,10 +36,13 @@ public class Main {
 
 
     public static void main(String[] args) throws FileNotFoundException, InterruptedException {
+        long sta = System.currentTimeMillis();
         initLog();
         readInit();
         myInit();
         printOk();
+        long end = System.currentTimeMillis();
+        printLog("初始化时间:" + (end - sta) + "ms");
         running();
         printLastInfo();
     }
@@ -111,8 +114,8 @@ public class Main {
             boat.frameMoved = false;
         }
 
-        if (boat_num < assignBoatNum) {
-            buyBoat(boatBuyPos.get(0));
+        if (boat_num < 1) {
+            buyBoat();
         }
 
         if (areaSched) {
@@ -127,7 +130,9 @@ public class Main {
             }
         }
 
-
+        if (boat_num < assignBoatNum) {
+            buyBoat();
+        }
 
 //        if (avg.size() < 1000 && frameId % 10 == 0) {
 //            avg.put(frameId, (int) avgGoodValue);
