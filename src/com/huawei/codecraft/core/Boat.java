@@ -573,12 +573,11 @@ public class Boat {
                 "id=" + id +
                 ", rsts=" + readsts +
                 ", pos=" + pos +
-//                ", dire=" + direction +
+                ", dire=" + direction +
                 ", status=" + status +
                 ", next=" + next +
                 ", target=" + route.target +
                 ", carry=" + carry +
-                ", calcarry=" + goodSize +
                 '}';
     }
 
