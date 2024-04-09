@@ -143,15 +143,16 @@ public class RegionManager {
     private void getFullPathsFromPoints2Berths() {
         for (Region originalRegion : regions) {
             for (Berth berth : originalRegion.getBerths()) {
-                bfsFromBerth(berth);
+                bfsFromBerth(berth, berth.pos);
+                bfsFromBerth(berth, berth.pos2);
+                bfsFromBerth(berth, berth.pos3);
             }
         }
     }
 
     // 从泊位开始bfs进行扩散，保留最短的路径
-    private void bfsFromBerth(Berth berth) {
+    private void bfsFromBerth(Berth berth, Point start) {
         Queue<Point> queue = new LinkedList<>();
-        Point start = berth.pos;
         queue.add(start);
 
         Map<Point, List<Point>> visitedPaths = new HashMap<>();
