@@ -49,7 +49,8 @@ public class Route {
         if (Const.pointToBerth.containsKey(pos)){
             // 该点是泊位的距离
             Berth berth = Const.pointToBerth.get(pos);
-            List<Point> path = berth.mapPath.get(robot.pos);
+//            List<Point> path = berth.getMinLandPath(robot.pos);
+            List<Point> path = berth.mapPath.get(robot.pos);    // todo  到时候换过来
             Util.printLog("setNewWay1:berth"+berth.pos+"pos"+robot.pos+"path"+path);
             if (path != null){
                 List<Point> path1 = new ArrayList<>(path);

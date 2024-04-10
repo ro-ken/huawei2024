@@ -15,6 +15,7 @@ import static com.huawei.codecraft.zone.RegionManager.getPointProb;
 public class Berth {
     public int id;
     public Point pos = new Point();
+    public HashSet<Point> landPoints = new HashSet<>();
     public Point pos2 = new Point();
     public Point pos3 = new Point();
     public Point core = new Point();  // 泊位核心点
@@ -42,7 +43,7 @@ public class Berth {
     public Deque<Good> existGoods = new LinkedList<>();     // 泊口存在的货物
     public int existValue=0;           // 泊口货物总价值
     public Map<Point,List<Point>> mapPath = new HashMap<>();   //  地图所有点到该泊位的路径信息
-    public Map<Point,Map<Point,List<Point>>> totalMapPath = new HashMap<>();   //  地图所有点到该泊位的路径信息
+    public Map<Point,Map<Point,List<Point>>> landMapPath = new HashMap<>();   //  地图所有点到该泊位的路径信息
     public int deadLine = Const.totalFrame;     // 有效时间，超过这个时间轮船不装了，也不用往这里运了
     public final Map<Integer,Integer> pathLenToNumMap = new HashMap<>();      // 计算区域点到泊口长度对应个数的map
     public Map<Integer, RegionValue> staticValue = new HashMap<>();     // 区域静态价值
@@ -519,8 +520,10 @@ public class Berth {
         }else {
             pos3 = new Point(pos.x,pos.y+1);
         }
-        Util.printDebug("pos2"+pos2);
-        Util.printDebug("pos3"+pos3);
+        landPoints.add(pos);
+        landPoints.add(pos2);
+        landPoints.add(pos3);
+        Util.printDebug("landPoints"+landPoints);
 
         // 初始化泊口方向
         if (map[core.x+1][core.y]=='K' && map[core.x][core.y+1]=='B'){
@@ -629,6 +632,18 @@ public class Berth {
             if (fps < min){
                 min = fps;
                 res = pos;
+            }
+        }
+        return res;
+    }
+
+    public List<Point> getMinLandPath(Point tar) {
+        // 得到去陆地的最小路径
+        List<Point> res = mapPath.get(tar);
+        for (Point src : landPoints) {
+            List<Point> list = landMapPath.get(src).get(tar);
+            if (list.size() < res.size()){
+                res = list;
             }
         }
         return res;
