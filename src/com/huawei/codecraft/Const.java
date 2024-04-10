@@ -60,7 +60,7 @@ public class Const {
     public static int NoLimit = -1;              // 无长度限制的寻路算法
     public static final int unreachableFps = 1000000;       // 不可达的时间
     // 陆地热路径点，key为初始点，value为<目的地，路径>
-    public static Map<Point,Map<Point,ArrayList<Point>>> landHotPath = new HashMap<>();
+    public static Map<Point, Map<Point, List<Point>>> landHotPath = new HashMap<Point, Map<Point, List<Point>>>();
     // 海洋热路径点，key为<初始点，方向>，value为<目的地，<路径，路径长度>>
     public static Map<Twins<Point,Integer>,Map<Point,Twins<ArrayList<Point>,Integer>>> seaHotPath = new HashMap<>();
     /*****************************区域相关参数*****************************/

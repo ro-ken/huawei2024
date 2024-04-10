@@ -112,9 +112,9 @@ public class Mapinfo {
                     costMap[i][j] = 2;
                 }
                 else if (originalMap[i][j] == 'K') {
-                    costMap[i][j] = 1;
+                    costMap[i][j] = 2;
                      if (isWalkMainBoth) {
-                         costMap[i][j] = 2;
+                         costMap[i][j] = 1;
                      }
                 }
                 else {

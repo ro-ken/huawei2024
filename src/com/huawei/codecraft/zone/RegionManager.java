@@ -148,10 +148,24 @@ public class RegionManager {
                 }
             }
         }
+        for (Point robotBuyPoint : robotBuyPos) {
+            Map<Point, List<Point>> landPath =  bfsFromPoint(robotBuyPoint);
+            landHotPath.put(robotBuyPoint, landPath);
+        }
     }
 
     // 从泊位开始bfs进行扩散，保留最短的路径
     private void bfsFromBerth(Berth berth, Point start) {
+        Map<Point, List<Point>> visitedPaths = bfsFromPoint(start);
+        // 将遍历结果更新到泊位的路径映射中
+        berth.landMapPath.put(start, visitedPaths);
+        if (start.equals(berth.pos)) {
+            berth.mapPath = visitedPaths;
+        }
+    }
+
+    // 从该点bfs进行扩散，保留最短的路径
+    private Map<Point, List<Point>> bfsFromPoint(Point start) {
         Queue<Point> queue = new LinkedList<>();
         queue.add(start);
 
@@ -181,12 +195,7 @@ public class RegionManager {
                 }
             }
         }
-
-        // 将遍历结果更新到泊位的路径映射中
-        berth.landMapPath.put(start, visitedPaths);
-        if (start.equals(berth.pos)) {
-            berth.mapPath = visitedPaths;
-        }
+        return visitedPaths;
     }
 
     /**
