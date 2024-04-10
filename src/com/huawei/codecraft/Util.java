@@ -313,10 +313,12 @@ public class Util {
     }
 
     // 手动初始化地图
-    private static void initMapSeq() {
+    public static void initMapSeq() {
+
+
         int[][][] berthsPos = {
-                {{3, 175}, {15, 176}, {33,176}}, // map1
-                {{74, 74}, {74, 122}, {82, 60}}, // map2
+                {{37,97}, {50,169}, {99,17}}, // map1
+                {{93,72}, {93,148}, {103,52}}, // map2
         };
         if (map[berthsPos[0][0][0]][berthsPos[0][0][1]] == 'B' && map[berthsPos[0][1][0]][berthsPos[0][1][1]] == 'B' && map[berthsPos[0][2][0]][berthsPos[0][2][1]] == 'B') {
             mapSeq = 1;
@@ -325,8 +327,9 @@ public class Util {
             mapSeq = 2;
         }
         else {
-            mapSeq =  defaultMap;
+            mapSeq = 3;
         }
+        Util.printLog("mapseq："+mapSeq);
     }
 
     private static void testRegionValue() {

@@ -39,7 +39,7 @@ public class Const {
     public static int totalLandPoint;   // 统计陆地点数，用于算每点概率
     public static int countGoodNum = 0;     //已经生成的物品总数，到时候算平均价值
     public static double countGoodValue = 0;   //已经生成的物品总价值
-    public static double avgGoodValue = 67;      // 货物的平均价值，每帧更新,设一个初始值，todo 后面可调
+    public static double avgGoodValue = 67;      // 货物的平均价值，每帧更新,设一个初始值，
     /*****************************机器人和轮船对应的方向*****************************/
     public static final int RIGHT = 0;
     public static final int LEFT = 1;

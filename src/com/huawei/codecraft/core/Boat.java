@@ -189,7 +189,7 @@ public class Boat {
     }
 
     private static Twins<ArrayList<Berth>, Integer> getSinglePathAndFpsByGreedy(ArrayList<Berth> berths) {
-        Util.printDebug("getSinglePathAndFpsByGreedy"+berths);
+//        Util.printDebug("getSinglePathAndFpsByGreedy"+berths);
         if (berths.isEmpty()){
             return new Twins<>(new ArrayList<>(),0);
         }
@@ -509,7 +509,7 @@ public class Boat {
                 seaHotPath.put(key,new HashMap<>());
             }
             Map<Point, Twins<ArrayList<Point>, Integer>> map = seaHotPath.get(key);
-            Util.printLog("海上未保存路径，先寻路：src:"+pos +"方向:"+direction+"dest:"+target);
+//            Util.printLog("海上未保存路径，先寻路：src:"+pos +"方向:"+direction+"dest:"+target);
             Twins<ArrayList<Point>, Integer> value = path.getBoatPathAndFps(pos, direction, target);
             if (value == null){
                 Util.printErr("海上寻路出现问题！");

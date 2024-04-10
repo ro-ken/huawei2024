@@ -26,13 +26,6 @@ public class Route {
         robot.next = getNextPoint();
     }
 
-    public void updateNextPoint() {
-        // 已经在下一个点了，要重新取点，否则不变
-        // 2出调用，每帧中间，有新路径
-//        if (pos.equals(next)) {
-//            next = getNextPoint();
-//        }
-    }
 
     private void setSelfWay() {
         // 只有一个点，机器人原地待命
@@ -49,8 +42,8 @@ public class Route {
         if (Const.pointToBerth.containsKey(pos)){
             // 该点是泊位的距离
             Berth berth = Const.pointToBerth.get(pos);
-//            List<Point> path = berth.getMinLandPath(robot.pos);
-            List<Point> path = berth.mapPath.get(robot.pos);    // todo  到时候换过来
+            List<Point> path = berth.getMinLandPath(robot.pos);
+//            List<Point> path = berth.mapPath.get(robot.pos);    // todo  到时候换过来
             Util.printLog("setNewWay1:berth"+berth.pos+"pos"+robot.pos+"path"+path);
             if (path != null){
                 List<Point> path1 = new ArrayList<>(path);
