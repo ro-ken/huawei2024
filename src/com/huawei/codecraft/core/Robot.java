@@ -155,6 +155,14 @@ public class Robot {
 
             int r2bFps = berth.getPathFps(pos);      //时间 = 泊口到物品  + 机器人到泊口
             double totalFps = r2bFps;
+
+            if (areaSched && bookBerth != berth){
+                // 限制走的距离
+                if (r2bFps >= bookBerth.getPathFps(pos)+Main.greedyMaxDis){
+                    continue;
+                }
+            }
+
             for (Good good : berth.domainGoodsByValue) {
                 // 找出第一个满足robot的
                 int fps = berth.getPathFps(good.pos);

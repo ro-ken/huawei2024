@@ -42,8 +42,7 @@ public class Berth {
     public Deque<Good> existGoods = new LinkedList<>();     // 泊口存在的货物
     public int existValue=0;           // 泊口货物总价值
     public Map<Point,List<Point>> mapPath = new HashMap<>();   //  地图所有点到该泊位的路径信息
-    public Map<Point,List<Point>> mapPath2 = new HashMap<>();   //  地图所有点到该泊位的路径信息
-    public Map<Point,List<Point>> mapPath3 = new HashMap<>();   //  地图所有点到该泊位的路径信息
+    public Map<Point,Map<Point,List<Point>>> totalMapPath = new HashMap<>();   //  地图所有点到该泊位的路径信息
     public int deadLine = Const.totalFrame;     // 有效时间，超过这个时间轮船不装了，也不用往这里运了
     public final Map<Integer,Integer> pathLenToNumMap = new HashMap<>();      // 计算区域点到泊口长度对应个数的map
     public Map<Integer, RegionValue> staticValue = new HashMap<>();     // 区域静态价值

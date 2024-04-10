@@ -12,8 +12,6 @@ import com.huawei.codecraft.way.Mapinfo;
 import com.huawei.codecraft.zone.RegionManager;
 
 import java.io.FileNotFoundException;
-
-
 import static com.huawei.codecraft.Const.*;
 import static com.huawei.codecraft.Util.*;
 
@@ -25,10 +23,11 @@ import static com.huawei.codecraft.Util.*;
  */
 public class Main {
     public static int testRobot = 100;    // 测试机器人
-    public static int assignRobotNum = 0;   // 手动分配机器人数量，小于等于0 则程序自动分配
+    public static int assignRobotNum = 16;   // 手动分配机器人数量，小于等于0 则程序自动分配
     public static int assignBoatNum = 0;   // 分配轮船数量
     public static double minAddNumPerRobot = 5.0;   // 若为自动分配，每个周期(20s)买一个机器人最少需要搬运多少物品，否则不买
     public static double minValueCoef = 0.2;    // 本泊口最高价值低于最低这个系数乘以期望时，启用贪心算法
+    public static int greedyMaxDis = 30;    // 用贪心算法，最远离本区域多远
     public static boolean limitArea = false;   // 是否限制机器人的工作区域，测试时打开
     public static boolean globalGreedy = true;  // 若本区域没物品，全局贪心，局部贪心
     public static boolean dynamicRegion = true;      // 是否动态分区
