@@ -353,6 +353,9 @@ public class PathImpl implements Path {
         // 将起点周围4个点围起来，防止出现方向不一致
         blockShipRound(direction);
         ArrayList<Point> initialPath = getInitialBoatPath(ship[0], dest);
+        if (initialPath == null) {
+            return null;
+        }
         restoreShipRound();
         ArrayList<Point> straightPath = getStraightPath(initialPath);
 
@@ -364,6 +367,9 @@ public class PathImpl implements Path {
             restoreShipRound();
             ArrayList<Point> specialPointList = new ArrayList<>(specialPoint.keySet());
             changeMapinfo(specialPointList, special);
+            if (initialPath == null) {
+                return null;
+            }
             straightPath = getStraightPath(initialPath);
             // 恢复地图上的点
             restoreMapinfo(specialPointList, special);
@@ -371,7 +377,6 @@ public class PathImpl implements Path {
         }
 
         int turnFlag = -1; // 旋转标志，0 顺，1逆，-1 zhi zou
-        int preTrunFlag = -1;
         // 拼接最后的路径
         for (int i = 2; i < straightPath.size() - 1; i++) {
             int nextDir = getDirection(straightPath.get(i), straightPath.get(i + 1));
@@ -399,7 +404,7 @@ public class PathImpl implements Path {
             else {
                 // 顺时针单独处理,顺时针会导致前进 1 格
                 if (turnFlag == 0) {
-                    if (ship[2].equals(straightPath.get(i + 1))) {
+                    if (i < straightPath.size() - 2 && ship[2].equals(straightPath.get(i + 2))) {
                         i += 1;
                     }
                     turnFlag = -1;

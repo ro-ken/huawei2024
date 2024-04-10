@@ -76,8 +76,13 @@ public class Mapinfo {
         for (int[] dir : new int[][]{{0, 1}, {0, -1}, {-1, 0}, {1, 0}}) {
             int newX = x + dir[0];
             int newY = y + dir[1];
-            if (isValid(newX, newY) &&  originalMap[newX][newY] == '~') {
+            if (isValid(newX, newY) && originalMap[newX][newY] == '~') {
                 return true;
+            }
+            else if (isValid(newX, newY) && originalMap[newX][newY] == 'K') {
+                if (!isWalkMainBoth) {
+                    return true;
+                }
             }
         }
         return false;
@@ -105,6 +110,12 @@ public class Mapinfo {
                 }
                 else if (isNearMainSea(i, j)) {
                     costMap[i][j] = 2;
+                }
+                else if (originalMap[i][j] == 'K') {
+                    costMap[i][j] = 1;
+                     if (isWalkMainBoth) {
+                         costMap[i][j] = 2;
+                     }
                 }
                 else {
                     costMap[i][j] = 1;

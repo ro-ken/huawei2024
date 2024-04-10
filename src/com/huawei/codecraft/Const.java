@@ -53,6 +53,7 @@ public class Const {
     public static final int SEA = -2;           // 海洋
     public static final int BOTH = 3;           // 陆地、海洋
     public static final int OBSTACLE = -3;      // 障碍
+    public static final boolean isWalkMainBoth = true; // 是否走主航道
     /*****************************路径相关参数*****************************/
     public static RegionManager regionManager;
     public static Path path = new PathImpl(); // 修改Path实现
