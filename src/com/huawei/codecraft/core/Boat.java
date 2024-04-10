@@ -589,7 +589,7 @@ public class Boat {
         Util.printLog("boat 寻路："+route.way);
         if (!route.target.equals(target)) {
             Util.printLog(this.pos + "->" + target + ":tar" + route.target);
-            Util.printErr("boat 找不到路");
+            Util.printWarn("boat 终点不对");
         }
     }
     private boolean isArriveDelivery() {

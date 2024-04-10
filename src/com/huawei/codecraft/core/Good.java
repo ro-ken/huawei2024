@@ -2,7 +2,6 @@ package com.huawei.codecraft.core;
 
 
 import com.huawei.codecraft.Const;
-import com.huawei.codecraft.Util;
 import com.huawei.codecraft.util.Point;
 
 // 货物类

@@ -1,11 +1,8 @@
 package com.huawei.codecraft;
-import com.huawei.codecraft.core.Berth;
-import com.huawei.codecraft.core.Boat;
-import com.huawei.codecraft.core.Robot;
-import com.huawei.codecraft.util.BerthArea;
-import com.huawei.codecraft.util.Point;
-import com.huawei.codecraft.util.RegionValue;
-import com.huawei.codecraft.util.Twins;
+import com.huawei.codecraft.core.*;
+import com.huawei.codecraft.util.*;
+import com.huawei.codecraft.way.Mapinfo;
+import com.huawei.codecraft.way.Pos;
 import com.huawei.codecraft.zone.Region;
 import com.huawei.codecraft.zone.RegionManager;
 
@@ -412,5 +409,27 @@ public class Util {
 //                    Util.printLog(robot+"分配成功"+list);
 //                    Util.printBerthArea();
 //                }
+    }
+
+    public static void preHeatClass() {
+        // 对一些类进行预热，
+        Berth berth;
+        Boat boat;
+        BoatRoute boatRoute;
+        DeliveryPoint deliveryPoint;
+        Good good;
+        Robot robot;
+        Route route;
+        BerthArea berthArea;
+        BoatPath boatPath;
+        BoatStatus boatStatus;
+        Point point;
+        RegionValue regionValue;
+        RobotRunMode runMode;
+        Twins twins;
+        UnionFind unionFind;
+        Mapinfo mapinfo;
+        Pos pos;
+
     }
 }

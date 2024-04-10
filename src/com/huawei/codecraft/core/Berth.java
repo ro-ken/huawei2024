@@ -16,8 +16,6 @@ public class Berth {
     public int id;
     public Point pos = new Point();
     public HashSet<Point> landPoints = new HashSet<>();
-    public Point pos2 = new Point();
-    public Point pos3 = new Point();
     public Point core = new Point();  // 泊位核心点
     private Point closestDelivery;
     public int direction;   // 泊位核心点方向

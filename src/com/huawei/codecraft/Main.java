@@ -8,6 +8,7 @@ import com.huawei.codecraft.core.Berth;
 import com.huawei.codecraft.core.Boat;
 import com.huawei.codecraft.core.Good;
 import com.huawei.codecraft.core.Robot;
+import com.huawei.codecraft.util.Point;
 import com.huawei.codecraft.way.Mapinfo;
 import com.huawei.codecraft.zone.RegionManager;
 
@@ -29,6 +30,7 @@ public class Main {
     public static double minValueCoef = 0.2;    // 本泊口最高价值低于最低这个系数乘以期望时，启用贪心算法
     public static double areaMinValueCoef = 1.0;    // 机器人本区域价值队列最低值系数，机器人默认先拿该价值队列，没有货在贪心，
     public static int greedyMaxDis = 50;    // 用贪心算法，最远离本区域多远
+    public static boolean fixValue = true;     // 获取物品平均价值是否按照预设的来，还是动态计算，白图运行一次可以固定下来
     public static boolean limitArea = false;   // 是否限制机器人的工作区域，测试时打开
     public static boolean globalGreedy = true;  // 若本区域没物品，全局贪心，局部贪心
     public static boolean dynamicRegion = true;      // 是否动态分区
@@ -56,6 +58,7 @@ public class Main {
             minValueCoef = 0.2;    // 本泊口最高价值低于最低这个系数乘以期望时，启用贪心算法
             greedyMaxDis = 50;    // 用贪心算法，最远离本区域多远
             expGoodNum = 2470;     // 期望总物品数，官方回答：15/100 * 15000 = 2250
+            fixValue = true;     // 获取物品平均价值是否按照预设的来，还是动态计算，白图运行一次可以固定下来
             avgGoodValue = 67;      // 货物的平均价值，每帧更新,设一个初始值，
             areaMinValueCoef = 1.0;    // 机器人本区域价值队列最低值系数，机器人默认先拿该价值队列，没有货在贪心，
         } else if (mapSeq == 2) {
@@ -64,6 +67,7 @@ public class Main {
             minValueCoef = 0.2;    // 本泊口最高价值低于最低这个系数乘以期望时，启用贪心算法
             greedyMaxDis = 50;    // 用贪心算法，最远离本区域多远
             expGoodNum = 2470;     // 期望总物品数，官方回答：15/100 * 15000 = 2250
+            fixValue = true;     // 获取物品平均价值是否按照预设的来，还是动态计算，白图运行一次可以固定下来
             avgGoodValue = 67;      // 货物的平均价值，每帧更新,设一个初始值，
             areaMinValueCoef = 1.0;    // 机器人本区域价值队列最低值系数，机器人默认先拿该价值队列，没有货在贪心，
 
@@ -73,6 +77,7 @@ public class Main {
             minValueCoef = 0.2;    // 本泊口最高价值低于最低这个系数乘以期望时，启用贪心算法
             greedyMaxDis = 50;    // 用贪心算法，最远离本区域多远
             expGoodNum = 2470;     // 期望总物品数，官方回答：15/100 * 15000 = 2250
+            fixValue = true;     // 获取物品平均价值是否按照预设的来，还是动态计算，白图运行一次可以固定下来
             avgGoodValue = 67;      // 货物的平均价值，每帧更新,设一个初始值，
             areaMinValueCoef = 1.0;    // 机器人本区域价值队列最低值系数，机器人默认先拿该价值队列，没有货在贪心，
         }
@@ -99,13 +104,17 @@ public class Main {
         Mapinfo.init(map);
         Mapinfo.initSeaMap();
         for (Berth berth : berths) {
-            pointToBerth.put(berth.pos, berth);
+            for (Point point : berth.landPoints) {
+                pointToBerth.put(point, berth);
+            }
+
             idToBerth.put(berth.id, berth);
         }
         regionManager = new RegionManager();
         regionManager.init();
         Berth.init();
         Boat.init();
+        Util.preHeatClass();
         printBerthRegion();
         printBerthArea();
     }
@@ -180,7 +189,10 @@ public class Main {
                 countGoodValue += good.value;
                 regionManager.addNewGood(good);
             }
-            avgGoodValue = countGoodValue / countGoodNum;
+            // todo 可以提前固定
+            if (!fixValue){
+                avgGoodValue = countGoodValue / countGoodNum;
+            }
         }
     }
 

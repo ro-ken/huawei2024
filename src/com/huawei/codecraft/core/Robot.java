@@ -925,7 +925,7 @@ public class Robot {
                 Util.printErr("pickNewTask:pick good can't arrive!" + this + twins.getObj2());
             }
         } else {
-            Util.printWarn("pickNewTask:didn't find job" + this);
+            Util.printWarn("pickNewTask:didn't find job，" + this);
         }
     }
 
@@ -1251,7 +1251,7 @@ public class Robot {
     // 换新的路
     public boolean changeRoad(Point target) {
         route.setNewWay(target);
-        if (!route.target.equals(target)) {
+        if (!route.target.equals(target) && !bookBerth.landPoints.contains(route.target)) {
             Util.printLog("机器人路径"+this.pos + "->" + target + ":tar" + route.target);
             Util.printErr("changeRoad robot 找不到路");
             return false;

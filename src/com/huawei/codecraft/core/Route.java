@@ -43,8 +43,7 @@ public class Route {
             // 该点是泊位的距离
             Berth berth = Const.pointToBerth.get(pos);
             List<Point> path = berth.getMinLandPath(robot.pos);
-//            List<Point> path = berth.mapPath.get(robot.pos);    // todo  到时候换过来
-            Util.printLog("setNewWay1:berth"+berth.pos+"pos"+robot.pos+"path"+path);
+//            Util.printLog("setNewWay1:berth"+berth.pos+"pos"+robot.pos+"path"+path);
             if (path != null){
                 List<Point> path1 = new ArrayList<>(path);
                 Collections.reverse(path1);  // 保存的是泊位到点的路径，需要翻转
@@ -54,13 +53,23 @@ public class Route {
         }else if (Const.pointToBerth.containsKey(robot.pos)){
             // 机器人所在的点是泊位的点
             Berth berth = Const.pointToBerth.get(robot.pos);
-            List<Point> path = berth.mapPath.get(pos);
-            Util.printDebug("setNewWay2:berth"+berth.pos+"pos"+robot.pos+"path"+path);
+            List<Point> path = berth.landMapPath.get(robot.pos).get(pos);
+//            Util.printDebug("setNewWay2:berth"+berth.pos+"pos"+robot.pos+"path"+path);
+            if (path != null){
+                setNewWay(path);
+                return;
+            }
+        }else if (Const.landHotPath.containsKey(robot.pos)){
+            // 机器人所在的点是热路径
+            List<Point> path = Const.landHotPath.get(robot.pos).get(pos);
+//            Util.printDebug("setNewWay2:berth"+berth.pos+"pos"+robot.pos+"path"+path);
             if (path != null){
                 setNewWay(path);
                 return;
             }
         }
+
+
         long sta = System.nanoTime();
         // 没有保存路径，自己寻路
         ArrayList<Point> path = Const.path.getPath(robot.pos,pos);
