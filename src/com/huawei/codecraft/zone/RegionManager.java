@@ -143,9 +143,9 @@ public class RegionManager {
     private void getFullPathsFromPoints2Berths() {
         for (Region originalRegion : regions) {
             for (Berth berth : originalRegion.getBerths()) {
-                bfsFromBerth(berth, berth.pos);
-                bfsFromBerth(berth, berth.pos2);
-                bfsFromBerth(berth, berth.pos3);
+                for (Point point : berth.landPoints) {
+                    bfsFromBerth(berth, point);
+                }
             }
         }
     }
@@ -183,7 +183,10 @@ public class RegionManager {
         }
 
         // 将遍历结果更新到泊位的路径映射中
-        berth.mapPath.putAll(visitedPaths);
+        berth.landMapPath.put(start, visitedPaths);
+        if (start.equals(berth.pos)) {
+            berth.mapPath = visitedPaths;
+        }
     }
 
     /**
