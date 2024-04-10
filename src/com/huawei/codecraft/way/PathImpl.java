@@ -354,7 +354,6 @@ public class PathImpl implements Path {
         blockShipRound(direction);
         ArrayList<Point> initialPath = getInitialBoatPath(ship[0], dest);
         restoreShipRound();
-        assert initialPath != null;
         ArrayList<Point> straightPath = getStraightPath(initialPath);
 
         // 需要路径是可靠的
@@ -363,7 +362,6 @@ public class PathImpl implements Path {
             blockShipRound(direction);
             initialPath = getInitialBoatPath(ship[0], dest);
             restoreShipRound();
-            assert initialPath != null;
             ArrayList<Point> specialPointList = new ArrayList<>(specialPoint.keySet());
             changeMapinfo(specialPointList, special);
             straightPath = getStraightPath(initialPath);
@@ -371,6 +369,7 @@ public class PathImpl implements Path {
             restoreMapinfo(specialPointList, special);
             specialPoint.clear(); // 清空，保证下次使用正常
         }
+
         int turnFlag = -1; // 旋转标志，0 顺，1逆，-1 zhi zou
         int preTrunFlag = -1;
         // 拼接最后的路径
@@ -400,30 +399,18 @@ public class PathImpl implements Path {
             else {
                 // 顺时针单独处理,顺时针会导致前进 1 格
                 if (turnFlag == 0) {
-                    int nextI = i + 1;
-                    int newNextDir;
-                    if (nextI < straightPath.size() - 1) {
-                        newNextDir  =  getDirection(straightPath.get(nextI), straightPath.get(nextI + 1));
-                    }
-                    else {
-                        newNextDir = nextDir;
-                    }
-                    if (newNextDir == nextDir && preTrunFlag == -1) {
+                    if (ship[2].equals(straightPath.get(i + 1))) {
                         i += 1;
                     }
-                    else if (newNextDir != nextDir && preTrunFlag == 1) {
-                        turnDirection(direction, newNextDir, straightPath.get(nextI), finalPath);
-                        direction = newNextDir;
-                    }
+                    turnFlag = -1;
                 }
                 else if (turnFlag == 1){
                     // 在这里处理转向标记，逆时针，船需要前进一个，顺时针，线路多1格
+                    turnFlag = -1;
                 }
                else {
                     pushForward(direction, finalPath);
                 }
-                preTrunFlag = turnFlag;
-                turnFlag = -1;
             }
         }
         // 结尾处理
