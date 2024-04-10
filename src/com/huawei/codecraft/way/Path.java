@@ -73,4 +73,13 @@ public interface Path {
      * @return  轮船核心点轨迹
      */
     Twins<ArrayList<Point>,Integer> getBoatPathAndFps(Point core, int direction , Point dest);
+
+    /**
+     * 获取海洋上的两点路径
+     * @param core 轮船核心点坐标
+     * @param direction 轮船起始方向
+     * @param dest  轮船目的地
+     * @return  轮船核心点轨迹
+     */
+    ArrayList<Point> getBoatPathWithBarrier(Point core, int direction ,Point dest,HashSet<Point> points);
 }
