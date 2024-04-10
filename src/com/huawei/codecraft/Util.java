@@ -193,7 +193,7 @@ public class Util {
         if (money < 8000){
             return;
         }
-        Boat boat = null;
+        Boat boat ;
         if (boat_num == 0){
             boat = new Boat(0,boatBuyPos.get(0));
             boatBuy(boatBuyPos.get(0));
@@ -201,6 +201,7 @@ public class Util {
             boat = Boat.buySecondBoat();
             boatBuy(boat.pos);
         }
+        Util.printLog("购买一艘轮船"+boat);
         money -= 8000;
         boats.add(boat);
         boat_num++;

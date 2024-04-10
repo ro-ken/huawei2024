@@ -13,8 +13,7 @@ import java.util.*;
 
 import static com.huawei.codecraft.Const.*;
 import static com.huawei.codecraft.Const.berths;
-import static com.huawei.codecraft.util.BoatStatus.GO;
-import static com.huawei.codecraft.util.BoatStatus.LOAD;
+import static com.huawei.codecraft.util.BoatStatus.*;
 
 // 轮船
 public class Boat {
@@ -31,6 +30,7 @@ public class Boat {
     public int startFrame;
     public int goodSize;
     public int totalCarryValue;
+    public int stopMoveFps;    // 发生碰撞，暂停的帧数
     BoatRoute route;
     BoatPath myPath;
     // <轮船数，路径>，若为两艘轮船，里面路径每人一条
@@ -47,9 +47,84 @@ public class Boat {
     }
 
     public static void handleBoatMove() {
-        for (Boat boat : boats) {
-            boat.printMove();
+
+        boolean conflict = false;
+//        if (boats.size()==2 && boats.get(0).pos.clacGridDis(boats.get(1).pos)<=7 && !tmpMode()){
+//            // 此时有可能发生重合
+//            Boat boat0 = boats.get(0);
+//            Boat boat1 = boats.get(1);
+//            HashSet<Point> point0 = boat0.getNextPoints();
+//            HashSet<Point> point1 = boat1.getNextPoints();
+//            HashSet<Point> all = new HashSet<>();
+//            all.addAll(point0);
+//            all.addAll(point1);
+//            if (all.size() != point0.size() + point1.size()){
+//                Util.printLog("船有冲突");
+//                handleBoatConflict(boat0,boat1);
+//                // 点有重叠，有冲突
+//                conflict = true;
+//            }
+//        }
+
+        if (!conflict){
+            for (Boat boat : boats) {
+                if (boat.stopMoveFps == 0){
+                    boat.printMove();
+                }else {
+                    boat.stopMoveFps --;
+                }
+            }
         }
+    }
+
+    private static boolean tmpMode() {
+        // 是否是临时避障模式
+        for (Boat boat : boats) {
+            if (boat.stopMoveFps>0){
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static void handleBoatConflict(Boat boat0, Boat boat1) {
+        // 有冲突，一个避让，一个不避让
+        Boat master,slave;
+
+        if (boat0.route.leftPathLen() < boat1.route.leftPathLen()){
+            // 距离近的让
+            master = boat0;
+            slave = boat1;
+        }else {
+            master = boat1;
+            slave = boat0;
+        }
+        ArrayList<Point> path1 = path.getBoatPathWithBarrier(slave.pos, slave.direction, slave.route.target, master.getSelfPoints());
+        if (path1 == null){
+            Boat tmp = master;
+            master = slave;
+            slave = tmp;
+            path1 = path.getBoatPathWithBarrier(slave.pos, slave.direction, slave.route.target, master.getSelfPoints());
+        }
+        if (path1 == null){
+            Util.printErr("两艘船都不能换路");
+            master.printMove();
+            slave.printMove();  // 直接开撞
+        }else {
+            master.stopMoveFps=3;
+            slave.route.setNewWay(path1);
+        }
+    }
+
+    private HashSet<Point> getSelfPoints() {
+        // 获取当前自身的所有点
+        return null;
+    }
+
+    private HashSet<Point> getNextPoints() {
+        // 计算移动到下一个点的自身的所有点，下一个点 robot.pos
+        // todo 所有坐标
+        return null;
     }
 
     public static void init() {
@@ -58,14 +133,14 @@ public class Boat {
 
     private static void initBoatPath() {
         // 初始化，轮船路径,分别计算单、双路径
-        BoatPath single = getSinglePath();
-        totalPaths.put(1,single);
+//        BoatPath single = getSinglePath();
+//        totalPaths.put(1,single);
         bothPath = getBothPath();
         Util.printLog("下面为both的两条路径：");
         Util.printLog(bothPath.getObj1());
         Util.printLog(bothPath.getObj2());
 
-        double expGood = getPeriodGoodNum(single.myPath);
+        double expGood = getPeriodGoodNum(berths);
         Util.printLog("单路径期望产速"+expGood);
         if (Main.assignBoatNum <=0){
             if (expGood > 50){
@@ -312,20 +387,18 @@ public class Boat {
     private static int reAssignPathByBoatPos(Boat boat) {
         //
         Berth berth = null;
-        if (boat.status == BoatStatus.SHIP || boat.status == LOAD){
-            berth = boat.bookBerth;
-        }else {
-            // 该船是去虚拟点
-            int min = unreachableFps;
-            berth = berths.get(0);
-            for (Berth ber : berths) {
-                int fps = ber.getSeaPathFps(boat.route.target);
-                if (fps<min){
-                    min = fps;
-                    berth = ber;
-                }
+
+        // 第一艘船肯定刚到虚拟点卖货
+        int min = unreachableFps;
+        berth = berths.get(0);
+        for (Berth ber : berths) {
+            int fps = ber.getSeaPathFps(boat.pos);
+            if (fps<min){
+                min = fps;
+                berth = ber;
             }
         }
+
         // 获取轮船路径
         Twins<ArrayList<Berth>, Integer> path = null;
         int res = -1;
@@ -336,12 +409,8 @@ public class Boat {
             res = 2;
             path = bothPath.getObj2();
         }
-//        Util.printLog("path"+path );
-//        Util.printLog(berth);
-//        Util.printLog(bothPath.getObj1());
-//        Util.printLog(bothPath.getObj2());
-
         boat.setMyPath(path);
+        boat.status = FREE;
         return res;
     }
 

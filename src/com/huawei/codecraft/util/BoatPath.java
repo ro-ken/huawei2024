@@ -40,7 +40,7 @@ public class BoatPath {
         if (!d1.equals(d2)){
             needChange = true;
         }
-        setStatus(boat);
+//        setStatus(boat);
     }
 
     private void setStatus(Boat boat) {
