@@ -17,6 +17,7 @@ public class Mapinfo {
     public static int[][] map = new int[mapWidth][mapWidth];            // 经过处理得数字化map，方便寻路判断
     public static int[][] originalMap = new int[mapWidth][mapWidth];    // 原始得地图map
     public static int[][] seaMap = new int[mapWidth][mapWidth];          // 经过预处理为船行走的 map，经过了预处理
+    public static int[][] landMap = new int[mapWidth][mapWidth];          // 经过预处理为机器人行走的 map，经过了预处理
     public static int[][] costMap = new int[mapWidth][mapWidth];          // 经过预处理为船行走的 map，经过了预处理
     public static HashMap<Point, DeliveryPoint> pointToDeliveryPoint = new HashMap<>(); // 根据点找对应的交货点
     // 私有化构造函数防止外部实例化
@@ -65,9 +66,10 @@ public class Mapinfo {
                         pointToDeliveryPoint.put(new Point(i, j), deliveryPoint);
                         break;
                     default:
-                        map[i][j] = Const.MAINBOTH; // 默认为0
+                        map[i][j] = Const.OBSTACLE; // 默认为障碍
                         break;
                 }
+                landMap[i][j] = map[i][j];
             }
         }
     }

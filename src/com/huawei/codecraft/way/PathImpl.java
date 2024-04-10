@@ -75,7 +75,7 @@ public class PathImpl implements Path {
         PriorityQueue<Pos> openSet = new PriorityQueue<>(Comparator.comparingInt(Pos::f));
         Map<Point, Pos> visitedNodes = new HashMap<>();
 
-        Pos start = new Pos(p1, null, 0, estimateHeuristic(p1, p2));
+        Pos start = new Pos(p1, null, 0, calculateDistance(p1, p2));
 
         openSet.add(start);
         visitedNodes.put(p1, start);
@@ -100,7 +100,7 @@ public class PathImpl implements Path {
 
                 int newG = current.g + 1;  // 每一步代价为1
                 if (!visitedNodes.containsKey(newPoint) || newG < visitedNodes.get(newPoint).g) {
-                    int newH = estimateHeuristic(newPoint, p2);
+                    int newH = calculateDistance(newPoint, p2);
                     Pos next = new Pos(newPoint, current, newG, newH);
                     openSet.add(next);
                     visitedNodes.put(newPoint, next);
@@ -215,7 +215,10 @@ public class PathImpl implements Path {
         if (core.equals(dest)) {
             return new ArrayList<>();
         }
-
+        // 小于6的距离认为没有障碍，直接寻路
+        if (calculateDistance(core, dest) <= 3) {
+            return getBoatPathSimply(core, direction, dest);
+        }
         Point newDest;
         // 泊位终点尽可能不靠墙
         newDest = offsetDestination(dest);
@@ -287,7 +290,8 @@ public class PathImpl implements Path {
         return new Twins<>(finalPath, pathLen);
     }
 
-    private ArrayList<Point> correctPath(ArrayList<Point> finalPathPath) {
+    @Override
+    public ArrayList<Point> getBoatPathWithBarrier(Point core, int direction, Point dest, HashSet<Point> points) {
         return null;
     }
 
@@ -466,15 +470,15 @@ public class PathImpl implements Path {
             // 更新前一个方向
             preDir = nextDir;
         }
-        // 检查
-        for (int i = 0; i < straightPath.size() - 1; i++) {
-            Point p1 = straightPath.get(i);
-            Point p2 = straightPath.get(i + 1);
-            int len = Math.abs(p1.x - p2.x) + Math.abs(p1.y - p2.y);
-            if (len != 1) {
-                printLog("straightpath 漏点了");
-            }
-        }
+//        // 检查
+//        for (int i = 0; i < straightPath.size() - 1; i++) {
+//            Point p1 = straightPath.get(i);
+//            Point p2 = straightPath.get(i + 1);
+//            int len =calculateDistance(p1, p2);
+//            if (len != 1) {
+//                printLog("straightpath 漏点了");
+//            }
+//        }
         // 终点特殊处理
         if (!initialPath.get(initialPath.size() - 1).equals(straightPath.get(straightPath.size() - 1))) {
             straightPath.add(new Point(initialPath.get(initialPath.size() - 1)));
@@ -667,45 +671,24 @@ public class PathImpl implements Path {
         }
     }
 
-    private ArrayList<Point> getBoatPath2(Point core, int direction, Point dest) {
+    // 曼哈顿距离小于 3 才会调用这个函数，因此不会调用太多的次
+    private ArrayList<Point> getBoatPathSimply(Point core, int direction, Point dest) {
         ArrayList<Point> path = new ArrayList<>();
-
         // 船只设置核心点和核心点前两个点
         initShip(core);
         refreshShip(core, direction);
 
         // 起始点加入路径
         path.add(new Point(core));
-
         int times = 0;
-        // TODO：一般来说地图搜索不可能超过1000次，暂时先这样，后续多测测看会不会死循环
-        while (!ship[2].equals(dest) && times < 500) {
-            times += 1;
-            // 实时判断水平和垂直走向
-            int horizon = judgeHorizon(ship[0], dest);
-            int vertical = judgeVertical(ship[0], dest);
-            if (canMoveHorizon(horizon, direction, dest)) { // 永远水平优先
-                if (direction != horizon) {   // 方向改为水平
-                    turnDirection(direction, horizon, dest, path);
-                    direction = horizon;
-                }
-                pushForward(horizon, path);
+        while (times < 3) {
+            times++;
+            if (ship[0].equals(dest)) {
+                return path;
             }
-            else { // 走垂直
-                if (direction != vertical) { // 方向改为垂直
-                    turnDirection(direction, vertical, dest, path);
-                    direction = vertical;
-                }
-                pushForward(vertical, path);
-            }
-        }
-        if (!ship[2].equals(dest)) {
-            printErr("can't get boat path error");
-            return null;
+            pushForward(direction, path);
         }
         // 因为是前置节点到达了终点，所以需要加上去
-        path.add(new Point(ship[1]));
-        path.add(new Point(ship[2]));
         return path;
     }
 
@@ -734,38 +717,6 @@ public class PathImpl implements Path {
             else {
                 ship[i].x = core.x + i;
                 ship[i].y = core.y;
-            }
-        }
-    }
-
-    private  boolean canMoveHorizon(int destDirection, int direction, Point dest) {
-        if (direction == destDirection) {
-            if (destDirection == LEFT) { //目标方向向左，当前方向 x不可以小于 dest.x
-                return isValid(ship[2].x, ship[2].y - 1) &&  seaMap[ship[2].x][ship[2].y - 1] != ROAD &&
-                        isValid(ship[2].x - 1, ship[2].y - 1) && (seaMap[ship[2].x - 1][ship[2].y - 1] != ROAD)
-                        && ship[2].y != dest.y ;
-            }
-            else {
-                return isValid(ship[2].x, ship[2].y + 1) && seaMap[ship[2].x][ship[2].y + 1] != ROAD &&
-                        isValid(ship[2].x + 1, ship[2].y + 1) && seaMap[ship[2].x + 1][ship[2].y + 1] != ROAD &&
-                        ship[2].y != dest.y;
-            }
-        }
-        // 不同向需要旋转才可以
-        if (direction == UP) {
-            if (destDirection == LEFT) {
-                return canCounterClockwiseTurn(direction) && ship[2].y != dest.y;
-            }
-            else {
-                return canClockwiseTurn(direction) && ship[2].y != dest.y;
-            }
-        }
-        else {
-            if (destDirection == LEFT) {
-                return canClockwiseTurn(direction) && ship[2].y != dest.y;
-            }
-            else {
-                return canCounterClockwiseTurn(direction)  && ship[2].y != dest.y;
             }
         }
     }
@@ -850,8 +801,6 @@ public class PathImpl implements Path {
     }
 
     private void  turnCounterClockwise(int direction, int newDirection, Point dest, ArrayList<Point> path) {
-//        System.out.println(ship[2]);
-//        System.out.println(dest);
         while (direction != newDirection) {
             int tempDirection = counterClockwiseRotation.get(direction);    // 获取下一个方向
             // 逆时针旋转，则需要特殊得处理
@@ -928,8 +877,8 @@ public class PathImpl implements Path {
     private void changeMapinfo(ArrayList<Point> barriers, int flag) {
         if (flag == robot) {
             for (Point barrier : barriers) {
-                if (Mapinfo.map[barrier.x][barrier.y] == ROAD) { // 将陆地暂时变为障碍物
-                    Mapinfo.map[barrier.x][barrier.y] = OBSTACLE;  // 标记障碍物
+                if (isValid(barrier.x, barrier.y) && !isHidePoint(barrier)) {
+                    landMap[barrier.x][barrier.y] = OBSTACLE;  // 标记障碍物
                 }
             }
         }
@@ -944,27 +893,29 @@ public class PathImpl implements Path {
     private void restoreMapinfo(ArrayList<Point> barriers, int flag) {
         if (flag == robot) {
             for (Point barrier : barriers) {
-                if (Mapinfo.map[barrier.x][barrier.y] == OBSTACLE) {
-                    Mapinfo.map[barrier.x][barrier.y] = ROAD;  // 恢复为陆地
+                if (isValid(barrier.x, barrier.y)) {
+                    landMap[barrier.x][barrier.y] = Mapinfo.map[barrier.x][barrier.y];  // 恢复为原来
                 }
             }
         }
         else if (flag == special) {
             for (Point barrier : barriers) {
-                seaMap[barrier.x][barrier.y] = specialPoint.get(barrier);  // 恢复为原来的地图
+                Mapinfo.seaMap[barrier.x][barrier.y] = specialPoint.get(barrier);  // 恢复为原来的地图
             }
         }
     }
 
-    private int estimateHeuristic(Point p1, Point p2) {
+    private int calculateDistance(Point p1, Point p2) {
         // Example using Manhattan distance
         return Math.abs(p1.x - p2.x) + Math.abs(p1.y - p2.y);
     }
 
+    // 陆地判断能否通过的函数
     private static boolean isAccessible(int x, int y) {
-        return isValid(x, y) && Mapinfo.map[x][y] >= MAINBOTH;
+        return isValid(x, y) && Mapinfo.landMap[x][y] >= MAINBOTH;
     }
 
+    // 海洋判断能否通过的函数
     private static boolean notAccessible(int x, int y) {
         return !isValid(x, y) || seaMap[x][y] ==  ROAD;
     }
@@ -988,7 +939,7 @@ public class PathImpl implements Path {
         Map<Point, Pos> visitedNodes = new HashMap<>();
 
         // 起点特殊处理
-        Pos start = new Pos(p1, null, 0, estimateHeuristic(p1, p2));
+        Pos start = new Pos(p1, null, 0, calculateDistance(p1, p2));
         openSet.add(start);
         visitedNodes.put(p1, start);
         // 获取特殊点，需要将其改为障碍
@@ -1014,7 +965,7 @@ public class PathImpl implements Path {
 //                int newG = current.g + 1;  // 每一步代价为1
                 int newG = current.g + costMap[newPoint.x][newPoint.y];  // 每一步代价为 costMap 对应值
                 if (!visitedNodes.containsKey(newPoint) || newG < visitedNodes.get(newPoint).g) {
-                    int newH = estimateHeuristic(newPoint, p2);
+                    int newH = calculateDistance(newPoint, p2);
                     Pos next = new Pos(newPoint, current, newG, newH);
                     openSet.add(next);
                     visitedNodes.put(newPoint, next);
