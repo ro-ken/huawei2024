@@ -24,9 +24,10 @@ import static com.huawei.codecraft.Util.*;
 public class Main {
     public static int testRobot = 100;    // 测试机器人
     public static int assignRobotNum = 16;   // 手动分配机器人数量，小于等于0 则程序自动分配
-    public static int assignBoatNum = 0;   // 分配轮船数量
+    public static int assignBoatNum = 0;   // 分配轮船数量，小于等于0为自动分配
     public static double minAddNumPerRobot = 5.0;   // 若为自动分配，每个周期(20s)买一个机器人最少需要搬运多少物品，否则不买
     public static double minValueCoef = 0.2;    // 本泊口最高价值低于最低这个系数乘以期望时，启用贪心算法
+    public static double areaMinValueCoef = 1.0;    // 机器人本区域价值队列最低值系数，机器人默认先拿该价值队列，没有货在贪心，
     public static int greedyMaxDis = 50;    // 用贪心算法，最远离本区域多远
     public static boolean limitArea = false;   // 是否限制机器人的工作区域，测试时打开
     public static boolean globalGreedy = true;  // 若本区域没物品，全局贪心，局部贪心
@@ -38,12 +39,43 @@ public class Main {
         long sta = System.currentTimeMillis();
         initLog();
         readInit();
+        initMapSeq();
+        tiaocan();
         myInit();
         printOk();
         long end = System.currentTimeMillis();
         printLog("初始化时间:" + (end - sta) + "ms");
         running();
         printLastInfo();
+    }
+
+    private static void tiaocan() {
+        if (mapSeq == 1){
+            assignRobotNum = 16;   // 手动分配机器人数量，小于等于0 则程序自动分配
+            assignBoatNum = 0;   // 分配轮船数量，小于等于0为自动分配
+            minValueCoef = 0.2;    // 本泊口最高价值低于最低这个系数乘以期望时，启用贪心算法
+            greedyMaxDis = 50;    // 用贪心算法，最远离本区域多远
+            expGoodNum = 2470;     // 期望总物品数，官方回答：15/100 * 15000 = 2250
+            avgGoodValue = 67;      // 货物的平均价值，每帧更新,设一个初始值，
+            areaMinValueCoef = 1.0;    // 机器人本区域价值队列最低值系数，机器人默认先拿该价值队列，没有货在贪心，
+        } else if (mapSeq == 2) {
+            assignRobotNum = 16;   // 手动分配机器人数量，小于等于0 则程序自动分配
+            assignBoatNum = 0;   // 分配轮船数量，小于等于0为自动分配
+            minValueCoef = 0.2;    // 本泊口最高价值低于最低这个系数乘以期望时，启用贪心算法
+            greedyMaxDis = 50;    // 用贪心算法，最远离本区域多远
+            expGoodNum = 2470;     // 期望总物品数，官方回答：15/100 * 15000 = 2250
+            avgGoodValue = 67;      // 货物的平均价值，每帧更新,设一个初始值，
+            areaMinValueCoef = 1.0;    // 机器人本区域价值队列最低值系数，机器人默认先拿该价值队列，没有货在贪心，
+
+        } else if (mapSeq == 3) {
+            assignRobotNum = 16;   // 手动分配机器人数量，小于等于0 则程序自动分配
+            assignBoatNum = 0;   // 分配轮船数量，小于等于0为自动分配
+            minValueCoef = 0.2;    // 本泊口最高价值低于最低这个系数乘以期望时，启用贪心算法
+            greedyMaxDis = 50;    // 用贪心算法，最远离本区域多远
+            expGoodNum = 2470;     // 期望总物品数，官方回答：15/100 * 15000 = 2250
+            avgGoodValue = 67;      // 货物的平均价值，每帧更新,设一个初始值，
+            areaMinValueCoef = 1.0;    // 机器人本区域价值队列最低值系数，机器人默认先拿该价值队列，没有货在贪心，
+        }
     }
 
 

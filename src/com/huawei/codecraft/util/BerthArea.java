@@ -9,6 +9,8 @@ import com.huawei.codecraft.core.Robot;
 import java.util.Comparator;
 import java.util.PriorityQueue;
 
+import static com.huawei.codecraft.Main.areaMinValueCoef;
+
 public class BerthArea {
     // 对单个泊口按照价值进行分区
     public Berth berth;    // 分配的泊口
@@ -77,7 +79,7 @@ public class BerthArea {
 
     public double getExpMinValue() {
         // 最远的距离即为最小价值
-        return Const.avgGoodValue/(expMaxStep*2);
+        return Const.avgGoodValue/(expMaxStep*2) * areaMinValueCoef;
     }
 
     public int getExpMaxStep() {

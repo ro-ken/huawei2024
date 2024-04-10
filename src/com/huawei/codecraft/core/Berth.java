@@ -509,21 +509,23 @@ public class Berth {
                 }
             }
         }
+        landPoints.add(pos);
+        Point tmp = null;
         // 初始化另外两个点
         if (Point.isPos2(pos.x-1,pos.y)){
-            pos2 = new Point(pos.x-1,pos.y);
+            tmp = new Point(pos.x-1,pos.y);
         }else {
-            pos2 = new Point(pos.x,pos.y-1);
+            tmp = new Point(pos.x,pos.y-1);
         }
+        landPoints.add(tmp);
         if (Point.isPos2(pos.x+1,pos.y)){
-            pos3 = new Point(pos.x+1,pos.y);
+            tmp = new Point(pos.x+1,pos.y);
         }else {
-            pos3 = new Point(pos.x,pos.y+1);
+            tmp = new Point(pos.x,pos.y+1);
         }
-        landPoints.add(pos);
-        landPoints.add(pos2);
-        landPoints.add(pos3);
-        Util.printDebug("landPoints"+landPoints);
+        landPoints.add(tmp);
+
+//        Util.printDebug("landPoints"+landPoints);
 
         // 初始化泊口方向
         if (map[core.x+1][core.y]=='K' && map[core.x][core.y+1]=='B'){
@@ -556,9 +558,9 @@ public class Berth {
             }
         }
 
-        for (Berth berth : berths) {
-            Util.printDebug(berth+"d1:"+direction+",d2:"+direction2);
-        }
+//        for (Berth berth : berths) {
+//            Util.printDebug(berth+"d1:"+direction+",d2:"+direction2);
+//        }
 
     }
 
