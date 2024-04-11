@@ -292,7 +292,45 @@ public class PathImpl implements Path {
 
     @Override
     public ArrayList<Point> getBoatPathWithBarrier(Point core, int direction, Point dest, HashSet<Point> points) {
-        return null;
+        ArrayList<Point> barrirers = new ArrayList<>(points);
+        ArrayList<Point> boatBoatPath = new ArrayList<>();
+        // 先改地图信息
+        changeMapinfo(barrirers, boat);
+        int x = core.x, y = core.y;
+        int cnt1 = 0, cnt2 = 0;
+        int nextDir;
+        if (direction == UP || direction == DOWN) {
+            // 比较左右的空地
+            while (isValid(x, y) && cnt1 <= 6 && seaMap[x][y] != ROAD) {
+                cnt1++;
+                y -= 1;
+            }
+            while (isValid(x, y) && cnt1 <= 6 && seaMap[x][y] != ROAD) {
+                cnt2++;
+                y += 1;
+            }
+           nextDir = cnt1 > cnt2 ? LEFT : RIGHT;
+        }
+        else {
+            // 比较上下的空地
+            while (isValid(x, y) && cnt1 <= 6 && seaMap[x][y] != ROAD) {
+                cnt1++;
+                x -= 1;
+            }
+            while (isValid(x, y) && cnt1 <= 6 && seaMap[x][y] != ROAD) {
+                cnt2++;
+                x += 1;
+            }
+            nextDir = cnt1 > cnt2 ? UP : DOWN;
+        }
+        // 哪边更宽阔，往那边转
+        turnDirection(direction, nextDir, dest, boatBoatPath);
+        // 获取剩余路径
+        ArrayList<Point> leftPath = getBoatPath(core, direction, dest);
+        // 恢复地图
+        restoreMapinfo(barrirers, boat);
+        boatBoatPath.addAll(leftPath);
+        return boatBoatPath;
     }
 
     private ArrayList<Point> getRoundPoints(int direction) {
@@ -887,6 +925,13 @@ public class PathImpl implements Path {
                 seaMap[barrier.x][barrier.y] = ROAD;  // 标记为陆地
             }
         }
+        else { // 船也是标记为陆地
+            for (Point barrier : barriers) {
+                if (isValid(barrier.x, barrier.y) && !isHidePoint(barrier)) {
+                    seaMap[barrier.x][barrier.y] = ROAD;  // 标记为陆地
+                }
+            }
+        }
     }
 
     // 恢复地图信息
@@ -901,6 +946,13 @@ public class PathImpl implements Path {
         else if (flag == special) {
             for (Point barrier : barriers) {
                 Mapinfo.seaMap[barrier.x][barrier.y] = specialPoint.get(barrier);  // 恢复为原来的地图
+            }
+        }
+        else {
+            for (Point barrier : barriers) {
+                if (isValid(barrier.x, barrier.y)) {
+                    Mapinfo.seaMap[barrier.x][barrier.y] = Mapinfo.map[barrier.x][barrier.y];  // 恢复为原来
+                }
             }
         }
     }
