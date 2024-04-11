@@ -14,6 +14,7 @@ import java.util.*;
 
 import static com.huawei.codecraft.Const.*;
 import static com.huawei.codecraft.Const.berths;
+import static com.huawei.codecraft.Main.menuAssign;
 import static com.huawei.codecraft.util.BoatStatus.*;
 
 // 轮船
@@ -39,7 +40,7 @@ public class Boat {
     public static Twins<Twins<ArrayList<Berth>, Integer>,Twins<ArrayList<Berth>, Integer>> bothPath;    // todo 路径要提前排好序，后面直接用
     public boolean frameMoved;  // 船体只能输入一条指令
     int lastDelivery;
-    int time;
+
 
     public Boat(int id,Point p) {
         this.id = id;
@@ -189,7 +190,12 @@ public class Boat {
         // 初始化，轮船路径,分别计算单、双路径
 //        BoatPath single = getSinglePath();
 //        totalPaths.put(1,single);
-        bothPath = getBothPath();
+        if (menuAssign[0]==null){
+            bothPath = getBothPath();
+        }else {
+            bothPath = menuAssignBoat(menuAssign);
+        }
+
         Util.printLog("下面为both的两条路径：");
         Util.printLog(bothPath.getObj1());
         Util.printLog(bothPath.getObj2());
@@ -203,6 +209,20 @@ public class Boat {
                 Main.assignBoatNum = 1;
             }
         }
+    }
+
+    private static Twins<Twins<ArrayList<Berth>, Integer>, Twins<ArrayList<Berth>, Integer>> menuAssignBoat(int[][] berthid) {
+        ArrayList<Berth> list1 = new ArrayList<>();
+        ArrayList<Berth> list2 = new ArrayList<>();
+        int[] ids = berthid[0];
+        for (int i = 0; i < ids.length; i++) {
+            list1.add(berths.get(ids[i]));
+        }
+        ids = berthid[1];
+        for (int i = 0; i < ids.length; i++) {
+            list2.add(berths.get(ids[i]));
+        }
+        return new Twins<>(new Twins<>(list1,-1),new Twins<>(list2,-1));
     }
 
     private static Twins<Twins<ArrayList<Berth>, Integer>,Twins<ArrayList<Berth>, Integer>> getBothPath() {
@@ -440,7 +460,7 @@ public class Boat {
 
     private static int reAssignPathByBoatPos(Boat boat) {
         //
-        Berth berth = null;
+        Berth berth;
 
         // 第一艘船肯定刚到虚拟点卖货
         int min = unreachableFps;
@@ -471,6 +491,9 @@ public class Boat {
     private void setMyPath(Twins<ArrayList<Berth>, Integer> path) {
         // 设置我的路径，后面要判断在什么状态
         myPath = new BoatPath(path,this);
+        for (Berth berth : path.getObj1()) {
+            berth.setBoat(this);
+        }
     }
 
     private void printMove() {
@@ -529,7 +552,6 @@ public class Boat {
             }else {
                 gotoBerthOrDeliveryNormalPeriod();
             }
-
         }
     }
 
@@ -571,7 +593,7 @@ public class Boat {
                 myPath.setDeadLine(bookBerth);
                 Util.printLog(this+"泊口"+bookBerth);
                 if (myPath.timeNotEnoughTo(bookBerth)){
-                    Util.printLog("时间不够，需要+"+(bookBerth.getSeaPathFps(pos) + bookBerth.getClosestDeliveryFps() + 3));
+//                    Util.printLog("时间不够，需要"+(bookBerth.getSeaPathFps(pos) + bookBerth.getClosestDeliveryFps() + 3));
                     continue;
                 }else {
                     Util.printLog("boat下一个泊口"+bookBerth);
@@ -789,6 +811,7 @@ public class Boat {
                     if (mustGotoDelivery()){
                         Util.printLog(this+"最后一次去交货点,计算时间"+bookBerth.getSeaPathFps(myPath.delivery)+"，剩余时间："+(totalFrame-frameId));
                         deptBerth();
+                        myPath.maxTimes = (totalFrame - frameId)/myPath.minT;
                         return;
                     }
                 }else {
@@ -838,19 +861,26 @@ public class Boat {
         if(status == GO){
             if (isArriveDelivery()){
                 Util.printLog(this+"到达虚拟点：花费时间"+(frameId-lastDelivery)+"送货"+goodSize);
-                time ++ ;
                 myPath.realSeq.add(frameId);
                 myPath.sizeSeq.add(goodSize);
                 resetBoat();        // 重置船
                 // 需要判断是否进入最后周期
                 lastDelivery = frameId;
                 status = BoatStatus.FREE;
+                myPath.maxTimes = (totalFrame - frameId)/myPath.minT;
                 if (myPath.canIntoLastPeriod()){
                     Util.printLog("进入最后周期，剩余时间："+(totalFrame-frameId)+",需要时间"+myPath.minT);
                     myPath.lastPeriod = true;
                 }
             }
         }
+    }
+    public int maxCarrySize(){
+        // 本局还能搬运的最大搬运量
+        if (myPath== null){
+            return 2000;
+        }
+        return myPath.maxTimes * capacity - carry;
     }
 
     private void deptBerth() {
@@ -922,48 +952,11 @@ public class Boat {
         return false;
     }
 
-
-
-    private void setDeadLine(Berth berth) {
-        // 给这个泊口设定deadLine
-//        int expSize = (int) (task.getMinT() / Good.maxSurvive * berth.staticValue.get(1).getGoodNum());
-
-//        berth.setDeadLine(frameId + berth.transport_time + expSize/berth.loading_speed);    // 运输时间 + 装载时间
-    }
-
     private void resetBoat() {
         goodSize = 0;
         totalCarryValue = 0;
     }
 
-    private void changeBerthAndShip(Berth next) {
-        resetBookBerth();
-        if (next == null)
-            return;
-        shipToBerth(next);
-    }
-
-
-    private static ArrayList<Berth> getHighestLowestBerths(List<Berth> berthList) {
-        // 得到berthList 价值最高和最低的berth；
-        ArrayList<Berth> res = new ArrayList<>();
-        if (berthList.isEmpty()) return res;
-        Berth high = berthList.get(0);
-        Berth low = berthList.get(1);
-        for (Berth berth : berthList) {
-            if (berth.staticValue.get(1).getGoodNum() > high.staticValue.get(1).getGoodNum()){
-                high = berth;
-            }
-            if (berth.staticValue.get(1).getGoodNum() < low.staticValue.get(1).getGoodNum()){
-                low = berth;
-            }
-        }
-        berthList.remove(high);
-        berthList.remove(low);
-        res.add(high);
-        res.add(low);
-        return res;
-    }
 
     private static ArrayList<Berth> getClosestTwinsBerth(List<Berth> berthList) {
         // 获取berthList中两个最近的泊口
@@ -1071,5 +1064,19 @@ public class Boat {
                 ", target=" + route.target +
                 ", carry=" + carry +
                 '}';
+    }
+
+    public int totalBerthGoods() {
+        // 该轮船负责的所有泊口货物
+        if (myPath == null){
+            return 0;
+        }else {
+            int total = 0;
+            for (Berth berth : myPath.myPath) {
+                total += berth.existGoods.size();
+                total += berth.bookGoodSize;
+            }
+        return total;
+        }
     }
 }

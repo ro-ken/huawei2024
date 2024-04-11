@@ -20,12 +20,11 @@ public class Berth {
     private Point closestDelivery;
     public int direction;   // 泊位核心点方向
     public int direction2;  // 朝海洋方向
-    public int transport_time;
     public int loading_speed;
-
     public Region region;  // 该泊口属于的区域，在区域初始化赋值
     public ArrayList<Berth> neighbors = new ArrayList<>();  // 该泊口的邻居，按照距离由近到远排序
     public int neighborTotalFps = 0;    // 与邻居的总距离
+    public Boat boat;   // 分配到的货船
     public PriorityQueue<Good> domainGoodsByValue = new PriorityQueue<>(new Comparator<Good>() {
         @Override
         public int compare(Good o1, Good o2) {
@@ -647,6 +646,25 @@ public class Berth {
             }
         }
         return res;
+    }
+
+    public void setBoat(Boat boat) {
+        //
+        this.boat = boat;
+    }
+
+    public boolean invalid() {
+        // 是否能能往这里运货
+        if (frameId+5>=deadLine){
+//            Util.printDebug("deadLine 无效");
+            return true;
+        }
+        if (boat == null){
+            return false;
+        }
+        Util.printDebug("船负责数量"+boat.totalBerthGoods()+"轮船最大载运"+boat.maxCarrySize());
+        // 看容量
+        return boat.totalBerthGoods() >= boat.maxCarrySize();
     }
 }
 

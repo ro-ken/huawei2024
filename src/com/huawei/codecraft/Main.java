@@ -36,6 +36,7 @@ public class Main {
     public static boolean globalGreedy = true;  // 若本区域没物品，全局贪心，局部贪心
     public static boolean dynamicRegion = true;      // 是否动态分区
     public static boolean areaSched = true;
+    public static int[][] menuAssign = new int[2][];    // 手动给轮船分配泊口
 
 
     public static void main(String[] args) throws FileNotFoundException, InterruptedException {
@@ -72,9 +73,12 @@ public class Main {
             avgGoodValue = 67;      // 货物的平均价值，每帧更新,设一个初始值，
             areaMinValueCoef = 1.0;    // 机器人本区域价值队列最低值系数，机器人默认先拿该价值队列，没有货在贪心，
 
+            menuAssign[0] = new int[]{2,0,1};   // 给轮船分配的泊口
+            menuAssign[1] = new int[]{3,4,5};
+
         } else if (mapSeq == 3) {
             assignRobotNum = 16;   // 手动分配机器人数量，小于等于0 则程序自动分配
-            assignBoatNum = 0;   // 分配轮船数量，小于等于0为自动分配
+            assignBoatNum = 1;   // 分配轮船数量，小于等于0为自动分配
             minValueCoef = 0.2;    // 本泊口最高价值低于最低这个系数乘以期望时，启用贪心算法
             greedyMaxDis = 50;    // 用贪心算法，最远离本区域多远
             expGoodNum = 2470;     // 期望总物品数，官方回答：15/100 * 15000 = 2250

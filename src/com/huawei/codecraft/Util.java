@@ -91,19 +91,20 @@ public class Util {
         }
         printBoth("-------------------");
         printBoth("总共跳帧："+dumpFrame);
-        printBoth("------机器人详细信息见日志：------");
+//        printBoth("------机器人详细信息见日志：------");
 //        printRobotArea();
         printBerthArea();
 //        printLog("平均价值：");
 //        printLog(avg);
-        for (Boat boat : boats) {
-            Util.printBoth(boat+"normalT"+boat.myPath.normalT);
-            Util.printBoth("calc seq:"+boat.myPath.fpsSeq);
-            Util.printBoth("real seq:"+boat.myPath.realSeq);
-            Util.printBoth("size seq:"+boat.myPath.sizeSeq);
-//            Util.
-        }
 
+        for (Boat boat : boats) {
+            if (boat.myPath!=null){
+                Util.printLog(boat+"normalT"+boat.myPath.normalT);
+                Util.printLog("calc seq:"+boat.myPath.fpsSeq);
+                Util.printLog("real seq:"+boat.myPath.realSeq);
+                Util.printLog("size seq:"+boat.myPath.sizeSeq);
+            }
+        }
     }
 
     public static void printRobotArea() {
@@ -320,7 +321,6 @@ public class Util {
 
     // 手动初始化地图
     public static void initMapSeq() {
-
 
         int[][][] berthsPos = {
                 {{37,97}, {50,169}, {99,17}}, // map1

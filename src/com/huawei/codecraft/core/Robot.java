@@ -148,9 +148,9 @@ public class Robot {
         Util.printLog(this);
 
         for (Berth berth : berths) {
-            if (berth.notFinalShip()) {
-                continue;
-            }
+//            if (berth.notFinalShip()) {
+//                continue;
+//            }
             Good tmpGood = null;
 
             int r2bFps = berth.getPathFps(pos);      //时间 = 泊口到物品  + 机器人到泊口
@@ -213,11 +213,9 @@ public class Robot {
             }
         } else {
             if (arriveBerth()) {
-
                 if (pos.clacGridDis(bookBerth.pos)>5){
                     Util.printErr("泊口不对....");
                 }
-
                 // 2、如果到达了泊口，卸货，任务结束
                 unloadGood(); //卸货
                 turnOffTask();
@@ -267,6 +265,17 @@ public class Robot {
     }
 
     private void carryGoodToBerthArea() {
+
+        Util.printDebug(this+"到达物品，找泊口："+bookBerth);
+        int fps = bookBerth.getPathFps(bookGood.pos);
+
+        if (bookBerth.invalid() || frameId+fps >= bookBerth.deadLine){
+            bookBerth = getAvailAndClosestBerth(pos);
+            Util.printLog("当前泊口无效，新泊口："+bookBerth);
+            changeRoad(bookBerth.pos);
+            return;
+        }
+
         // 如果只有一个区域，那就会这个泊口
         if (areas.size() == 2){
             // 有两个可用区域，观察是否需要换区
@@ -591,8 +600,6 @@ public class Robot {
                         }
                     }
                 }
-
-
             }
         }
     }
@@ -943,6 +950,13 @@ public class Robot {
     private Twins<Berth, Good> pickNewTaskArea() {
 
         Berth berth = areas.get(curAreaIndex).berth;
+
+        Util.printDebug(this+"机器人找新物品");
+        if (berth.invalid()){
+            Util.printDebug("本泊口无效");
+            return globalGreedyArea();
+        }
+
         // 先去找本泊口的货物
         for (BerthArea myArea : berth.myAreas) {
             while (!myArea.areaGoodsByTime.isEmpty()){
@@ -1070,6 +1084,86 @@ public class Robot {
             return new Twins<>(berth,twins.getObj2());
         }
         return null;
+    }
+
+    private Twins<Berth, Good> globalGreedyArea() {
+        // 自己泊口不能用，全局贪心
+        // 贪心选择任务，选择单次价值最高的
+        double maxV = 0;
+        Berth tarBer = null;
+        Berth goodBer = null;
+        Good tarGood = null;
+        Util.printLog(this);
+
+        // todo 全局贪心
+
+        for (Berth berth : region.zone.berths) {
+            Berth me = null;
+            if (pointToBerth.containsKey(pos)){
+                me = pointToBerth.get(pos);
+            }
+
+            int index = 0;
+            for (Good good : berth.domainGoodsByValue) {
+                // 找出第一个满足robot的
+                double fps = 0;
+                if (me != null){
+                    fps += me.getPathFps(good.pos);
+                }else {
+                    fps += berth.getPathFps(good.pos) + berth.getPathFps(pos);
+                }
+                Berth tar = berth;
+                if (berth.invalid()){
+                    tar = getAvailAndClosestBerth(good.pos);
+                }
+                fps += tar.getPathFps(good.pos);
+                double avgV = good.value / fps;
+                if (avgV > maxV) {
+                    maxV = avgV;
+                    tarBer = tar;
+                    goodBer = berth;
+                    tarGood = good;
+                }
+                if (index++>=3){
+                    break;
+                }
+            }
+        }
+        if (tarGood != null) {
+            goodBer.removeDomainGood(tarGood);
+            return new Twins<>(tarBer, tarGood);
+        }
+
+        return null;
+    }
+
+    private Berth getAvailAndClosestBerth(Point pos) {
+        // 找到一个离pos最近且有用的泊口
+        Berth tar = null;
+        int min = unreachableFps;
+        for (Berth berth : region.zone.berths) {
+            if (!berth.invalid()){
+                int fps = berth.getPathFps(pos);
+                if (fps <min){
+                    min = fps;
+                    tar = berth;
+                }
+            }
+        }
+        Util.printDebug("初次找到泊口："+tar);
+        if (tar != null){
+            return tar;
+        }
+        // 都不可用，选择一个deadline最小的
+        int max = 0;
+        for (Berth berth : region.zone.berths) {
+            if (berth.deadLine > max){
+                max = berth.deadLine;
+                tar = berth;
+            }
+        }
+        Util.printDebug("最后选择泊口："+tar);
+        return tar;
     }
 
     // 选择物品和泊口

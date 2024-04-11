@@ -15,7 +15,7 @@ public class BoatPath {
     public ArrayList<Berth> myPath = new ArrayList<>();
     int pathNum = 1;        // 路径数量
     int index = 0;     // 始终指向下一个节点
-    int totalFps;       // 所有路径加一起的大周期
+
 //    boolean needChange=false;     // 是否需要转换顺序
     public int minT; // 最小完整周期，最后一个阶段的调度周期
     public int normalT;    // 前面正常周期  total = normalT * n + minT ;
@@ -27,11 +27,11 @@ public class BoatPath {
     public ArrayList<Integer> fpsSeq = new ArrayList<>();
     public ArrayList<Integer> realSeq = new ArrayList<>();
     public ArrayList<Integer> sizeSeq = new ArrayList<>();
+    public int maxTimes = 20;  // 还能搬运的趟数
 
     public BoatPath(ArrayList<Berth> path, int period) {
         // 只有一条路径   ,没有boat，不启用
         myPath.addAll(path);
-        totalFps = period;
     }
 
 //    public BoatPath(ArrayList<Berth> path1, ArrayList<Berth> path2) {
@@ -46,11 +46,9 @@ public class BoatPath {
     public BoatPath(Twins<ArrayList<Berth>, Integer> path, Boat boat) {
         this.boat = boat;
         assignMyPath(path.getObj1());
-        totalFps = path.getObj2();
         startFrame = frameId;
         delivery = myPath.get(myPath.size()-1).getClosestDelivery();    // 交货点选离最后节点近的，离交货点近的要放最后一个
         updateTime();
-
     }
 
     private void assignMyPath(ArrayList<Berth> path) {
@@ -135,7 +133,6 @@ public class BoatPath {
     public String toString() {
         return "BoatPath{" +
                 ", pathNum=" + pathNum +
-                ", totalFps=" + totalFps +
                 ",myPath=" + myPath +
                 '}';
     }
@@ -224,6 +221,10 @@ public class BoatPath {
 
     public void setDeadLine(Berth berth) {
         // 设置到期时间 = 这个泊口离开到delivery的时间
+        if (isLastBerth(berth)){
+            return;     // 最后泊口不设deadline
+        }
+
         int t = 0;
         for (int i = index; i < myPath.size(); i++) {
             t += myPath.get(i-1).getSeaPathFps(myPath.get(i).core);
