@@ -7,6 +7,7 @@ import com.huawei.codecraft.util.BoatPath;
 import com.huawei.codecraft.util.BoatStatus;
 import com.huawei.codecraft.util.Point;
 import com.huawei.codecraft.util.Twins;
+import com.huawei.codecraft.way.PathImpl;
 
 
 import java.util.*;
@@ -32,11 +33,13 @@ public class Boat {
     public int totalCarryValue;
     public int stopMoveFps;    // 发生碰撞，暂停的帧数
     BoatRoute route;
-    BoatPath myPath;
+    public BoatPath myPath;
     // <轮船数，路径>，若为两艘轮船，里面路径每人一条
     public static Map<Integer,BoatPath> totalPaths = new HashMap<>();
     public static Twins<Twins<ArrayList<Berth>, Integer>,Twins<ArrayList<Berth>, Integer>> bothPath;    // todo 路径要提前排好序，后面直接用
     public boolean frameMoved;  // 船体只能输入一条指令
+    int lastDelivery;
+    int time;
 
     public Boat(int id,Point p) {
         this.id = id;
@@ -49,22 +52,22 @@ public class Boat {
     public static void handleBoatMove() {
 
         boolean conflict = false;
-//        if (boats.size()==2 && boats.get(0).pos.clacGridDis(boats.get(1).pos)<=7 && !tmpMode()){
-//            // 此时有可能发生重合
-//            Boat boat0 = boats.get(0);
-//            Boat boat1 = boats.get(1);
-//            HashSet<Point> point0 = boat0.getNextPoints();
-//            HashSet<Point> point1 = boat1.getNextPoints();
-//            HashSet<Point> all = new HashSet<>();
-//            all.addAll(point0);
-//            all.addAll(point1);
-//            if (all.size() != point0.size() + point1.size()){
-//                Util.printLog("船有冲突");
-//                handleBoatConflict(boat0,boat1);
-//                // 点有重叠，有冲突
-//                conflict = true;
-//            }
-//        }
+        if (boats.size()==2 && boats.get(0).pos.clacGridDis(boats.get(1).pos)<=7 && !tmpMode()){
+            // 此时有可能发生重合
+            Boat boat0 = boats.get(0);
+            Boat boat1 = boats.get(1);
+            HashSet<Point> point0 = boat0.getNextPoints();
+            HashSet<Point> point1 = boat1.getNextPoints();
+            HashSet<Point> all = new HashSet<>();
+            all.addAll(point0);
+            all.addAll(point1);
+            if (all.size() != point0.size() + point1.size()){
+                Util.printLog("船有冲突");
+                handleBoatConflict(boat0,boat1);
+                // 点有重叠，有冲突
+                conflict = true;
+            }
+        }
 
         if (!conflict){
             for (Boat boat : boats) {
@@ -99,12 +102,12 @@ public class Boat {
             master = boat1;
             slave = boat0;
         }
-        ArrayList<Point> path1 = path.getBoatPathWithBarrier(slave.pos, slave.direction, slave.route.target, master.getSelfPoints());
+        ArrayList<Point> path1 = path.getBoatPathWithBarrier(slave.pos, slave.direction, slave.route.target, master.getSelfPoints(-1));
         if (path1 == null){
             Boat tmp = master;
             master = slave;
             slave = tmp;
-            path1 = path.getBoatPathWithBarrier(slave.pos, slave.direction, slave.route.target, master.getSelfPoints());
+            path1 = path.getBoatPathWithBarrier(slave.pos, slave.direction, slave.route.target, master.getSelfPoints(-1));
         }
         if (path1 == null){
             Util.printErr("两艘船都不能换路");
@@ -116,15 +119,63 @@ public class Boat {
         }
     }
 
-    private HashSet<Point> getSelfPoints() {
+
+    private HashSet<Point> getSelfPoints(int nextDir) {
+        // 获取当前时刻的坐标
+        int dir = nextDir;
+        // -1 就是获取自己
+        if (nextDir == -1) {
+            dir = direction;
+        }
+        Point p;
         // 获取当前自身的所有点
-        return null;
+        HashSet<Point> shipPoints = new HashSet<>();
+        for (int i = 0; i < 3; i++) {
+            if (nextDir == -1) {
+                p = new Point(pos);
+            }
+            else {
+                p = new Point(next);
+            }
+            for (int j = 0; j < 2; j++) {
+                if (dir == LEFT) {
+                    p.y = pos.y - i;
+                    p.x -= j;
+                }
+                else if (dir == RIGHT) {
+                    p.y = pos.y + i;
+                    p.x += j;
+                }
+                else if (dir == UP) {
+                    p.x = pos.x - i;
+                    p.y += j;
+                }
+                else {
+                    p.x = pos.x + i;
+                    p.y -= j;
+                }
+            }
+            shipPoints.add(p);
+        }
+        return shipPoints;
     }
 
     private HashSet<Point> getNextPoints() {
         // 计算移动到下一个点的自身的所有点，下一个点 robot.pos
-        // todo 所有坐标
-        return null;
+        int nextDir;
+        int dis = next.clacGridDis(pos);
+        if (dis == 1) {
+            nextDir = direction;
+        }
+        else {
+            if (Math.abs(next.x-pos.x)==1) {
+                nextDir = PathImpl.counterClockwiseRotation.get(direction);
+            }
+            else {
+                nextDir = PathImpl.clockwiseRotation.get(direction);
+            }
+        }
+        return getSelfPoints(nextDir);
     }
 
     public static void init() {
@@ -447,18 +498,40 @@ public class Boat {
     }
 
     public void schedule() {
+        // 轮船简单调度，在各大泊口间轮转，满了卸货
+        if (inRecoverMode()){
+            return;     // 恢复状态不能操作
+        }
         if (boat_num == 1){
             simpleSched();
         }else {
-            pathSched();
+//            pathSched();
+            PeriodSched();
+        }
+    }
+
+    private void PeriodSched() {
+        // 常规周期调度
+        if (status != BoatStatus.FREE){
+            if (myPath.lastPeriod){
+                handleBoatTaskLastPeriod();
+            }else {
+                handleBoatTaskNormalPeriod();
+            }
+        }
+        if (status == BoatStatus.FREE && !frameMoved){
+            // 没有任务 ， 且没有输出指令
+            if (myPath.lastPeriod){
+                gotoBerthOrDeliveryLastPeriod();
+            }else {
+                gotoBerthOrDeliveryNormalPeriod();
+            }
+
         }
     }
 
     private void pathSched() {
         // 按照规划的路径进行调度
-        if (inRecoverMode()){
-            return;     // 恢复状态不能操作
-        }
         if (status != BoatStatus.FREE){
             handleBoatTask();
         }
@@ -472,15 +545,54 @@ public class Boat {
 
     private void simpleSched() {
         // 轮船简单调度，在各大泊口间轮转，满了卸货
-        if (inRecoverMode()){
-            return;     // 恢复状态不能操作
-        }
         if (status != BoatStatus.FREE){
             handleBoatTask();
         }
         if (status == BoatStatus.FREE && !frameMoved){
             // 没有任务 ， 且没有输出指令
             goToBerthOrDelivery();
+        }
+    }
+
+    private void gotoBerthOrDeliveryLastPeriod() {
+        // 最后周期调度 ，
+        while (true){
+            Twins<Berth,Point> twins = myPath.getNextPlace();
+            if (twins.getObj1() == null){
+                Util.printLog("boat去交货点"+twins.getObj2());
+                status = GO;
+                changeRoad(twins.getObj2());
+                return;
+            }else {
+                bookBerth = twins.getObj1();
+                myPath.setDeadLine(bookBerth);
+                Util.printLog(this+"泊口"+bookBerth);
+                if (myPath.timeNotEnoughTo(bookBerth)){
+                    Util.printLog("时间不够，需要+"+(bookBerth.getSeaPathFps(pos) + bookBerth.getClosestDeliveryFps() + 3));
+                    continue;
+                }else {
+                    Util.printLog("boat下一个泊口"+bookBerth);
+                    status = BoatStatus.SHIP;
+                    changeRoad(bookBerth.pos);
+                    return;
+                }
+            }
+        }
+    }
+
+    private void gotoBerthOrDeliveryNormalPeriod() {
+        // todo 后续加一个如果去下一个点时间不够，就会虚拟点进入最后周期
+        // 通过实现规划的路径决定该怎么走
+        Twins<Berth,Point> twins = myPath.getNextPlace();
+        if (twins.getObj1() == null){
+            Util.printLog("boat去交货点"+twins.getObj2());
+            status = GO;
+            changeRoad(twins.getObj2());
+        }else {
+            bookBerth = twins.getObj1();
+            Util.printLog("boat下一个泊口"+bookBerth);
+            status = BoatStatus.SHIP;
+            changeRoad(bookBerth.pos);
         }
     }
 
@@ -647,6 +759,105 @@ public class Boat {
             }
         }
     }
+    private void handleBoatTaskLastPeriod() {
+        // 常规调度处理
+        if (status == BoatStatus.SHIP){
+            // 驶向泊口状态
+            if (isArriveBerthArea()){
+                Util.printLog(this+"boat arrive："+bookBerth);
+                Util.boatBerth(id);
+                frameMoved = true;
+                status = BoatStatus.LOAD;
+            }
+            return;
+        }
+        if (status == BoatStatus.LOAD){
+            if (startFrame == 0){
+                startFrame = frameId;
+            }
+            if (boatIsFull()){
+                Util.printLog("货船已满");
+                deptBerth();
+            }
+            if (isLoadFinish()){
+                // 不是最后一个直接走，是最后一个，到最后时刻在走，todo 可以细化
+                if (myPath.isLastBerth(bookBerth)){
+                    // 等到最后时刻再走
+                    if (mustGotoDelivery()){
+                        Util.printLog(this+"最后一次去交货点,计算时间"+bookBerth.getSeaPathFps(myPath.delivery)+"，剩余时间："+(totalFrame-frameId));
+                        deptBerth();
+                        return;
+                    }
+                }else {
+                    // 不是最后泊口，装好就走
+                    deptBerth();
+                }
+            }
+            return;
+        }
+        if(status == GO){
+            if (isArriveDelivery()){
+                Util.printLog(this+"最后一次到达交货点，浪费时间"+(totalFrame-frameId));
+                resetBoat();        // 重置船
+                // 需要判断是否进入最后周期
+                status = BoatStatus.FREE;
+            }
+        }
+    }
+
+    private void handleBoatTaskNormalPeriod() {
+        // 常规调度处理
+        if (status == BoatStatus.SHIP){
+            // 驶向泊口状态
+            if (isArriveBerthArea()){
+                Util.printLog(this+"boat arrive："+bookBerth);
+                Util.boatBerth(id);
+                frameMoved = true;
+                status = BoatStatus.LOAD;
+            }
+            return;
+        }
+        if (status == BoatStatus.LOAD){
+            if (startFrame == 0){
+                startFrame = frameId;
+            }
+            if (boatIsFull()){
+                Util.printLog("货船已满");
+                deptBerth();
+            }
+            if (isLoadFinish()){
+                if (myPath.needGoNormal()){
+                    deptBerth();
+                }
+            }
+            return;
+        }
+        if(status == GO){
+            if (isArriveDelivery()){
+                Util.printLog(this+"到达虚拟点：花费时间"+(frameId-lastDelivery)+"送货"+goodSize);
+                time ++ ;
+                myPath.realSeq.add(frameId);
+                myPath.sizeSeq.add(goodSize);
+                resetBoat();        // 重置船
+                // 需要判断是否进入最后周期
+                lastDelivery = frameId;
+                status = BoatStatus.FREE;
+                if (myPath.canIntoLastPeriod()){
+                    Util.printLog("进入最后周期，剩余时间："+(totalFrame-frameId)+",需要时间"+myPath.minT);
+                    myPath.lastPeriod = true;
+                }
+            }
+        }
+    }
+
+    private void deptBerth() {
+        // 离岗
+        clacGoods();//结算货物
+        Util.boatDept(id);
+        frameMoved = true;
+        status = BoatStatus.FREE; // 让轮船重新做选择
+        startFrame = 0;
+    }
 
     // 换新的路
     public void changeRoad(Point target) {
@@ -700,9 +911,9 @@ public class Boat {
         return left <= loadGoods;   // 实际装载量 > 轮船剩余空位
     }
 
-    private boolean mustGotoVirtual() {
+    private boolean mustGotoDelivery() {
         // 时间不够，必须回虚拟点了,
-        if (frameId + bookBerth.transport_time >= totalFrame){
+        if (totalFrame - frameId <= bookBerth.getSeaPathFps(myPath.delivery)+Main.lastGoFps){
             return true;
         }
         return false;

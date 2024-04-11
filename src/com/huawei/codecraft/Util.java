@@ -86,7 +86,7 @@ public class Util {
             printLog(berth+"期望运货："+expNum+",\t期望价值："+(float)avgGoodValue*expNum+",\t单位价值："+avgGoodValue+"，\t期望距离"+expDis+",\t期望最低价值："+expMinValue);
             printLog(berth+"实际产生："+area.totalGoodNum/15.0f+",\t实际价值："+area.totalGoodValue/15.0f+",\t单位价值："+area.totalGoodValue*1.0f/area.totalGoodNum+"，\t周期等待:"+area.waitTime/15.0f);
             printLog(berth+"实际运货："+berth.totalCarrySize/15.0f+",\t周期价值：" + berth.totalCarryValue/15.0f+",\t单位价值：" + berth.totalCarryValue*1.0f/berth.totalCarrySize+"，\t取货距离:"+berth.totalDis*1.0f/berth.totalCarrySize);
-
+            printLog("码头货物"+berth.existGoods.size()+"价值："+berth.existValue);
             printLog("----");
         }
         printBoth("-------------------");
@@ -96,6 +96,14 @@ public class Util {
         printBerthArea();
 //        printLog("平均价值：");
 //        printLog(avg);
+        for (Boat boat : boats) {
+            Util.printBoth(boat+"normalT"+boat.myPath.normalT);
+            Util.printBoth("calc seq:"+boat.myPath.fpsSeq);
+            Util.printBoth("real seq:"+boat.myPath.realSeq);
+            Util.printBoth("size seq:"+boat.myPath.sizeSeq);
+//            Util.
+        }
+
     }
 
     public static void printRobotArea() {

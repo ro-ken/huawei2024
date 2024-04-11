@@ -33,8 +33,8 @@ public class PathImpl implements Path {
             {{3, 1, 2, 4},{1, 3, 2, 4}}
     };
 
-    private static final Map<Integer, Integer> clockwiseRotation = new HashMap<>(); // 轮转方向顺时针映射
-    private static final Map<Integer, Integer> counterClockwiseRotation = new HashMap<>(); // 轮转方向逆时针映射
+    public static final Map<Integer, Integer> clockwiseRotation = new HashMap<>(); // 轮转方向顺时针映射
+    public static final Map<Integer, Integer> counterClockwiseRotation = new HashMap<>(); // 轮转方向逆时针映射
 
     static {
         clockwiseRotation.put(0, 3);

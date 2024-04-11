@@ -30,6 +30,7 @@ public class Main {
     public static double minValueCoef = 0.2;    // 本泊口最高价值低于最低这个系数乘以期望时，启用贪心算法
     public static double areaMinValueCoef = 1.0;    // 机器人本区域价值队列最低值系数，机器人默认先拿该价值队列，没有货在贪心，
     public static int greedyMaxDis = 50;    // 用贪心算法，最远离本区域多远
+    public static int lastGoFps = 2;      // 最后到达交货点的剩余时间，防止货物卖不出去
     public static boolean fixValue = true;     // 获取物品平均价值是否按照预设的来，还是动态计算，白图运行一次可以固定下来
     public static boolean limitArea = false;   // 是否限制机器人的工作区域，测试时打开
     public static boolean globalGreedy = true;  // 若本区域没物品，全局贪心，局部贪心
