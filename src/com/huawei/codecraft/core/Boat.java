@@ -53,10 +53,12 @@ public class Boat {
 
         boolean conflict = false;
         if (boats.size()==2 && boats.get(0).pos.clacGridDis(boats.get(1).pos)<=7 && !tmpMode()){
+            Util.printLog("发生冲突了");
             // 此时有可能发生重合
             Boat boat0 = boats.get(0);
             Boat boat1 = boats.get(1);
             HashSet<Point> point0 = boat0.getNextPoints();
+            Util.printLog("point0：" + point0.size());
             HashSet<Point> point1 = boat1.getNextPoints();
             HashSet<Point> all = new HashSet<>();
             all.addAll(point0);
@@ -121,6 +123,7 @@ public class Boat {
 
 
     private HashSet<Point> getSelfPoints(int nextDir) {
+
         // 获取当前时刻的坐标
         int dir = nextDir;
         // -1 就是获取自己
@@ -131,31 +134,31 @@ public class Boat {
         // 获取当前自身的所有点
         HashSet<Point> shipPoints = new HashSet<>();
         for (int i = 0; i < 3; i++) {
-            if (nextDir == -1) {
-                p = new Point(pos);
-            }
-            else {
-                p = new Point(next);
-            }
             for (int j = 0; j < 2; j++) {
+                if (nextDir == -1) {
+                    p = new Point(pos);
+                }
+                else {
+                    p = new Point(next);
+                }
                 if (dir == LEFT) {
-                    p.y = pos.y - i;
+                    p.y = p.y - i;
                     p.x -= j;
                 }
                 else if (dir == RIGHT) {
-                    p.y = pos.y + i;
+                    p.y = p.y + i;
                     p.x += j;
                 }
                 else if (dir == UP) {
-                    p.x = pos.x - i;
+                    p.x = p.x - i;
                     p.y += j;
                 }
                 else {
-                    p.x = pos.x + i;
+                    p.x = p.x + i;
                     p.y -= j;
                 }
+                shipPoints.add(p);
             }
-            shipPoints.add(p);
         }
         return shipPoints;
     }
@@ -168,7 +171,7 @@ public class Boat {
             nextDir = direction;
         }
         else {
-            if (Math.abs(next.x-pos.x)==1) {
+            if (Math.abs(next.x-pos.x) == 1) {
                 nextDir = PathImpl.counterClockwiseRotation.get(direction);
             }
             else {

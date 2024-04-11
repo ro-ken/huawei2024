@@ -292,10 +292,12 @@ public class PathImpl implements Path {
 
     @Override
     public ArrayList<Point> getBoatPathWithBarrier(Point core, int direction, Point dest, HashSet<Point> points) {
-        ArrayList<Point> barrirers = new ArrayList<>(points);
+        ArrayList<Point> barriers = new ArrayList<>(points);
         ArrayList<Point> boatBoatPath = new ArrayList<>();
+        initShip(core);
+        refreshShip(core, direction);
         // 先改地图信息
-        changeMapinfo(barrirers, boat);
+        changeMapinfo(barriers, boat);
         int x = core.x, y = core.y;
         int cnt1 = 0, cnt2 = 0;
         int nextDir;
@@ -325,10 +327,11 @@ public class PathImpl implements Path {
         }
         // 哪边更宽阔，往那边转
         turnDirection(direction, nextDir, dest, boatBoatPath);
+        direction = nextDir;
         // 获取剩余路径
-        ArrayList<Point> leftPath = getBoatPath(core, direction, dest);
+        ArrayList<Point> leftPath = getBoatPath(ship[0], direction, dest);
         // 恢复地图
-        restoreMapinfo(barrirers, boat);
+        restoreMapinfo(barriers, boat);
         boatBoatPath.addAll(leftPath);
         return boatBoatPath;
     }
@@ -927,7 +930,7 @@ public class PathImpl implements Path {
         }
         else { // 船也是标记为陆地
             for (Point barrier : barriers) {
-                if (isValid(barrier.x, barrier.y) && !isHidePoint(barrier)) {
+                if (isValid(barrier.x, barrier.y)) {
                     seaMap[barrier.x][barrier.y] = ROAD;  // 标记为陆地
                 }
             }
