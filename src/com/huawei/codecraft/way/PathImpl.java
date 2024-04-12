@@ -272,8 +272,13 @@ public class PathImpl implements Path {
 
     public static int getPathLen(ArrayList<Point> finalPath) {
         int len = 0;
-        for (Point p : finalPath) {
-            if (isValid(p.x, p.y) && (seaMap[p.x][p.y] == MAINBOTH || seaMap[p.x][p.y] == MAINSEA)) {
+        int size = finalPath.size();
+        if (size >= 2 && finalPath.get(size - 1).equals(finalPath.get(size - 2))) {
+            size--;
+        }
+        for (int i = 0; i < size; i++) {
+            Point p = finalPath.get(i);
+            if (isValid(p.x, p.y) && (Mapinfo.map[p.x][p.y] == MAINBOTH || Mapinfo.map[p.x][p.y] == MAINSEA)) {
                 len += 2;
             }
             else  if (isValid(p.x, p.y)){
