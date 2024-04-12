@@ -59,7 +59,7 @@ public class Boat {
     public static void handleBoatMove() {
 
         boolean conflict = false;
-        if (boats.size()==2 && boats.get(0).pos.clacGridDis(boats.get(1).pos)<=7 && !tmpMode()){
+        if (boats.size()==2 && boats.get(0).pos.clacGridDis(boats.get(1).pos)<=8 && !tmpMode()){
             Util.printLog("发生冲突了");
             // 此时有可能发生重合
             Boat boat0 = boats.get(0);
@@ -111,6 +111,12 @@ public class Boat {
             master = boat1;
             slave = boat0;
         }
+        if (master.route.target.equals(slave.route.target)){
+            slave.stopMoveFps = 4;
+            master.printMove();
+            return;
+        }
+
         ArrayList<Point> path1 = path.getBoatPathWithBarrier(slave.pos, slave.direction, slave.route.target, master.getSelfPoints(-1));
         if (path1 == null || path1.size()<=2){
             Boat tmp = master;
@@ -904,6 +910,10 @@ public class Boat {
                 Util.boatBerth(id);
                 frameMoved = true;
                 status = BoatStatus.LOAD;
+            }else {
+                if (pos.equals(route.target)){
+                    status = FREE;  // 卡住了
+                }
             }
             return;
         }
@@ -938,6 +948,10 @@ public class Boat {
                 resetBoat();        // 重置船
                 // 需要判断是否进入最后周期
                 status = BoatStatus.FREE;
+            }else {
+                if (pos.equals(route.target)){
+                    status = FREE;  // 卡住了
+                }
             }
         }
     }
@@ -951,6 +965,10 @@ public class Boat {
                 Util.boatBerth(id);
                 frameMoved = true;
                 status = BoatStatus.LOAD;
+            }else {
+                if (pos.equals(route.target)){
+                    status = FREE;  // 卡住了
+                }
             }
             return;
         }
@@ -983,6 +1001,10 @@ public class Boat {
                     Util.printLog("进入最后周期，剩余时间："+(totalFrame-frameId)+",需要时间"+myPath.minT);
                     myPath.lastPeriod = true;
                 }
+            }else {
+                if (pos.equals(route.target)){
+                    status = FREE;  // 卡住了
+                }
             }
         }
     }
@@ -1005,10 +1027,10 @@ public class Boat {
 
     // 换新的路
     public void changeRoad(Point target) {
-        if (target.clacGridDis(pos)<=3){
-            Util.printLog("距离太近，不寻路");
-            return;
-        }
+//        if (target.clacGridDis(pos)<=2){
+//            Util.printLog("距离太近，不寻路");
+//            return;
+//        }
         route.setNewWay(target);
         Util.printLog("boat 寻路："+route.way);
         if (!route.target.equals(target)) {
