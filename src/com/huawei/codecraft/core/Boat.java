@@ -112,13 +112,13 @@ public class Boat {
             slave = boat0;
         }
         ArrayList<Point> path1 = path.getBoatPathWithBarrier(slave.pos, slave.direction, slave.route.target, master.getSelfPoints(-1));
-        if (path1 == null){
+        if (path1 == null || path1.size()<=2){
             Boat tmp = master;
             master = slave;
             slave = tmp;
             path1 = path.getBoatPathWithBarrier(slave.pos, slave.direction, slave.route.target, master.getSelfPoints(-1));
         }
-        if (path1 == null){
+        if (path1 == null || path1.size()<=2){
             Util.printErr("两艘船都不能换路");
             master.printMove();
             slave.printMove();  // 直接开撞
@@ -756,6 +756,16 @@ public class Boat {
                 seaHotPath.put(key,new HashMap<>());
             }
             Map<Point, Twins<ArrayList<Point>, Integer>> map = seaHotPath.get(key);
+
+            if (Main.staticPath.containsKey(key) && Main.staticPath.get(key).containsKey(target)){
+                ArrayList<Point> list = Main.staticPath.get(key).get(target);
+
+                int len = PathImpl.getPathLen(list);
+                map.put(target,new Twins<>(list,len));
+                Util.printLog("读取成功，长度："+len+"路径："+list);
+                return len;
+            }
+
 //            Util.printLog("海上未保存路径，先寻路：src:"+pos +"方向:"+direction+"dest:"+target);
             Twins<ArrayList<Point>, Integer> value = path.getBoatPathAndFps(pos, direction, target);
             if (value == null){
@@ -763,7 +773,9 @@ public class Boat {
                 return unreachableFps;
             }
             map.put(target,value);
-            seaHotPath.put(key,map);
+
+            Util.printLog(pos+"方向："+direction+"dest:"+target+"距离："+value.getObj2());
+            Util.printLog(value.getObj1());
             return value.getObj2();
         }
     }
@@ -816,7 +828,7 @@ public class Boat {
             }
 
 
-            if (capacity == carry || bookBerth.getClosestDeliveryFps() >= totalFrame-frameId-3){
+            if (capacity == carry || bookBerth.getClosestDeliveryFps() >= totalFrame-frameId-1-Main.lastGoFps){
                 Util.printLog("满了或时间到了，必须去交货点"+startFrame);
                 lastJudge();
                 clacGoods();//结算货物
