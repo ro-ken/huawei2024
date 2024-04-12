@@ -679,8 +679,9 @@ public class Boat {
 
         Berth most = selectMostGoodNumBerth();
         Twins<Point, Integer> delivery = selectClosestDeliveryToBerth(most);
+        int dis = 0;
         if (tarBerth != null && goodSize != 0){
-            int dis = getSeaPathFps(pos,direction,tarBerth.core);
+             dis = getSeaPathFps(pos,direction,tarBerth.core);
             if (dis > delivery.getObj2() * 0.8){
                 // 距离太长，还不如先去交货点
                 tarBerth = null;
@@ -688,8 +689,24 @@ public class Boat {
         }
 
         if (tarBerth != null){
-
-
+            // 判断是否是最后时刻
+            if (dis + tarBerth.getClosestDeliveryFps() >= (totalFrame-frameId)-5){
+                // 时间有点来不及，选一个除了本泊口最近的
+                Berth tar = null;
+                int min = unreachableFps;
+                for (Berth berth : berths) {
+                    int fps = getSeaPathFps(pos,direction,berth.core)+berth.getClosestDeliveryFps();
+                    if (fps < min){
+                        min = fps;
+                        tar = berth;
+                    }
+                }
+                if (min >= (totalFrame-frameId)-4){
+                    tarBerth = null;
+                }else {
+                    tarBerth = tar;
+                }
+            }
         }
 
 
@@ -703,6 +720,11 @@ public class Boat {
             status = GO;
             changeRoad(delivery.getObj1());
         }
+    }
+
+    private Berth selectClosestBerthToDelivery() {
+        // dis = pos -> berth —> delivery；选择一个最近最小
+        return null;
     }
 
     private Twins<Point,Integer> selectClosestDeliveryToBerth(Berth berth) {
@@ -776,6 +798,11 @@ public class Boat {
 
     private void handleBoatTask() {
         if (status == BoatStatus.SHIP){
+
+            if (bookBerth.deadLine < totalFrame){
+                bookBerth.deadLine = totalFrame;
+            }
+
             // 驶向泊口状态
             if (isArriveBerthArea()){
                 Util.printLog(this+"boat arrive："+bookBerth);
@@ -787,7 +814,36 @@ public class Boat {
             if (startFrame == 0){
                 startFrame = frameId;
             }
+
+
+            if (capacity == carry || bookBerth.getClosestDeliveryFps() >= totalFrame-frameId-3){
+                Util.printLog("满了或时间到了，必须去交货点"+startFrame);
+                lastJudge();
+                clacGoods();//结算货物
+                Util.boatDept(id);
+                frameMoved = true;
+                status = BoatStatus.FREE; // 让轮船重新做选择
+                startFrame = 0;
+            }
+
+
             if (isLoadFinish()){
+                // 判断时间是否够去下一个点，不然在等待
+                Berth tar = null;
+                int min = unreachableFps;
+                for (Berth berth : berths) {
+                    if (berth == bookBerth) continue;
+                    int fps = getSeaPathFps(pos,direction,berth.core)+berth.getClosestDeliveryFps();
+                    if (fps < min){
+                        min = fps;
+                        tar = berth;
+                    }
+                }
+                if (min >= totalFrame-frameId-6){
+                    // 去下一个时间有点紧，不如在本泊口多装一点
+                    return;
+                }
+                lastJudge();
                 Util.printLog("搬运结束：startFrame"+startFrame);
                 clacGoods();//结算货物
                 Util.boatDept(id);
@@ -803,6 +859,22 @@ public class Boat {
             }
         }
     }
+
+    private void lastJudge() {
+        if (frameId > 14000){
+            // 快到最后时刻，如果是来这里的最后一趟，那么给改泊口设置deadline，机器人不在往这里送货，
+            //
+            if (bookBerth.deadLine == totalFrame){
+                // 设置deadLine,
+                Twins<ArrayList<Berth>, Integer> tw = getSinglePathAndFpsByGreedy(berths);
+                if (tw.getObj2()>(totalFrame-frameId)){
+                    // 不够一个周期了，设置deadline
+                    bookBerth.deadLine = frameId;
+                }
+            }
+        }
+    }
+
     private void handleBoatTaskLastPeriod() {
         // 常规调度处理
         if (status == BoatStatus.SHIP){
