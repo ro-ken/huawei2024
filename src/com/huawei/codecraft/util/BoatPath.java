@@ -138,16 +138,6 @@ public class BoatPath {
     }
 
     public Twins<Berth, Point> getNextPlace() {
-        Twins<Berth, Point> twins;
-        if (pathNum == 1){
-            twins = getNextPlaceOnePath();
-        }else {
-            twins = getNextPlaceTwoPath();
-        }
-        return twins;
-    }
-
-    private Twins<Berth, Point> getNextPlaceOnePath() {
         Berth next = null;
         if (index < myPath.size()){
             next = myPath.get(index++);
@@ -158,17 +148,10 @@ public class BoatPath {
         if (next != null){
            return new Twins<>(next,null);
         }else {
-//            // 需要去交货点
-//            if (needChange){
-//                Collections.reverse(myPath);
-//            }
+            // 去交货点
             index=0;
             return new Twins<>(null,delivery);
         }
-    }
-
-    private Twins<Berth, Point> getNextPlaceTwoPath() {
-        return null;
     }
 
     public boolean needGoNormal() {

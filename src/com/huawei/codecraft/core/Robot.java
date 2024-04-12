@@ -148,37 +148,41 @@ public class Robot {
         Util.printLog(this);
 
         for (Berth berth : berths) {
-//            if (berth.notFinalShip()) {
-//                continue;
-//            }
-            Good tmpGood = null;
-
-            int r2bFps = berth.getPathFps(pos);      //时间 = 泊口到物品  + 机器人到泊口
-            double totalFps = r2bFps;
-
-            if (areaSched && bookBerth != berth){
-                // 限制走的距离
-                if (r2bFps >= bookBerth.getPathFps(pos)+Main.greedyMaxDis){
-                    continue;
-                }
+            Berth me = null;
+            if (pointToBerth.containsKey(pos)){
+                me = pointToBerth.get(pos);
             }
+
+//            int r2bFps = berth.getPathFps(pos);      //时间 = 泊口到物品  + 机器人到泊口
+//            double totalFps = r2bFps;
+
+//            if (areaSched && bookBerth != berth){
+//                // 限制走的距离
+//                if (r2bFps >= bookBerth.getPathFps(pos)+Main.greedyMaxDis){
+//                    continue;
+//                }
+//            }
 
             for (Good good : berth.domainGoodsByValue) {
                 // 找出第一个满足robot的
-                int fps = berth.getPathFps(good.pos);
-                int dis = r2bFps + fps;
-                if (dis < good.leftFps()) {
-                    tmpGood = good;     // 找到一个就行
-                    totalFps += berth.getPathFps(good.pos) * 2;     // 实际时间来回
-                    break;
+                double fps = 0;
+                if (me != null){
+                    fps += me.getPathFps(good.pos);
+                }else {
+                    fps += berth.getPathFps(good.pos) + berth.getPathFps(pos);
+                }
+                if (areaSched && bookBerth != berth){
+                // 限制走的距离
+                if (bookBerth.getPathFps(good.pos) >= berth.getPathFps(good.pos)+Main.greedyMaxDis){
+                    continue;
                 }
             }
-            if (tmpGood != null) {
-                double avgV = tmpGood.value / totalFps;
+                fps *=2;
+                double avgV = good.value / fps;
                 if (avgV > maxV) {
                     maxV = avgV;
                     tarBer = berth;
-                    tarGood = tmpGood;
+                    tarGood = good;
                 }
             }
         }
@@ -982,12 +986,12 @@ public class Robot {
 
                 berth.removeDomainGood(good);
 
-                if (Main.limitArea){
-                    // todo 下面为测试使用，后面需要释放
-                    if (berth.getPathFps(good.pos)>berth.getAreaMaxStep()){
-                        continue;   // 不属于自己的货物不要拿
-                    }
-                }
+//                if (Main.limitArea){
+//                    // todo 下面为测试使用，后面需要释放
+//                    if (berth.getPathFps(good.pos)>berth.getAreaMaxStep()){
+//                        continue;   // 不属于自己的货物不要拿
+//                    }
+//                }
 
                 if (berth.canCarryGood(good)){
                     return new Twins<>(berth,good);
@@ -1004,12 +1008,12 @@ public class Robot {
                     if (berth.canCarryGood(good)){
                         // 邻居货物不能乱删,自己拿不到，别人可能能拿
 
-                        if (Main.limitArea) {
-                            // todo 下面为测试使用，后面需要释放
-                            if (next.getPathFps(good.pos) > next.getAreaMaxStep()) {
-                                continue;   // 不属于自己的货物不要拿
-                            }
-                        }
+//                        if (Main.limitArea) {
+//                            // todo 下面为测试使用，后面需要释放
+//                            if (next.getPathFps(good.pos) > next.getAreaMaxStep()) {
+//                                continue;   // 不属于自己的货物不要拿
+//                            }
+//                        }
 
                         next.removeDomainGood(good);
                         curAreaIndex = getNextAreaIndex();  // 换area
@@ -1033,47 +1037,18 @@ public class Robot {
             }
             berth.removeDomainGood(good);
 
-            if (Main.limitArea) {
-                // todo 下面为测试使用，后面需要释放
-                if (berth.getPathFps(good.pos) > berth.getAreaMaxStep()) {
-                    continue;   // 不属于自己的货物不要拿
-                }
-            }
+//            if (Main.limitArea) {
+//                // todo 下面为测试使用，后面需要释放
+//                if (berth.getPathFps(good.pos) > berth.getAreaMaxStep()) {
+//                    continue;   // 不属于自己的货物不要拿
+//                }
+//            }
 
             if (berth.canCarryGood(good)) {
                 return new Twins<>(berth, good);
             }
         }
 
-        // 严格按照时间先后排序
-        while (!berth.domainGoodsByTime.isEmpty()) {
-            Good good = berth.domainGoodsByTime.peek();
-            if (!berth.canCarryGood(good)){
-                berth.removeDomainGood(good);
-                continue;
-            }
-            // 判断该货物的价值
-            BerthArea area = berth.myAreas.get(berth.myAreas.size() - 1);
-            if (good.fpsValue < area.getExpMinValue() * minValueCoef){
-                break;    // 价值太低，懒得去
-            }
-            berth.removeDomainGood(good);
-
-            if (Main.limitArea) {
-                // todo 下面为测试使用，后面需要释放
-                if (berth.getPathFps(good.pos) > berth.getAreaMaxStep()) {
-                    continue;   // 不属于自己的货物不要拿
-                }
-            }
-
-            if (berth.canCarryGood(good)) {
-                return new Twins<>(berth, good);
-            }
-        }
-
-
-        // todo 测试只管自己泊口，后期打开
-        // todo 后期加个限制，距离超过多久就不去运
         // 对面区域也没有货，贪心选择
         Twins<Berth, Good> twins = pickGreedyTaskInBerthNeighborArea();
         if (twins == null){
@@ -1244,7 +1219,7 @@ public class Robot {
         Set<Berth> berthSet = new HashSet<>();
 
         berthSet.add(areas.get(0).berth);
-        for (int i = 0; i < 2; i++) {
+        for (int i = 0; i < Math.min(3,areas.get(0).berth.neighbors.size()); i++) {
             berthSet.add(areas.get(0).berth.neighbors.get(i));
         }
         return pickLastGreedyTask(berthSet);

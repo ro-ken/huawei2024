@@ -35,7 +35,9 @@ public class Boat {
     public int stopMoveFps;    // 发生碰撞，暂停的帧数
     BoatRoute route;
     public BoatPath myPath;
+    public BoatPath myPath2;
     // <轮船数，路径>，若为两艘轮船，里面路径每人一条
+    public int pathIndex=1;
     public static Map<Integer,BoatPath> totalPaths = new HashMap<>();
     public static Twins<Twins<ArrayList<Berth>, Integer>,Twins<ArrayList<Berth>, Integer>> bothPath;    // todo 路径要提前排好序，后面直接用
     public boolean frameMoved;  // 船体只能输入一条指令
@@ -48,6 +50,10 @@ public class Boat {
         route = new BoatRoute(this);
 //        myPath = totalPaths.get(1);     // 事先走单路径
 //        myPath.enable(this);
+        if (Main.assignBoatNum == 1 && menuAssign[0] != null){
+            myPath = new BoatPath(bothPath.getObj1(),this);
+            myPath2 = new BoatPath(bothPath.getObj2(),this);
+        }
     }
 
     public static void handleBoatMove() {
@@ -209,6 +215,7 @@ public class Boat {
                 Main.assignBoatNum = 1;
             }
         }
+
     }
 
     private static Twins<Twins<ArrayList<Berth>, Integer>, Twins<ArrayList<Berth>, Integer>> menuAssignBoat(int[][] berthid) {
@@ -529,9 +536,13 @@ public class Boat {
             return;     // 恢复状态不能操作
         }
         if (boat_num == 1){
-            simpleSched();
+//            if (myPath2 == null){
+                simpleSched();
+//            }else {
+//                pathSched();
+//            }
         }else {
-//            pathSched();
+//            simpleSched();
             PeriodSched();
         }
     }
@@ -556,7 +567,7 @@ public class Boat {
     }
 
     private void pathSched() {
-        // 按照规划的路径进行调度
+        // 双路径周期调度
         if (status != BoatStatus.FREE){
             handleBoatTask();
         }
@@ -622,9 +633,11 @@ public class Boat {
     }
 
     private void gotoBerthOrDeliveryByPath() {
-        // 通过实现规划的路径决定该怎么走
-        Twins<Berth,Point> twins = myPath.getNextPlace();
+        BoatPath bp = (pathIndex == 1)?myPath:myPath2;
+        // 通过事先规划的路径决定该怎么走
+        Twins<Berth,Point> twins = bp.getNextPlace();
         if (twins.getObj1() == null){
+            pathIndex = (pathIndex== 1) ? 2:1;  // 交换，去下一个
             Util.printLog("boat去交货点"+twins.getObj2());
             status = GO;
             changeRoad(twins.getObj2());
@@ -673,6 +686,12 @@ public class Boat {
                 tarBerth = null;
             }
         }
+
+        if (tarBerth != null){
+
+
+        }
+
 
         if (tarBerth != null ){
             bookBerth = tarBerth;
