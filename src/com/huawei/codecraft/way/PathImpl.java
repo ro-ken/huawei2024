@@ -330,6 +330,9 @@ public class PathImpl implements Path {
         direction = nextDir;
         // 获取剩余路径
         ArrayList<Point> leftPath = getBoatPath(ship[0], direction, dest);
+        if (leftPath == null) {
+            return boatBoatPath;
+        }
         // 恢复地图
         restoreMapinfo(barriers, boat);
         boatBoatPath.addAll(leftPath);
