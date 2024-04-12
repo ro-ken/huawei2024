@@ -118,6 +118,10 @@ public class Boat {
             return;
         }
 
+        if (master.allinMainSea() || slave.allinMainSea()){
+            return;
+        }
+
         ArrayList<Point> path1 = path.getBoatPathWithBarrier(slave.pos, slave.direction, slave.route.target, master.getSelfPoints(-1));
         if (path1 == null || path1.size()<=2){
             Boat tmp = master;
@@ -136,6 +140,24 @@ public class Boat {
             }
             slave.route.setNewWay(path1);
         }
+    }
+
+    private boolean allinMainSea() {
+        // 当前点和下一个点都在主航道
+        HashSet<Point> points = getSelfPoints(-1);
+        for (Point point : points) {
+            if (Mapinfo.map[point.x][point.y] != MAINSEA && Mapinfo.map[point.x][point.y] != MAINBOTH){
+                return false;
+            }
+        }
+
+        points = getNextPoints();
+        for (Point point : points) {
+            if (Mapinfo.map[point.x][point.y] != MAINSEA && Mapinfo.map[point.x][point.y] != MAINBOTH){
+                return false;
+            }
+        }
+        return true;
     }
 
 
