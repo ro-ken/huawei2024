@@ -7,6 +7,7 @@ import java.util.*;
 
 import static com.huawei.codecraft.Const.*;
 import static com.huawei.codecraft.Util.*;
+import static com.huawei.codecraft.Util.printLog;
 import static com.huawei.codecraft.way.Mapinfo.*;
 
 /**
@@ -295,52 +296,87 @@ public class PathImpl implements Path {
         return new Twins<>(finalPath, pathLen);
     }
 
+    private int getPassablePoint(Point start, int l, int r) {
+        int cnt = 0; // 空格数
+        int x = start.x,y = start.y;
+        int xFlag = l /  Math.abs(l);  //计算是正还是负的标记
+        int yFlag = r / Math.abs(r);
+        for (int i = 0; i < Math.abs(l); i++) {
+            for (int j = 0; j < Math.abs(r); j++) {
+                if (isValid(x + i * xFlag, y + j * yFlag) && seaMap[x + i * xFlag][y + j * yFlag] != ROAD) {
+                    cnt++;
+                }
+            }
+        }
+        return cnt;
+    }
+
+    private boolean noObstacle(Point start, int direction) {
+        int cnt = 0;
+        while (cnt < 4 && isValid(start.x, start.y) && seaMap[start.x][start.y] != ROAD) {
+            getNextPoint(direction, start);
+            cnt++;
+        }
+        return cnt == 4;
+    }
+
     @Override
     public ArrayList<Point> getBoatPathWithBarrier(Point core, int direction, Point dest, HashSet<Point> points) {
         ArrayList<Point> barriers = new ArrayList<>(points);
         ArrayList<Point> boatBoatPath = new ArrayList<>();
+        printLog("block Points:" + points);
         initShip(core);
         refreshShip(core, direction);
         // 先改地图信息
         changeMapinfo(barriers, boat);
-        int x = core.x, y = core.y;
+        // 使用ship[1]，而不是用ship[0]
         int cnt1 = 0, cnt2 = 0;
         int nextDir;
-        if (direction == UP || direction == DOWN) {
-            // 比较左右的空地
-            while (isValid(x, y) && cnt1 <= 6 && seaMap[x][y] != ROAD) {
-                cnt1++;
-                y -= 1;
-            }
-            while (isValid(x, y) && cnt1 <= 6 && seaMap[x][y] != ROAD) {
-                cnt2++;
-                y += 1;
-            }
-           nextDir = cnt1 > cnt2 ? LEFT : RIGHT;
+        // 判断当前方向往前是不是障碍物
+        if (noObstacle(new Point(ship[0]), direction)) {
+            nextDir = direction;
         }
         else {
-            // 比较上下的空地
-            while (isValid(x, y) && cnt1 <= 6 && seaMap[x][y] != ROAD) {
-                cnt1++;
-                x -= 1;
+            if (direction == LEFT) {
+                cnt1 = getPassablePoint(new Point(ship[1]), -6, -6);
+                cnt2 = getPassablePoint(new Point(ship[1]), 6, -6);
+                nextDir = cnt1 > cnt2 ? UP : DOWN;
             }
-            while (isValid(x, y) && cnt1 <= 6 && seaMap[x][y] != ROAD) {
-                cnt2++;
-                x += 1;
+            else if (direction == RIGHT) {
+                cnt1 = getPassablePoint(new Point(ship[1]), -6, 6);
+                cnt2 = getPassablePoint(new Point(ship[1]), 6, 6);
+                nextDir = cnt1 > cnt2 ? UP : DOWN;
             }
-            nextDir = cnt1 > cnt2 ? UP : DOWN;
+            else if (direction == UP) {
+                cnt1 = getPassablePoint(new Point(ship[1]), -6, -6);
+                cnt2 = getPassablePoint(new Point(ship[1]), -6, 6);
+                nextDir = cnt1 > cnt2 ? LEFT : RIGHT;
+            }
+            else {
+                cnt1 = getPassablePoint(new Point(ship[1]), 6, -6);
+                cnt2 = getPassablePoint(new Point(ship[1]), 6, 6);
+                nextDir = cnt1 > cnt2 ? LEFT : RIGHT;
+            }
         }
+        printLog("cnt1: " + cnt1 + "  cnt2: " + cnt2 + "  nextDir: " + nextDir + " direction: " + direction);
         // 哪边更宽阔，往那边转
-        turnDirection(direction, nextDir, dest, boatBoatPath);
-        direction = nextDir;
-        // 获取剩余路径
-        ArrayList<Point> leftPath = getBoatPath(ship[0], direction, dest);
-        if (leftPath == null) {
-            return boatBoatPath;
+        if (direction != nextDir) {
+            turnDirection(direction, nextDir, null, boatBoatPath);
+            direction = nextDir;
         }
         // 恢复地图
         restoreMapinfo(barriers, boat);
-        boatBoatPath.addAll(leftPath);
+        // 获取剩余路径
+        ArrayList<Point> leftPath = getFinalPath(ship[0], direction, dest, direction);
+        if (leftPath == null) {
+            return boatBoatPath;
+        }
+        if (boatBoatPath.size() != 0 && !boatBoatPath.get(boatBoatPath.size() - 1).equals(leftPath.get(0))) {
+            boatBoatPath.add(leftPath.get(0));
+        }
+        for (int i = 1; i < leftPath.size(); i++) {
+            boatBoatPath.add(leftPath.get(i));
+        }
         return boatBoatPath;
     }
 
@@ -802,9 +838,12 @@ public class PathImpl implements Path {
     private boolean canCounterClockwiseTurn(int direction) {
         // 逆时针，核心点则沿着对角转
         int nextDirection = counterClockwiseRotation.get(direction);
+        printLog("ni shi zhen nextDirection:" + nextDirection);
+        printLog("ship[0]" + ship[0]);
         int x = ship[0].x + counterClockwiseCoordinate[direction][nextDirection][0];
         int y = ship[0].y + counterClockwiseCoordinate[direction][nextDirection][1];
         Point tempCore = new Point(x, y);
+        printLog("tempCore" + tempCore);
         // 判断头的两个位置即可
         return canTurn(tempCore, nextDirection);
     }
@@ -853,7 +892,7 @@ public class PathImpl implements Path {
         while (direction != newDirection) {
             int tempDirection = counterClockwiseRotation.get(direction);    // 获取下一个方向
             // 逆时针旋转，则需要特殊得处理
-            if (ship[2].x == dest.x && ship[2].y == dest.y) {
+            if (dest != null && ship[2].x == dest.x && ship[2].y == dest.y) {
                 int x = ship[0].x;
                 int y = ship[0].y;
                 // 以 ship 1 位置进行逆时针旋转刚好使得 x y 对齐
