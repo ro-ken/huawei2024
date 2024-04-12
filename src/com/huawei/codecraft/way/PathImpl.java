@@ -317,7 +317,7 @@ public class PathImpl implements Path {
             getNextPoint(direction, start);
             cnt++;
         }
-        return cnt == 4;
+        return cnt == 5;
     }
 
     @Override
@@ -838,12 +838,9 @@ public class PathImpl implements Path {
     private boolean canCounterClockwiseTurn(int direction) {
         // 逆时针，核心点则沿着对角转
         int nextDirection = counterClockwiseRotation.get(direction);
-        printLog("ni shi zhen nextDirection:" + nextDirection);
-        printLog("ship[0]" + ship[0]);
         int x = ship[0].x + counterClockwiseCoordinate[direction][nextDirection][0];
         int y = ship[0].y + counterClockwiseCoordinate[direction][nextDirection][1];
         Point tempCore = new Point(x, y);
-        printLog("tempCore" + tempCore);
         // 判断头的两个位置即可
         return canTurn(tempCore, nextDirection);
     }
