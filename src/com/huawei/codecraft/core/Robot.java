@@ -224,6 +224,16 @@ public class Robot {
                 unloadGood(); //卸货
                 turnOffTask();
             }else {
+                if (frameId > 14000){
+                    if (bookBerth.deadLine-frameId<route.getLeftPath().size()){
+                        // 当前送货节点不可用，选择新节点
+                        Berth berth = getAvailAndClosestBerth(pos);
+                        if (berth != null){
+                            bookBerth = berth;
+                            changeRoad(bookBerth.pos);
+                        }
+                    }
+                }
                 // 卡住了，重新找路
                 if (route.target.equals(pos)){
                     changeRoad(bookBerth.pos);
