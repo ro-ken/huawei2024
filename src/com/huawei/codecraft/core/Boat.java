@@ -119,6 +119,8 @@ public class Boat {
         }
 
         if (master.allinMainSea() || slave.allinMainSea()){
+            master.printMove();
+            slave.printMove();
             return;
         }
 
@@ -147,6 +149,7 @@ public class Boat {
         HashSet<Point> points = getSelfPoints(-1);
         for (Point point : points) {
             if (Mapinfo.map[point.x][point.y] != MAINSEA && Mapinfo.map[point.x][point.y] != MAINBOTH){
+//                Util.printDebug(point+"不在主干道");
                 return false;
             }
         }
@@ -154,9 +157,11 @@ public class Boat {
         points = getNextPoints();
         for (Point point : points) {
             if (Mapinfo.map[point.x][point.y] != MAINSEA && Mapinfo.map[point.x][point.y] != MAINBOTH){
+//                Util.printDebug(point+"不在主干道");
                 return false;
             }
         }
+//        Util.printDebug(this+"全在主干道");
         return true;
     }
 
@@ -279,7 +284,9 @@ public class Boat {
                     list2.add(berth);
                 }
                 // todo 需要调整
-//                adjustBerthList(list1,list2);
+                if (Main.avgAssignBerthToBoat){
+                    adjustBerthList(list1,list2);
+                }
             }
         }else {
             // 距离来分类

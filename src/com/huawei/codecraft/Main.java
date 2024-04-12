@@ -44,6 +44,7 @@ public class Main {
     public static int[][] menuAssign = new int[2][];    // 手动给轮船分配泊口
     public static Map<Twins<Point,Integer>, Map<Point,ArrayList<Point>>> staticPath = new HashMap<>();   // 手动规划的路径
     public static boolean initFindGood = false;     // 机器人是否需要一开始就去找物品
+    public static boolean avgAssignBerthToBoat = false;     // 将泊口平均分配给轮船，打开可能会有路径交错，针对两个虚拟点的时候
 
 
     public static void main(String[] args) throws FileNotFoundException, InterruptedException {
@@ -87,8 +88,8 @@ public class Main {
             avgGoodValue = 67;      // 货物的平均价值，每帧更新,设一个初始值，                               67
             areaMinValueCoef = 0.7;    // 机器人本区域价值队列最低值系数，机器人默认先拿该价值队列，没有货在贪心，0.7
 
-            menuAssign[0] = new int[]{2,0,1};   // 给轮船分配的泊口
-            menuAssign[1] = new int[]{3,4,5};
+//            menuAssign[0] = new int[]{0,3,1};   // 给轮船分配的泊口
+//            menuAssign[1] = new int[]{2,4,5};
 
         } else if (mapSeq == 3) {
             // 多游走 陆地面积 31574
