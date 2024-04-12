@@ -224,6 +224,7 @@ public class Util {
             money -= 2000;
             robot.pickRegion();
             robots.add(robot);
+            robot.enableArea();
         }
     }
     public static boolean buyRobot(Point pos) {

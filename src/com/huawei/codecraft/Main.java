@@ -9,10 +9,15 @@ import com.huawei.codecraft.core.Boat;
 import com.huawei.codecraft.core.Good;
 import com.huawei.codecraft.core.Robot;
 import com.huawei.codecraft.util.Point;
+import com.huawei.codecraft.util.Twins;
 import com.huawei.codecraft.way.Mapinfo;
 import com.huawei.codecraft.zone.RegionManager;
 
 import java.io.FileNotFoundException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
+
 import static com.huawei.codecraft.Const.*;
 import static com.huawei.codecraft.Util.*;
 
@@ -30,13 +35,15 @@ public class Main {
     public static double minValueCoef = 0.2;    // 本泊口最高价值低于最低这个系数乘以期望时，启用贪心算法
     public static double areaMinValueCoef = 0.8;    // 机器人本区域价值队列最低值系数，机器人默认先拿该价值队列，没有货在贪心，
     public static int greedyMaxDis = 50;    // 用贪心算法，最远离本区域多远
-    public static int lastGoFps = 1;      // 最后到达交货点的剩余时间，防止货物卖不出去
+    public static int lastGoFps = 0;      // 最后到达交货点的剩余时间，防止货物卖不出去
     public static boolean fixValue = true;     // 获取物品平均价值是否按照预设的来，还是动态计算，白图运行一次可以固定下来
     public static boolean limitArea = false;   // 是否限制机器人的工作区域，测试时打开
     public static boolean globalGreedy = true;  // 若本区域没物品，全局贪心，局部贪心
     public static boolean dynamicRegion = true;      // 是否动态分区
     public static boolean areaSched = true;
     public static int[][] menuAssign = new int[2][];    // 手动给轮船分配泊口
+    public static Map<Twins<Point,Integer>, Map<Point,ArrayList<Point>>> staticPath = new HashMap<>();   // 手动规划的路径
+    public static boolean initFindGood = false;     // 机器人是否需要一开始就去找物品
 
 
     public static void main(String[] args) throws FileNotFoundException, InterruptedException {
@@ -65,13 +72,16 @@ public class Main {
             fixValue = true;     // 获取物品平均价值是否按照预设的来，还是动态计算，白图运行一次可以固定下来
             avgGoodValue = 67;      // 货物的平均价值，每帧更新,设一个初始值，                                67
             areaMinValueCoef = 0.8;    // 机器人本区域价值队列最低值系数，机器人默认先拿该价值队列，没有货在贪心， 0.8
+
+            Menu.map1();
+
         } else if (mapSeq == 2) {
             // 多游走 32275
             // 当前线上最高 121520
             assignRobotNum = 15;   // 手动分配机器人数量，小于等于0 则程序自动分配                           15
             assignBoatNum = 2;   // 分配轮船数量，小于等于0为自动分配                                       2
-            minValueCoef = 0.2;    // 本泊口最高价值低于最低这个系数乘以期望时，启用贪心算法                   0.2
-            greedyMaxDis = 60;    // 用贪心算法，最远离本区域多远                                          80
+            minValueCoef = 0.3;    // 本泊口最高价值低于最低这个系数乘以期望时，启用贪心算法                   0.2
+            greedyMaxDis = 80;    // 用贪心算法，最远离本区域多远                                          80
             expGoodNum = 2600;     // 期望总物品数，官方回答：15/100 * 15000 = 2250                       2600 陆地面积大调大
             fixValue = true;     // 获取物品平均价值是否按照预设的来，还是动态计算，白图运行一次可以固定下来
             avgGoodValue = 67;      // 货物的平均价值，每帧更新,设一个初始值，                               67
@@ -91,7 +101,6 @@ public class Main {
             fixValue = true;     // 获取物品平均价值是否按照预设的来，还是动态计算，白图运行一次可以固定下来
             avgGoodValue = 67;      // 货物的平均价值，每帧更新,设一个初始值，                                67
             areaMinValueCoef = 0.8;    // 机器人本区域价值队列最低值系数，机器人默认先拿该价值队列，没有货在贪心， 0.8
-
         }
     }
 

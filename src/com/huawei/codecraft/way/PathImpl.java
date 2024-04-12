@@ -270,7 +270,7 @@ public class PathImpl implements Path {
         return verCnt > horCnt ? vertical : horizon;
     }
 
-    private int getPathLen(ArrayList<Point> finalPath) {
+    public static int getPathLen(ArrayList<Point> finalPath) {
         int len = 0;
         for (Point p : finalPath) {
             if (isValid(p.x, p.y) && (seaMap[p.x][p.y] == MAINBOTH || seaMap[p.x][p.y] == MAINSEA)) {

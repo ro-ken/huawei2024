@@ -28,7 +28,7 @@ public class BerthArea {
     private int expMaxStep;     // 期望最远距离
     private int expMaxStepNum;      // 期望最远距离所占的点数
     private boolean rich ;  // 该区域是否充足
-
+    public boolean canUse = false;  // 是否能用
     public int totalGoodNum;
     public int totalGoodValue;
     public int waitTime;

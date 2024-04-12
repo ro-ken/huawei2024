@@ -192,7 +192,7 @@ public class Region {
        // 获取离该pos最近的泊口
         int min = unreachableFps;
         Berth tar = null;
-        for (Berth berth : berths) {
+        for (Berth berth : this.berths) {
             int t = berth.getPathFps(pos);
             if (t < min){
                 min = t;
