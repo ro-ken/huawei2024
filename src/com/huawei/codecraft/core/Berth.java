@@ -655,7 +655,7 @@ public class Berth {
 
     public boolean invalid() {
         // 是否能能往这里运货
-        if (frameId+5>=deadLine){
+        if (deadLine - frameId<=5){
 //            Util.printDebug("deadLine 无效");
             return true;
         }
