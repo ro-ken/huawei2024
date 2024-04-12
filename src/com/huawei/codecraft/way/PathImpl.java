@@ -916,6 +916,10 @@ public class PathImpl implements Path {
         return Mapinfo.map[point.x][point.y] == MAINROAD || Mapinfo.map[point.x][point.y] == MAINBOTH;
     }
 
+    private boolean isBoatHidePoint(Point point) {
+        return Mapinfo.map[point.x][point.y] == MAINBOTH || Mapinfo.map[point.x][point.y] == MAINSEA;
+    }
+
     // 修改地图信息以添加障碍物
     // flag 表示是船还是机器人封路，船为1，机器人为0
     private void changeMapinfo(ArrayList<Point> barriers, int flag) {
@@ -933,7 +937,7 @@ public class PathImpl implements Path {
         }
         else { // 船也是标记为陆地
             for (Point barrier : barriers) {
-                if (isValid(barrier.x, barrier.y)) {
+                if (isValid(barrier.x, barrier.y) && !isBoatHidePoint(barrier)) {
                     seaMap[barrier.x][barrier.y] = ROAD;  // 标记为陆地
                 }
             }

@@ -45,6 +45,7 @@ public class Mapinfo {
                     case '~':
                     case 'S':
                     case 'K':
+                    case 'T':
                         map[i][j] = Const.MAINSEA; // 海洋主干道
                         break;
                     case '.':
@@ -58,12 +59,6 @@ public class Mapinfo {
                         break;
                     case '#':
                         map[i][j] = Const.OBSTACLE; // 障碍物
-                        break;
-                    case 'T':
-                        map[i][j] = Const.MAINSEA; // 海洋主干道
-                        DeliveryPoint deliveryPoint = new DeliveryPoint(new Point(i, j));
-                        deliveryPoints.add(deliveryPoint);
-                        pointToDeliveryPoint.put(new Point(i, j), deliveryPoint);
                         break;
                     default:
                         map[i][j] = Const.OBSTACLE; // 默认为障碍
