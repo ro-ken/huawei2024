@@ -7,6 +7,7 @@ import com.huawei.codecraft.util.BoatPath;
 import com.huawei.codecraft.util.BoatStatus;
 import com.huawei.codecraft.util.Point;
 import com.huawei.codecraft.util.Twins;
+import com.huawei.codecraft.way.Mapinfo;
 import com.huawei.codecraft.way.PathImpl;
 
 
@@ -130,6 +131,9 @@ public class Boat {
             slave.printMove();  // 直接开撞
         }else {
             master.stopMoveFps=3;
+            if (Mapinfo.map[slave.pos.x][slave.pos.y] == MAINSEA || Mapinfo.map[slave.pos.x][slave.pos.y] == MAINBOTH){
+                master.stopMoveFps+=3;
+            }
             slave.route.setNewWay(path1);
         }
     }
