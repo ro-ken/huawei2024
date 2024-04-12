@@ -7,6 +7,7 @@ import com.huawei.codecraft.util.BoatPath;
 import com.huawei.codecraft.util.BoatStatus;
 import com.huawei.codecraft.util.Point;
 import com.huawei.codecraft.util.Twins;
+import com.huawei.codecraft.way.Mapinfo;
 import com.huawei.codecraft.way.PathImpl;
 
 
@@ -117,6 +118,12 @@ public class Boat {
             return;
         }
 
+        if (master.allinMainSea() || slave.allinMainSea()){
+            master.printMove();
+            slave.printMove();
+            return;
+        }
+
         ArrayList<Point> path1 = path.getBoatPathWithBarrier(slave.pos, slave.direction, slave.route.target, master.getSelfPoints(-1));
         if (path1 == null || path1.size()<=2){
             Boat tmp = master;
@@ -130,8 +137,32 @@ public class Boat {
             slave.printMove();  // 直接开撞
         }else {
             master.stopMoveFps=3;
+            if (Mapinfo.map[slave.pos.x][slave.pos.y] == MAINSEA || Mapinfo.map[slave.pos.x][slave.pos.y] == MAINBOTH){
+                master.stopMoveFps+=3;
+            }
             slave.route.setNewWay(path1);
         }
+    }
+
+    private boolean allinMainSea() {
+        // 当前点和下一个点都在主航道
+        HashSet<Point> points = getSelfPoints(-1);
+        for (Point point : points) {
+            if (Mapinfo.map[point.x][point.y] != MAINSEA && Mapinfo.map[point.x][point.y] != MAINBOTH){
+//                Util.printDebug(point+"不在主干道");
+                return false;
+            }
+        }
+
+        points = getNextPoints();
+        for (Point point : points) {
+            if (Mapinfo.map[point.x][point.y] != MAINSEA && Mapinfo.map[point.x][point.y] != MAINBOTH){
+//                Util.printDebug(point+"不在主干道");
+                return false;
+            }
+        }
+//        Util.printDebug(this+"全在主干道");
+        return true;
     }
 
 
@@ -253,7 +284,9 @@ public class Boat {
                     list2.add(berth);
                 }
                 // todo 需要调整
-//                adjustBerthList(list1,list2);
+                if (Main.avgAssignBerthToBoat){
+                    adjustBerthList(list1,list2);
+                }
             }
         }else {
             // 距离来分类
