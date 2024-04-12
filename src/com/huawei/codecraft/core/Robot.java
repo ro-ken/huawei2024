@@ -102,6 +102,17 @@ public class Robot {
             Util.printDebug("changeRegionSched ： 到达本区域id:" + region.id + " " + this.pos);
             changeRegionMode = false;
         }
+        if (Main.initFindGood){
+            if (robotBuyPos.contains(pos)){
+                // 刚开始有货就挑选一个
+                Twins<Berth, Good> twins = globalGreedyAreaOnBuyPos(pos);
+                setTask(twins);
+                if (twins!=null){
+                    Util.printDebug("机器人刚开始找到物品"+this+twins.getObj2());
+                    changeRegionMode = false;
+                }
+            }
+        }
     }
 
     private void areaSched() {
@@ -973,6 +984,7 @@ public class Robot {
 
         // 先去找本泊口的货物
         for (BerthArea myArea : berth.myAreas) {
+            if (!myArea.canUse) break;  // 该区域机器人未到位
             while (!myArea.areaGoodsByTime.isEmpty()){
                 // 从最低的开始拿
                 Good good = myArea.areaGoodsByTime.poll();
@@ -1068,6 +1080,50 @@ public class Robot {
             // 还是选择运回原来的泊口
             return new Twins<>(berth,twins.getObj2());
         }
+        return null;
+    }
+
+    private Twins<Berth, Good> globalGreedyAreaOnBuyPos(Point pos) {
+        if (!landHotPath.containsKey(pos)){
+            return null;
+        }
+
+        // 自己泊口不能用，全局贪心
+        // 贪心选择任务，选择单次价值最高的
+        double maxV = 0;
+        Berth tarBer = null;
+        Berth goodBer = null;
+        Good tarGood = null;
+        Util.printLog(this);
+        Map<Point, List<Point>> path = landHotPath.get(pos);
+
+        // todo 全局贪心
+        for (Berth berth : region.zone.berths) {
+
+            int index = 0;
+
+            for (Good good : berth.domainGoodsByValue) {
+                // 找出第一个满足robot的
+                double fps = 0;
+                fps += path.get(good.pos).size();
+
+                fps += bookBerth.getPathFps(good.pos);
+                double avgV = good.value / fps;
+                if (avgV > maxV) {
+                    maxV = avgV;
+                    goodBer = berth;
+                    tarGood = good;
+                }
+                if (index++>=3){
+                    break;
+                }
+            }
+        }
+        if (tarGood != null) {
+            goodBer.removeDomainGood(tarGood);
+            return new Twins<>(bookBerth, tarGood);
+        }
+
         return null;
     }
 
@@ -1378,6 +1434,12 @@ public class Robot {
         this.areas = areas;
         for (BerthArea area : areas) {
             area.enable(this);
+        }
+    }
+
+    public void enableArea() {
+        for (BerthArea area : areas) {
+            area.canUse = true;
         }
     }
 }

@@ -270,7 +270,7 @@ public class PathImpl implements Path {
         return verCnt > horCnt ? vertical : horizon;
     }
 
-    private int getPathLen(ArrayList<Point> finalPath) {
+    public static int getPathLen(ArrayList<Point> finalPath) {
         int len = 0;
         int size = finalPath.size();
         if (size >= 2 && finalPath.get(size - 1).equals(finalPath.get(size - 2))) {
