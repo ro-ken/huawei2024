@@ -237,7 +237,7 @@ public class Berth {
             double max = 0;
             Twins<BerthArea,BerthArea> maxTp = null;
 //            Util.printLog("最大的区域为："+send);
-            for (int i = 0; i < 2; i++) {
+            for (int i = 0; i < Math.min(2,send.neighbors.size()); i++) {
                 Berth neighbor = send.neighbors.get(i);
                 if (!berthList.contains(neighbor) || neighbor.myAreas.isEmpty() || !neighbor.myAreas.get(neighbor.myAreas.size()-1).single){
                     // 以上三种情况的区域不参与争夺
