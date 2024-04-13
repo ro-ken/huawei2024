@@ -47,7 +47,15 @@ public class BoatPath {
         this.boat = boat;
         assignMyPath(path.getObj1());
         startFrame = frameId;
-        delivery = myPath.get(myPath.size()-1).getClosestDelivery();    // 交货点选离最后节点近的，离交货点近的要放最后一个
+        if (mapSeq == 2){
+            if (boat.id == 0){
+                delivery = boatDeliveries.get(0);
+            }else {
+                delivery = boatDeliveries.get(1);
+            }
+        }else {
+            delivery = myPath.get(myPath.size()-1).getClosestDelivery();    // 交货点选离最后节点近的，离交货点近的要放最后一个
+        }
         updateTime();
     }
 

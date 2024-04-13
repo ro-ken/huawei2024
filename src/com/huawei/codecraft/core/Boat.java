@@ -502,7 +502,13 @@ public class Boat {
         Util.printLog(tw.getObj1());
         Berth berth = tw.getObj1().get(0);
         Point pos = berth.getClosestBoatBuyPos();
-        Boat boat = new Boat(1,pos);
+        Boat boat = null;
+        if (Const.mapSeq==2 ){
+             boat = new Boat(1,boatBuyPos.get(1));
+        }else {
+
+             boat = new Boat(1,pos);
+        }
         boat.setMyPath(tw);
         return boat;
     }
