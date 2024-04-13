@@ -445,6 +445,9 @@ public class PathImpl implements Path {
         if (initialPath == null) {
             return null;
         }
+//        if (initialPath != null) {
+//            return  initialPath;
+//        }
         restoreShipRound();
         ArrayList<Point> straightPath = getStraightPath(initialPath);
 
@@ -464,6 +467,9 @@ public class PathImpl implements Path {
             restoreMapinfo(specialPointList, special);
             specialPoint.clear(); // 清空，保证下次使用正常
         }
+//        if (straightPath != null) {
+//            return straightPath;
+//        }
 
         int turnFlag = -1; // 旋转标志，0 顺，1逆，-1 zhi zou
         // 拼接最后的路径
@@ -691,9 +697,11 @@ public class PathImpl implements Path {
     // TODO，暂时先这样，拉直时不考虑主航道
     private boolean canMove(int preDir, int nextDir, Point nextPoint,  Point endPoint, HashMap<Point, Integer> pointToIndexMap) {
         getNextPoint(preDir, nextPoint);
-        return isValid(nextPoint.x, nextPoint.y) && seaMap[nextPoint.x][nextPoint.y] != ROAD
-                && costMap[nextPoint.x][nextPoint.y] != 2
-                && haveIntersectedPoint(nextDir, nextPoint, endPoint, pointToIndexMap);
+        Point next = new Point(nextPoint);
+        getNextPoint(preDir, next); // 用下下个点
+        return isValid(next.x, next.y) && seaMap[next.x][next.y] != ROAD
+//                && costMap[nextPoint.x][nextPoint.y] != 2
+                && haveIntersectedPoint(nextDir, next, endPoint, pointToIndexMap);
     }
 
     // 没有交接点
