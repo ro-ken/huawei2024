@@ -102,8 +102,9 @@ public class Robot {
             Util.printDebug("changeRegionSched ： 到达本区域id:" + region.id + " " + this.pos);
             changeRegionMode = false;
         }
-        if (Main.initFindGood){
-            if (robotBuyPos.contains(pos)){
+        if (Main.initFindGood && frameId>2){
+
+            if (landHotPath.containsKey(pos)){
                 // 刚开始有货就挑选一个
                 Twins<Berth, Good> twins = globalGreedyAreaOnBuyPos(pos);
                 setTask(twins);

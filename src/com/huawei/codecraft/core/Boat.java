@@ -61,7 +61,6 @@ public class Boat {
 
         boolean conflict = false;
         if (boats.size()==2 && boats.get(0).pos.clacGridDis(boats.get(1).pos)<=8 && !tmpMode()){
-            Util.printLog("发生冲突了");
             // 此时有可能发生重合
             Boat boat0 = boats.get(0);
             Boat boat1 = boats.get(1);

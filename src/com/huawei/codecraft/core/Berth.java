@@ -182,6 +182,7 @@ public class Berth {
         assignRobotArea();
 
         preheatSeaPath();
+        Main.staticPath.clear();
     }
 
     private static void preheatSeaPath() {

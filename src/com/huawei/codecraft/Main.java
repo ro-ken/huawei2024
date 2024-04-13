@@ -37,7 +37,6 @@ public class Main {
     public static int greedyMaxDis = 50;    // 用贪心算法，最远离本区域多远
     public static int lastGoFps = 0;      // 最后到达交货点的剩余时间，防止货物卖不出去
     public static boolean fixValue = true;     // 获取物品平均价值是否按照预设的来，还是动态计算，白图运行一次可以固定下来
-    public static boolean limitArea = false;   // 是否限制机器人的工作区域，测试时打开
     public static boolean globalGreedy = true;  // 若本区域没物品，全局贪心，局部贪心
     public static boolean dynamicRegion = true;      // 是否动态分区
     public static boolean areaSched = true;
@@ -73,6 +72,7 @@ public class Main {
             fixValue = true;     // 获取物品平均价值是否按照预设的来，还是动态计算，白图运行一次可以固定下来
             avgGoodValue = 67;      // 货物的平均价值，每帧更新,设一个初始值，                                67
             areaMinValueCoef = 0.8;    // 机器人本区域价值队列最低值系数，机器人默认先拿该价值队列，没有货在贪心， 0.8
+            lastGoFps = 0;      // 最后到达交货点的剩余时间，防止货物卖不出去
 
             Menu.map1();
 
@@ -87,9 +87,11 @@ public class Main {
             fixValue = true;     // 获取物品平均价值是否按照预设的来，还是动态计算，白图运行一次可以固定下来
             avgGoodValue = 67;      // 货物的平均价值，每帧更新,设一个初始值，                               67
             areaMinValueCoef = 0.7;    // 机器人本区域价值队列最低值系数，机器人默认先拿该价值队列，没有货在贪心，0.7
+            lastGoFps = 0;      // 最后到达交货点的剩余时间，防止货物卖不出去
 
-//            menuAssign[0] = new int[]{0,3,1};   // 给轮船分配的泊口
-//            menuAssign[1] = new int[]{2,4,5};
+            Menu.map2();
+            menuAssign[0] = new int[]{2,0,1};   // 给轮船分配的泊口
+            menuAssign[1] = new int[]{3,4,5};
 
         } else if (mapSeq == 3) {
             // 多游走 陆地面积 31574
@@ -102,6 +104,7 @@ public class Main {
             fixValue = true;     // 获取物品平均价值是否按照预设的来，还是动态计算，白图运行一次可以固定下来
             avgGoodValue = 67;      // 货物的平均价值，每帧更新,设一个初始值，                                67
             areaMinValueCoef = 0.8;    // 机器人本区域价值队列最低值系数，机器人默认先拿该价值队列，没有货在贪心， 0.8
+            lastGoFps = 0;      // 最后到达交货点的剩余时间，防止货物卖不出去
         }
     }
 
