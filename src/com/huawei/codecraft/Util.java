@@ -167,13 +167,14 @@ public class Util {
     public static void robotPull(int id){
         outStream.printf("pull %d\n", id);
     }
-    public static void robotBuy(Point pos){
+    public static void robotBuy(Point pos,int type){
         printLog("尝试在"+pos+"处购买一个机器人");
-        outStream.printf("lbot %d %d\n", pos.x,pos.y);
+        outStream.printf("lbot %d %d %d\n", pos.x,pos.y,type);
     }
     public static void boatBuy(Point pos){
         outStream.printf("lboat %d %d\n", pos.x,pos.y);
     }
+
     // 将船前进移动一格
     public static void boatShip(int boatId){
         outStream.printf("ship %d\n", boatId);
@@ -222,7 +223,7 @@ public class Util {
         // robot前期工作以做完
         while (money >= 2000 && !preAssignRobot.isEmpty()){
             Robot robot = preAssignRobot.remove(0);
-            robotBuy(robot.pos);
+            robotBuy(robot.pos,0);
             money -= 2000;
             robot.pickRegion();
             robots.add(robot);
@@ -233,7 +234,7 @@ public class Util {
         if (money < 2000){
             return false;
         }
-        robotBuy(pos);
+        robotBuy(pos,0);
 
         money -= 2000;
         Robot robot = new Robot(robots.size(),pos);

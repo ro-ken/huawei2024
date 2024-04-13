@@ -17,7 +17,7 @@ public class Const {
     public static int berth_num;
     public static int boat_num;
     public static final int totalFrame= 5 * 60 * 50;    // 总共帧数 5分钟
-    public static int money = 25000;    // 起始资金25000
+    public static int money = 17000;    // 起始资金25000
     public static int frameId;
     // 存放地图字符
     public static char[][] map = new char[mapWidth][mapWidth];
@@ -53,7 +53,7 @@ public class Const {
     public static final int SEA = -2;           // 海洋
     public static final int BOTH = 3;           // 陆地、海洋
     public static final int OBSTACLE = -3;      // 障碍
-    public static final boolean isWalkMainBoth = true; // 是否走主航道
+    public static boolean isWalkMainBoth = true; // 是否走主航道
     /*****************************路径相关参数*****************************/
     public static RegionManager regionManager;
     public static Path path = new PathImpl(); // 修改Path实现
