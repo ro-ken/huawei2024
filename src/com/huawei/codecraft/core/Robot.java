@@ -222,7 +222,15 @@ public class Robot {
                 if (bookGood.isExist()) {
                     carryGoodToBerthArea();
                     loadGood(); // 装货
-                    taskStatus = BERTH;
+
+                    if (type == 0 || carry == 2){
+                        taskStatus = BERTH;
+                    }else {
+                        // 在去运货
+                        taskStatus = 0;
+                    }
+
+
                 } else {
                     // 物品不存在，任务结束
                     turnOffTask();
@@ -395,6 +403,7 @@ public class Robot {
     private void unloadGood() {
         Util.printLog("到达泊口,卸货:"+this+bookGood);
         Util.robotPull(id);
+
         carry = 0;
         bookBerth.addBerthGood(bookGood);
         bookBerth.bookGoodSize--;

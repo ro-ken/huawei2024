@@ -67,9 +67,14 @@ public class Util {
             }
         }
 
+        int fee = 0;
+        for (Robot robot : robots) {
+            fee += robot.type == 0?2000:5000;
+        }
+
 
         printBoth("------结果分析：------");
-        printBoth("机器人数："+robot_num +"，花费："+robot_num*2000+"，轮船数："+boat_num+"，花费："+boat_num*8000+"，计算得分:"+(25000+totalSellValue-robot_num*2000-boat_num*8000-boatValue));
+        printBoth("机器人数："+robot_num +"，花费："+fee+"，轮船数："+boat_num+"，花费："+boat_num*8000+"，计算得分:"+(25000+totalSellValue-robot_num*2000-boat_num*8000-boatValue));
         printBoth("------运货信息：------");
         printBoth("总计生成货物："+ countGoodNum+"，总计价值："+countGoodValue+"，单位价值："+countGoodValue/countGoodNum);
         printBoth("搬运码头货物："+ totalCarrySize+"，总计价值："+ totalCarryValue+"，单位价值："+totalCarryValue/(totalCarrySize+0.01));
@@ -168,7 +173,7 @@ public class Util {
         outStream.printf("pull %d\n", id);
     }
     public static void robotBuy(Point pos,int type){
-        printLog("尝试在"+pos+"处购买一个机器人");
+        printLog("尝试在"+pos+"处购买一个机器人,"+type+"剩余金额"+money);
         outStream.printf("lbot %d %d %d\n", pos.x,pos.y,type);
     }
     public static void boatBuy(Point pos){
@@ -220,6 +225,19 @@ public class Util {
     }
 
     public static void buyRobotArea() {
+
+//        if (frameId == 1){
+//            for (int i = 0; i < 1; i++) {
+////                Util.printLog("购买成功");
+//                Robot robot = preAssignRobot.remove(0);
+//                robotBuy(robot.pos,0);
+//                money -= 2000;
+//                robot.pickRegion();
+//                robots.add(robot);
+//                robot.enableArea();
+//            }
+//        }
+
         // robot前期工作以做完
         while (money >= 2000 && !preAssignRobot.isEmpty()){
             Robot robot = preAssignRobot.remove(0);

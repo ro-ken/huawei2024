@@ -45,6 +45,9 @@ public class Main {
     public static boolean initFindGood = false;     // 机器人是否需要一开始就去找物品
     public static boolean avgAssignBerthToBoat = false;     // 将泊口平均分配给轮船，打开可能会有路径交错，针对两个虚拟点的时候
     public static int finalFpsUseGreedy = 0;
+    public static boolean simpleSched = false;   // 轮船简单贪心调度
+    public static int robot5000Num = 10;
+//    public static int robot2000Num = 2;
     public static int type = 0;
 
 
@@ -66,7 +69,7 @@ public class Main {
         if (mapSeq == 1){
             // 陆地面积 20698
             // 当前线上最高 126522
-            assignRobotNum = 16;   // 手动分配机器人数量，小于等于0 则程序自动分配                          16
+            assignRobotNum = 7;   // 手动分配机器人数量，小于等于0 则程序自动分配                          16
             assignBoatNum = 2;   // 分配轮船数量，小于等于0为自动分配                                      2
             minValueCoef = 0.25;    // 本泊口最高价值低于最低这个系数乘以期望时，启用贪心算法                 0.25
             greedyMaxDis = 55;    // 用贪心算法，最远离本区域多远                                          55
@@ -83,7 +86,7 @@ public class Main {
         } else if (mapSeq == 2) {
             // 多游走 32275
             // 当前线上最高 121520
-            assignRobotNum = 15;   // 手动分配机器人数量，小于等于0 则程序自动分配                           15
+            assignRobotNum = 8;   // 手动分配机器人数量，小于等于0 则程序自动分配                           15
             assignBoatNum = 2;   // 分配轮船数量，小于等于0为自动分配                                       2
             minValueCoef = 0.3;    // 本泊口最高价值低于最低这个系数乘以期望时，启用贪心算法                   0.2
             greedyMaxDis = 80;    // 用贪心算法，最远离本区域多远                                          80
@@ -95,8 +98,8 @@ public class Main {
             isWalkMainBoth = true;
 
             Menu.map2();
-//            menuAssign[0] = new int[]{2,0,1};   // 给轮船分配的泊口
-//            menuAssign[1] = new int[]{3,4,5};
+            menuAssign[0] = new int[]{0,1};   // 给轮船分配的泊口
+            menuAssign[1] = new int[]{2};
 
         } else if (mapSeq == 3) {
             // 多游走 陆地面积 31574

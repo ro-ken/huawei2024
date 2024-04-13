@@ -21,6 +21,7 @@ public class Berth {
     public int direction;   // 泊位核心点方向
     public int direction2;  // 朝海洋方向
     public int loading_speed;
+    public boolean boatBooked = false;
     public Region region;  // 该泊口属于的区域，在区域初始化赋值
     public ArrayList<Berth> neighbors = new ArrayList<>();  // 该泊口的邻居，按照距离由近到远排序
     public int neighborTotalFps = 0;    // 与邻居的总距离

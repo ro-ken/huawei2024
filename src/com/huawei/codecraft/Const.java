@@ -17,7 +17,7 @@ public class Const {
     public static int berth_num;
     public static int boat_num;
     public static final int totalFrame= 5 * 60 * 50;    // 总共帧数 5分钟
-    public static int money = 17000;    // 起始资金25000
+    public static int money = 25000;    // 起始资金25000
     public static int frameId;
     // 存放地图字符
     public static char[][] map = new char[mapWidth][mapWidth];

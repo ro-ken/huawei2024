@@ -16,6 +16,7 @@ import java.util.*;
 import static com.huawei.codecraft.Const.*;
 import static com.huawei.codecraft.Const.berths;
 import static com.huawei.codecraft.Main.menuAssign;
+import static com.huawei.codecraft.Main.testRobot;
 import static com.huawei.codecraft.util.BoatStatus.*;
 
 // 轮船
@@ -496,6 +497,9 @@ public class Boat {
         }else {
             tw = bothPath.getObj1();
         }
+        Util.printLog(bothPath);
+        Util.printLog(tw.getObj1());
+        Util.printLog(tw.getObj1());
         Berth berth = tw.getObj1().get(0);
         Point pos = berth.getClosestBoatBuyPos();
         Boat boat = new Boat(1,pos);
@@ -581,7 +585,11 @@ public class Boat {
 //            }
         }else {
 //            simpleSched();
-            PeriodSched();
+            if (Main.simpleSched){
+                simpleSched();
+            }else {
+                PeriodSched();
+            }
         }
     }
 
@@ -624,6 +632,10 @@ public class Boat {
         }
         if (status == BoatStatus.FREE && !frameMoved){
             // 没有任务 ， 且没有输出指令
+//            if (bookBerth != null){
+//
+//            bookBerth.boatBooked = false;
+//            }
             goToBerthOrDelivery();
         }
     }
@@ -712,6 +724,9 @@ public class Boat {
                     int min = unreachableFps;
                     tarBerth = berthList.get(0);
                     for (Berth berth : berthList) {
+//                        if (berth.boatBooked){
+//                            continue;
+//                        }
                         int dis = Boat.getSeaPathFps(pos,direction,berth.core);
                         dis += berth.getClosestDeliveryFps();
                         if (dis < min){
@@ -758,6 +773,7 @@ public class Boat {
 
         if (tarBerth != null ){
             bookBerth = tarBerth;
+//            bookBerth.boatBooked = true;
             Util.printLog("boat下一个泊口"+bookBerth);
             status = BoatStatus.SHIP;
             changeRoad(bookBerth.pos);
@@ -834,6 +850,9 @@ public class Boat {
         Berth tar = berths.get(0);
         // 选择物品数量最多的泊口
         for (Berth berth : berths) {
+//            if (berth.boatBooked){
+//                continue;
+//            }
             if (berth.existGoods.size()>max){
                 max = berth.existGoods.size();
                 tar = berth;
