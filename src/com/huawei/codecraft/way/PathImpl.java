@@ -428,6 +428,32 @@ public class PathImpl implements Path {
         blockPoints.clear();
     }
 
+    private boolean canPush(int direction) {
+        int x = ship[2].x, y = ship[2].y;
+        if (direction == LEFT) {
+            if (seaMap[x][y - 1] != ROAD && seaMap[x - 1][y - 1] != ROAD) {
+                return true;
+            }
+        }
+        else if (direction == RIGHT) {
+            if (seaMap[x][y + 1] != ROAD && seaMap[x + 1][y + 1] != ROAD) {
+                return true;
+            }
+        }
+        else if (direction == UP) {
+            if (seaMap[x - 1][y] != ROAD && seaMap[x - 1][y + 1] != ROAD) {
+                return true;
+            }
+        }
+        else {
+            if (seaMap[x + 1][y] != ROAD && seaMap[x + 1][y - 1] != ROAD) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     // 从船当前方向去找，这个方向一定向外的
     private ArrayList<Point> getFinalPath(Point core, int direction, Point dest, int bestDir) {
         ArrayList<Point> finalPath = new ArrayList<>();
@@ -475,7 +501,7 @@ public class PathImpl implements Path {
         // 拼接最后的路径
         for (int i = 2; i < straightPath.size() - 1; i++) {
             int nextDir = getDirection(straightPath.get(i), straightPath.get(i + 1));
-            if (direction == nextDir && shipBehindPathPoint(nextDir, straightPath.get(i))) {
+            if (direction == nextDir && shipBehindPathPoint(nextDir, straightPath.get(i)) && canPush(direction)) {
                 pushForward(direction, finalPath);
             }
             // A*开始转向的时候，船不一定能转，需要做特殊处理
@@ -490,7 +516,7 @@ public class PathImpl implements Path {
                     times++;
                 }
                 // TODO： 这个在有的时候可能会出现不知情的落后，暂时先这样吧
-                if (shipBehindPathPoint(direction, straightPath.get(i))) {
+                if (shipBehindPathPoint(direction, straightPath.get(i)) && canPush(direction)) {
                     pushForward(direction, finalPath);
                 }
                 turnDirection(direction, nextDir, straightPath.get(i), finalPath);
@@ -700,7 +726,7 @@ public class PathImpl implements Path {
         Point next = new Point(nextPoint);
         getNextPoint(preDir, next); // 用下下个点
         return isValid(next.x, next.y) && seaMap[next.x][next.y] != ROAD
-//                && costMap[nextPoint.x][nextPoint.y] != 2
+                && costMap[nextPoint.x][nextPoint.y] != 2
                 && haveIntersectedPoint(nextDir, next, endPoint, pointToIndexMap);
     }
 
@@ -897,9 +923,13 @@ public class PathImpl implements Path {
         while (direction != newDirection) {
             int tempDirection = counterClockwiseRotation.get(direction);    // 获取下一个方向
             // 逆时针旋转，则需要特殊得处理
-            if (dest != null && ship[2].x == dest.x && ship[2].y == dest.y) {
-                int x = ship[0].x;
-                int y = ship[0].y;
+            int x = ship[0].x;
+            int y = ship[0].y;
+            Point tmp1 = new Point(x, y);
+            getNextPoint(direction, tmp1);
+            Point tmp2 = new Point(tmp1);
+            getNextPoint(direction, tmp2);
+            if (dest != null && ship[2].x == dest.x && ship[2].y == dest.y && seaMap[tmp1.x][tmp1.y] != ROAD && seaMap[tmp2.x][tmp2.y] != ROAD) {
                 // 以 ship 1 位置进行逆时针旋转刚好使得 x y 对齐
                 getNextPoint(direction, ship[0]);
 
