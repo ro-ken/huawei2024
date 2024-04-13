@@ -61,8 +61,10 @@ public class Util {
         int boatValue = 0;
         int boatNum = 0;
         for (Boat boat : boats) {
-            boatValue += boat.totalCarryValue;
-            boatNum += boat.goodSize;
+            if (boat.carry >0){
+                boatValue += boat.totalCarryValue;
+                boatNum += boat.goodSize;
+            }
         }
 
 

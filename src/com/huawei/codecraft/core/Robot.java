@@ -983,6 +983,9 @@ public class Robot {
             return globalGreedyArea();
         }
 
+        if (totalFrame - frameId >= finalFpsUseGreedy){
+
+
         // 先去找本泊口的货物
         for (BerthArea myArea : berth.myAreas) {
             if (!myArea.canUse) break;  // 该区域机器人未到位
@@ -1044,6 +1047,8 @@ public class Robot {
                     }
                 }
             }
+        }
+
         }
 
 //         对面区域没货本泊口按照价值贪心

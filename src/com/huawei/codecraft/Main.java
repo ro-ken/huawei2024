@@ -44,6 +44,7 @@ public class Main {
     public static Map<Twins<Point,Integer>, Map<Point,ArrayList<Point>>> staticPath = new HashMap<>();   // 手动规划的路径
     public static boolean initFindGood = false;     // 机器人是否需要一开始就去找物品
     public static boolean avgAssignBerthToBoat = false;     // 将泊口平均分配给轮船，打开可能会有路径交错，针对两个虚拟点的时候
+    public static int finalFpsUseGreedy = 0;
 
 
     public static void main(String[] args) throws FileNotFoundException, InterruptedException {
