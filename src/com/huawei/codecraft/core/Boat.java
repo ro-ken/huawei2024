@@ -792,6 +792,9 @@ public class Boat {
         if (pos.equals(target)){
             return 0;
         }
+        if (mapSeq == 1 && pos.equals(197, 10) && direction == 0) {
+            return 0;
+        }
 
         Twins<Point,Integer> key = new Twins<>(pos,direction);
         if (seaHotPath.containsKey(key) && seaHotPath.get(key).containsKey(target)){

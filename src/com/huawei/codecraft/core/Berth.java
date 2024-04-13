@@ -217,7 +217,8 @@ public class Berth {
             // 选择最近的购买点
             Point buyPos = area.berth.pickClosestRobotBuyPos();
             // ID 后面在修改
-            Robot robot = new Robot(i,buyPos);
+            int type = 0;
+            Robot robot = new Robot(i,buyPos,type);
             robot.areas.add(area);
             area.enable(robot);
             preAssignRobot.add(robot);

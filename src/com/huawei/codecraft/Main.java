@@ -45,6 +45,7 @@ public class Main {
     public static boolean initFindGood = false;     // 机器人是否需要一开始就去找物品
     public static boolean avgAssignBerthToBoat = false;     // 将泊口平均分配给轮船，打开可能会有路径交错，针对两个虚拟点的时候
     public static int finalFpsUseGreedy = 0;
+    public static int type = 0;
 
 
     public static void main(String[] args) throws FileNotFoundException, InterruptedException {
@@ -73,7 +74,9 @@ public class Main {
             fixValue = true;     // 获取物品平均价值是否按照预设的来，还是动态计算，白图运行一次可以固定下来
             avgGoodValue = 67;      // 货物的平均价值，每帧更新,设一个初始值，                                67
             areaMinValueCoef = 0.8;    // 机器人本区域价值队列最低值系数，机器人默认先拿该价值队列，没有货在贪心， 0.8
-            lastGoFps = 0;      // 最后到达交货点的剩余时间，防止货物卖不出去
+            lastGoFps = 1;      // 最后到达交货点的剩余时间，防止货物卖不出去
+            isWalkMainBoth = true;
+
 
             Menu.map1();
 
@@ -88,24 +91,26 @@ public class Main {
             fixValue = true;     // 获取物品平均价值是否按照预设的来，还是动态计算，白图运行一次可以固定下来
             avgGoodValue = 67;      // 货物的平均价值，每帧更新,设一个初始值，                               67
             areaMinValueCoef = 0.7;    // 机器人本区域价值队列最低值系数，机器人默认先拿该价值队列，没有货在贪心，0.7
-            lastGoFps = 0;      // 最后到达交货点的剩余时间，防止货物卖不出去
+            lastGoFps = 1;      // 最后到达交货点的剩余时间，防止货物卖不出去
+            isWalkMainBoth = true;
 
             Menu.map2();
-            menuAssign[0] = new int[]{2,0,1};   // 给轮船分配的泊口
-            menuAssign[1] = new int[]{3,4,5};
+//            menuAssign[0] = new int[]{2,0,1};   // 给轮船分配的泊口
+//            menuAssign[1] = new int[]{3,4,5};
 
         } else if (mapSeq == 3) {
             // 多游走 陆地面积 31574
             // 当前线上最高 140600
             assignRobotNum = 17;   // 手动分配机器人数量，小于等于0 则程序自动分配                            17
-            assignBoatNum = 1;   // 分配轮船数量，小于等于0为自动分配                                        1
+            assignBoatNum = 2;   // 分配轮船数量，小于等于0为自动分配                                        1
             minValueCoef = 0.25;    // 本泊口最高价值低于最低这个系数乘以期望时，启用贪心算法                   0.25
             greedyMaxDis = 55;    // 用贪心算法，最远离本区域多远                                           55
             expGoodNum = 2470;     // 期望总物品数，官方回答：15/100 * 15000 = 2250                         2470
             fixValue = true;     // 获取物品平均价值是否按照预设的来，还是动态计算，白图运行一次可以固定下来
             avgGoodValue = 67;      // 货物的平均价值，每帧更新,设一个初始值，                                67
             areaMinValueCoef = 0.8;    // 机器人本区域价值队列最低值系数，机器人默认先拿该价值队列，没有货在贪心， 0.8
-            lastGoFps = 0;      // 最后到达交货点的剩余时间，防止货物卖不出去
+            lastGoFps = 1;      // 最后到达交货点的剩余时间，防止货物卖不出去
+            isWalkMainBoth = true;
         }
     }
 
@@ -264,6 +269,7 @@ public class Main {
         robot_num = inStream.nextInt();
         if (robot_num != robots.size()) {
             printErr("robot_num != robots.size()");
+            printErr("robot_num ="+robot_num+",size:"+robots.size());
         }
         for (int i = 0; i < robot_num; i++) {
             int id = inStream.nextInt();    // 机器人id

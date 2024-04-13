@@ -17,8 +17,13 @@ public class Robot {
     public int id;     // 机器人编号
     public Point pos;
     public int carry;   // 是否携带货物，1：携带，0：未携带
-    public int taskStatus;    // 0：无任务，1：有任务
+    public int taskStatus = 0;    // 0：无任务，1：有任务, 2为泊口
 
+    public static int GOOD = 1;
+    public static int BERTH = 2;
+
+    public int type = 0;
+    public int task = 1;    // 1为机器人，0为泊口
     public Good bookGood;  // 预定的产品
     public Berth bookBerth;  // 预定的产品
     public Route route; //
@@ -37,11 +42,12 @@ public class Robot {
 
     /************************************************分界线***********************************************/
 
-    public Robot(int id, Point p) {
+    public Robot(int id, Point p,int type) {
         this.id = id;
         pos = new Point(p);
         route = new Route(this);
         next = pos;
+        this.type = type;
     }
 //
 //    // 购买一个机器人，并对其初始化
@@ -210,12 +216,13 @@ public class Robot {
             return;
         }
 
-        if (!isCarry()) {
+        if (taskStatus == GOOD) {
             if (arriveGood()) {
                 // 1、如果到达了物品，捡起物品，换路线选择泊口
                 if (bookGood.isExist()) {
                     carryGoodToBerthArea();
                     loadGood(); // 装货
+                    taskStatus = BERTH;
                 } else {
                     // 物品不存在，任务结束
                     turnOffTask();
@@ -403,7 +410,7 @@ public class Robot {
 
     private void loadGood() {
         Util.robotGet(id);
-        carry = 1;
+        carry += 1;
         bookBerth.bookGoodSize++;
     }
 
@@ -952,7 +959,7 @@ public class Robot {
             boolean canArrive = changeRoad(twins.getObj2().pos);
             if (canArrive) {
                 setBook(twins.getObj2(), twins.getObj1());
-                turnOnTask();
+                turnOnTask(GOOD);
                 Util.printLog("picked task robot:" + id + ",good" + bookGood + "berth:" + bookBerth);
             } else {
                 Util.printErr("pickNewTask:pick good can't arrive!" + this + twins.getObj2());
@@ -1383,6 +1390,9 @@ public class Robot {
 
     private void turnOnTask() {
         taskStatus = 1;
+    }
+    private void turnOnTask(int type) {
+        taskStatus = type;
     }
 
     private void turnOffTask() {

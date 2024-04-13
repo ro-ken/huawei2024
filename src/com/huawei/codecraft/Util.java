@@ -234,10 +234,11 @@ public class Util {
         if (money < 2000){
             return false;
         }
-        robotBuy(pos,0);
+        int type = 0;
+        robotBuy(pos,type);
 
         money -= 2000;
-        Robot robot = new Robot(robots.size(),pos);
+        Robot robot = new Robot(robots.size(),pos,type);
         robot.pickRegion();
         robots.add(robot);
         return true;
@@ -327,8 +328,8 @@ public class Util {
     public static void initMapSeq() {
 
         int[][][] berthsPos = {
-                {{37,97}, {50,169}, {99,17}}, // map1
-                {{93,72}, {93,148}, {103,52}}, // map2
+                {{3,98}, {92,3}, {92,194}}, // map1
+                {{98,34}, {98,60}, {102,47}}, // map2
         };
         if (map[berthsPos[0][0][0]][berthsPos[0][0][1]] == 'B' && map[berthsPos[0][1][0]][berthsPos[0][1][1]] == 'B' && map[berthsPos[0][2][0]][berthsPos[0][2][1]] == 'B') {
             mapSeq = 1;
